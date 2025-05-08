@@ -1,8 +1,8 @@
-{% extends 'base.html' %}
+{% extends 'student_layout.html' if current_user.is_authenticated else 'base.html' %}
 
 {% block title %}{{ course.title }} - Ludens Medical Academy{% endblock %}
 
-{% block content %}
+{% block student_content if current_user.is_authenticated else 'content' %}
 <div class="bg-white">
     <!-- Course Header -->
     <div class="bg-primary-700">
@@ -210,20 +210,51 @@
             <div x-show="activeTab === 'modules'" class="space-y-8">
                 <h2 id="module-content" class="text-2xl font-bold text-gray-900">Course Modules</h2>
                 {% if modules %}
-                    <div class="space-y-6">
+                    <div class="space-y-6" x-data="{ openModule: null }">
                         {% for module in modules %}
                             <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-                                <div class="px-4 py-5 sm:px-6 flex justify-between items-center bg-gray-50">
-                                    <h3 class="text-lg leading-6 font-medium text-gray-900">
-                                        Module {{ module.order }}: {{ module.title }}
-                                    </h3>
-                                    {% if enrolled %}
-                                        <a href="{{ url_for('module_detail', course_id=course.id, module_id=module.id) }}" class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
-                                            Start Learning
-                                        </a>
-                                    {% endif %}
+                                <div class="px-4 py-5 sm:px-6 flex justify-between items-center bg-gray-50 cursor-pointer"
+                                     @click="openModule = (openModule === {{ loop.index }} ? null : {{ loop.index }})">
+                                    <div class="flex items-center">
+                                        <h3 class="text-lg leading-6 font-medium text-gray-900">
+                                            Module {{ module.order }}: {{ module.title }}
+                                        </h3>
+                                        
+                                        {% if enrolled %}
+                                            {% if progress > (module.order / modules|length * 100) %}
+                                                <span class="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                    <svg class="mr-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    Completed
+                                                </span>
+                                            {% else %}
+                                                <span class="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                    <svg class="mr-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    In Progress
+                                                </span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <svg class="h-5 w-5 text-gray-500 transform transition-transform" 
+                                         :class="openModule === {{ loop.index }} ? 'rotate-180' : ''"
+                                         xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
                                 </div>
-                                <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+                                
+                                <div class="border-t border-gray-200 px-4 py-5 sm:p-6"
+                                     x-show="openModule === {{ loop.index }}"
+                                     x-transition:enter="transition ease-out duration-100"
+                                     x-transition:enter-start="transform opacity-0 scale-95"
+                                     x-transition:enter-end="transform opacity-100 scale-100"
+                                     x-transition:leave="transition ease-in duration-75"
+                                     x-transition:leave-start="transform opacity-100 scale-100"
+                                     x-transition:leave-end="transform opacity-0 scale-95">
+                                    
                                     <div class="prose prose-primary prose-sm text-gray-700">
                                         {{ module.content|safe }}
                                     </div>
@@ -257,6 +288,17 @@
                                             </span>
                                         {% endif %}
                                     </div>
+                                    
+                                    {% if enrolled %}
+                                        <div class="mt-6">
+                                            <a href="{{ url_for('module_detail', course_id=course.id, module_id=module.id) }}" class="text-primary-600 hover:text-primary-800 font-medium">
+                                                View module details
+                                                <svg class="inline-block ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                                </svg>
+                                            </a>
+                                        </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         {% endfor %}
