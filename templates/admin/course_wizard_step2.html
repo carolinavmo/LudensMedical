@@ -1,5 +1,13 @@
 {% extends 'admin/course_wizard.html' %}
 
+{% block head %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.8.2/dist/alpine.min.js" defer></script>
+<style>
+    [x-cloak] { display: none !important; }
+</style>
+{% endblock %}
+
 {% block wizard_content %}
 <div class="px-4 py-5 sm:p-6">
     <div class="grid grid-cols-6 gap-6">
@@ -76,7 +84,8 @@
                                 </div>
                                 <div class="flex space-x-2">
                                     <button 
-                                        @click="$dispatch('open-modal', 'edit-module-{{ module.id }}')" 
+                                        data-module-edit
+                                        data-module-id="{{ module.id }}"
                                         class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                                     >
                                         Edit Content
@@ -143,7 +152,6 @@
         </button>
     </form>
 </div>
-{% endblock %}
 
 <!-- Modal Templates -->
 {% for module in modules %}
@@ -363,11 +371,28 @@
 </div>
 {% endfor %}
 
-{% block head %}
-<script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.8.2/dist/alpine.min.js" defer></script>
+{% block scripts %}
+{{ super() }}
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
 <script src="{{ url_for('static', filename='js/module-reorder.js') }}"></script>
-<style>
-    [x-cloak] { display: none !important; }
-</style>
+<script>
+    // Function to open modal programmatically
+    function openModuleModal(moduleId) {
+        window.dispatchEvent(new CustomEvent('open-modal', {
+            detail: 'edit-module-' + moduleId
+        }));
+    }
+    
+    // Add click event listeners to all module edit buttons
+    document.addEventListener('DOMContentLoaded', function() {
+        const editButtons = document.querySelectorAll('[data-module-edit]');
+        editButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const moduleId = this.getAttribute('data-module-id');
+                openModuleModal(moduleId);
+            });
+        });
+    });
+</script>
 {% endblock %}
