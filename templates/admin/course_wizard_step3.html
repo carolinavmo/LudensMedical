@@ -280,7 +280,19 @@
                                         </div>
                                     </div>
                                     
-                                    {% set quiz_questions = [q for q in questions if q.quiz_id == module_quiz.id] %}
+                                    <!-- First count questions for this specific quiz -->
+                                    {% set quiz_questions = [] %}
+                                    {% for question in questions %}
+                                        {% if question.quiz_id == module_quiz.id %}
+                                            {% set quiz_questions = quiz_questions + [question] %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    <!-- Debug info display - will be hidden in the UI -->
+                                    <div class="text-xs text-gray-400 mb-2">
+                                        Debug: Found {{ quiz_questions|length }} questions for quiz ID {{ module_quiz.id }}
+                                    </div>
+                                    
                                     {% if quiz_questions|length > 0 %}
                                     <ul class="divide-y divide-gray-200 bg-white rounded-md border border-gray-200">
                                         {% for question in questions %}
