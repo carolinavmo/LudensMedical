@@ -12,11 +12,12 @@
             </p>
             
             {% if modules %}
-                <div class="bg-white shadow overflow-hidden sm:rounded-md">
-                    <ul class="divide-y divide-gray-200">
+                <div class="bg-white shadow overflow-hidden sm:rounded-md mb-4">
+                    <ul class="divide-y divide-gray-200 accordion-container">
                         {% for module in modules %}
-                        <li>
-                            <div class="px-4 py-4 sm:px-6 flex items-center justify-between">
+                        <li class="accordion-item">
+                            <!-- Accordion Header -->
+                            <div class="px-4 py-4 sm:px-6 flex items-center justify-between accordion-header" id="accordion-header-{{ module.id }}">
                                 <div>
                                     <p class="text-sm font-medium text-primary-600 truncate">
                                         Module {{ module.order }}: {{ module.title }}
@@ -62,23 +63,121 @@
                                         {% endif %}
                                     </div>
                                 </div>
-                                <div>
+                                <div class="flex items-center space-x-2">
+                                    <!-- Edit/Add Button -->
                                     {% if module_quiz %}
-                                        <a href="{{ url_for('admin_quiz_edit', quiz_id=module_quiz.id) }}" class="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200">
+                                        <button type="button" 
+                                            class="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200 accordion-toggle"
+                                            data-target="accordion-content-{{ module.id }}"
+                                        >
                                             <svg class="-ml-0.5 mr-1.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                                 <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                                             </svg>
-                                            Edit Quiz
-                                        </a>
+                                            <span class="edit-text">Edit Quiz</span>
+                                            <span class="hidden cancel-text">Cancel</span>
+                                        </button>
                                     {% else %}
-                                        <a href="{{ url_for('admin_quiz_new', module_id=module.id) }}" class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                        <button type="button" 
+                                            class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 accordion-toggle"
+                                            data-target="accordion-content-{{ module.id }}"
+                                        >
                                             <svg class="-ml-0.5 mr-1.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
                                             </svg>
-                                            Add Quiz
-                                        </a>
+                                            <span class="edit-text">Add Quiz</span>
+                                            <span class="hidden cancel-text">Cancel</span>
+                                        </button>
                                     {% endif %}
                                 </div>
+                            </div>
+                            
+                            <!-- Accordion Content (Initially Hidden) -->
+                            <div class="hidden accordion-content px-4 py-4 sm:px-6 border-t border-gray-200 bg-gray-50" id="accordion-content-{{ module.id }}">
+                                <form action="{{ url_for('admin_quiz_new', module_id=module.id) }}" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    
+                                    <div class="grid grid-cols-6 gap-6">
+                                        <div class="col-span-6">
+                                            <label for="title-{{ module.id }}" class="block text-sm font-medium text-gray-700">Quiz Title</label>
+                                            <input 
+                                                type="text" 
+                                                id="title-{{ module.id }}" 
+                                                name="title" 
+                                                class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                                                value="{% if module_quiz %}{{ module_quiz.title }}{% endif %}"
+                                                required
+                                            >
+                                        </div>
+
+                                        <div class="col-span-6">
+                                            <label for="description-{{ module.id }}" class="block text-sm font-medium text-gray-700">Description</label>
+                                            <textarea 
+                                                id="description-{{ module.id }}" 
+                                                name="description" 
+                                                rows="3"
+                                                class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                                                required
+                                            >{% if module_quiz %}{{ module_quiz.description }}{% endif %}</textarea>
+                                        </div>
+
+                                        <div class="col-span-6 sm:col-span-3">
+                                            <label for="passing_score-{{ module.id }}" class="block text-sm font-medium text-gray-700">Passing Score (%)</label>
+                                            <input 
+                                                type="number" 
+                                                id="passing_score-{{ module.id }}" 
+                                                name="passing_score" 
+                                                min="1" 
+                                                max="100"
+                                                class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                                                value="{% if module_quiz %}{{ module_quiz.passing_score }}{% else %}70{% endif %}"
+                                                required
+                                            >
+                                            <p class="mt-1 text-xs text-gray-500">Percentage required to pass this quiz (1-100)</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex justify-end mt-4">
+                                        <button 
+                                            type="submit" 
+                                            class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                                        >
+                                            {% if module_quiz %}Save Changes{% else %}Create Quiz{% endif %}
+                                        </button>
+                                    </div>
+                                </form>
+                                
+                                {% if module_quiz and question_count > 0 %}
+                                <div class="mt-6 border-t border-gray-200 pt-4">
+                                    <h4 class="text-sm font-medium text-gray-900 mb-3">Quiz Questions</h4>
+                                    <ul class="divide-y divide-gray-200 bg-white rounded-md border border-gray-200">
+                                        {% for question in questions %}
+                                            {% if question.quiz_id == module_quiz.id %}
+                                            <li class="px-4 py-3">
+                                                <div class="flex justify-between items-center">
+                                                    <p class="text-sm font-medium text-gray-900">{{ question.question }}</p>
+                                                    <div class="flex space-x-2">
+                                                        <a href="{{ url_for('admin_question_edit', question_id=question.id) }}" class="text-primary-600 hover:text-primary-900 text-xs">
+                                                            Edit
+                                                        </a>
+                                                        <form method="POST" action="{{ url_for('admin_question_delete', question_id=question.id) }}" class="inline">
+                                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                            <button type="submit" onclick="return confirm('Are you sure you want to delete this question?')" class="text-red-600 hover:text-red-900 text-xs">
+                                                                Delete
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </ul>
+                                    <div class="mt-3">
+                                        <a href="{{ url_for('admin_question_new', quiz_id=module_quiz.id) }}" class="text-primary-600 hover:text-primary-900 text-sm">
+                                            + Add Question
+                                        </a>
+                                    </div>
+                                </div>
+                                {% endif %}
                             </div>
                         </li>
                         {% endfor %}
@@ -115,4 +214,28 @@
         </button>
     </form>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize accordion functionality
+        const accordionToggles = document.querySelectorAll('.accordion-toggle');
+        
+        accordionToggles.forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                const contentElement = document.getElementById(targetId);
+                
+                // Toggle the content visibility
+                contentElement.classList.toggle('hidden');
+                
+                // Toggle the edit/cancel text
+                const editText = this.querySelector('.edit-text');
+                const cancelText = this.querySelector('.cancel-text');
+                
+                editText.classList.toggle('hidden');
+                cancelText.classList.toggle('hidden');
+            });
+        });
+    });
+</script>
 {% endblock %}

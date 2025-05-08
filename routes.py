@@ -1431,8 +1431,14 @@ def admin_quiz_new(module_id):
         )
         quiz_db[quiz_id] = quiz
         
-        flash('Quiz created successfully. Now add some questions.', 'success')
-        return redirect(url_for('admin_quiz_edit', quiz_id=quiz_id))
+        flash('Quiz created successfully.', 'success')
+        
+        # Check if the request came from the course wizard
+        referer = request.headers.get('Referer', '')
+        if 'course-wizard/step3' in referer:
+            return redirect(url_for('admin_course_wizard_step3', course_id=course.id))
+        else:
+            return redirect(url_for('admin_quiz_edit', quiz_id=quiz_id))
     
     return render_template('admin/quiz_edit.html',
                           form=form,
@@ -1469,7 +1475,13 @@ def admin_quiz_edit(quiz_id):
         quiz.updated_at = datetime.now()
         
         flash('Quiz updated successfully', 'success')
-        return redirect(url_for('admin_quiz_edit', quiz_id=quiz_id))
+        
+        # Check if the request came from the course wizard
+        referer = request.headers.get('Referer', '')
+        if 'course-wizard/step3' in referer:
+            return redirect(url_for('admin_course_wizard_step3', course_id=course.id))
+        else:
+            return redirect(url_for('admin_quiz_edit', quiz_id=quiz_id))
     
     # Get questions for this quiz
     questions = [q for q in question_db.values() if q.quiz_id == quiz_id]
