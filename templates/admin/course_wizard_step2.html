@@ -13,12 +13,17 @@
         <div class="col-span-6">
             <div class="flex justify-between items-center mb-5">
                 <h2 class="text-xl font-semibold text-gray-900">Course Modules</h2>
-                <a href="{{ url_for('admin_module_new', course_id=course.id) }}" class="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                <button 
+                    type="button" 
+                    id="new-module-button"
+                    class="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                >
                     <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
                     </svg>
-                    Add New Module
-                </a>
+                    <span class="add-text">Add New Module</span>
+                    <span class="hidden cancel-text">Cancel</span>
+                </button>
             </div>
             
             <p class="text-sm text-gray-500 mb-6">
@@ -181,6 +186,76 @@
                         </li>
                         {% endfor %}
                     </ul>
+                    
+                    <!-- New Module Accordion Section -->
+                    <div id="new-module-section" class="hidden">
+                        <div class="border-t border-gray-200 px-4 py-4 sm:px-6 bg-gray-50">
+                            <form action="{{ url_for('admin_module_new', course_id=course.id) }}" method="POST" enctype="multipart/form-data">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="col-span-1">
+                                        <div class="mb-4">
+                                            <label for="title-new" class="block text-sm font-medium text-gray-700">Module Title</label>
+                                            <input 
+                                                type="text" 
+                                                id="title-new" 
+                                                name="title" 
+                                                class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                                                required
+                                            >
+                                        </div>
+                                        
+                                        <div class="mb-4">
+                                            <label for="video_url-new" class="block text-sm font-medium text-gray-700">Video URL (External)</label>
+                                            <input 
+                                                type="text" 
+                                                id="video_url-new" 
+                                                name="video_url" 
+                                                class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                                            >
+                                            <p class="mt-1 text-sm text-gray-500">Enter a URL for an external video (YouTube, Vimeo, etc.)</p>
+                                        </div>
+                                        
+                                        <div class="mb-4">
+                                            <label for="order-new" class="block text-sm font-medium text-gray-700">Module Order</label>
+                                            <input 
+                                                type="number" 
+                                                id="order-new" 
+                                                name="order" 
+                                                value="{{ modules|length + 1 }}"
+                                                min="1"
+                                                class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                                                required
+                                            >
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-span-1">
+                                        <div class="mb-4">
+                                            <label for="content-new" class="block text-sm font-medium text-gray-700">Content</label>
+                                            <textarea 
+                                                id="content-new" 
+                                                name="content" 
+                                                rows="8"
+                                                class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                                                required
+                                            ></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex justify-end mt-4">
+                                    <button 
+                                        type="submit" 
+                                        class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                                    >
+                                        Create Module
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Reordering Modules Message -->
@@ -188,20 +263,94 @@
                     <p>Drag and drop modules to reorder them.</p>
                 </div>
             {% else %}
-                <div class="text-center py-12 bg-gray-50 rounded-lg">
+                <div id="empty-state" class="text-center py-12 bg-gray-50 rounded-lg">
                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
                     </svg>
                     <h3 class="mt-2 text-sm font-medium text-gray-900">No modules</h3>
                     <p class="mt-1 text-sm text-gray-500">Get started by creating a new module.</p>
                     <div class="mt-6">
-                        <a href="{{ url_for('admin_module_new', course_id=course.id) }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                        <button id="new-module-button-empty" type="button" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
                             <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
                             </svg>
-                            New Module
-                        </a>
+                            Add New Module
+                        </button>
                     </div>
+                </div>
+                
+                <!-- New Module Form (Initially Hidden) for empty state -->
+                <div id="new-module-form-empty" class="hidden mt-6 bg-white shadow overflow-hidden sm:rounded-md px-4 py-5 border border-gray-300">
+                    <form action="{{ url_for('admin_module_new', course_id=course.id) }}" method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="col-span-1">
+                                <div class="mb-4">
+                                    <label for="title-new-empty" class="block text-sm font-medium text-gray-700">Module Title</label>
+                                    <input 
+                                        type="text" 
+                                        id="title-new-empty" 
+                                        name="title" 
+                                        class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                                        required
+                                    >
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label for="video_url-new-empty" class="block text-sm font-medium text-gray-700">Video URL (External)</label>
+                                    <input 
+                                        type="text" 
+                                        id="video_url-new-empty" 
+                                        name="video_url" 
+                                        class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                                    >
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label for="order-new-empty" class="block text-sm font-medium text-gray-700">Module Order</label>
+                                    <input 
+                                        type="number" 
+                                        id="order-new-empty" 
+                                        name="order" 
+                                        value="1"
+                                        min="1"
+                                        class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                                        required
+                                    >
+                                </div>
+                            </div>
+                            
+                            <div class="col-span-1">
+                                <div class="mb-4">
+                                    <label for="content-new-empty" class="block text-sm font-medium text-gray-700">Content</label>
+                                    <textarea 
+                                        id="content-new-empty" 
+                                        name="content" 
+                                        rows="8"
+                                        class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                                        required
+                                    ></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between mt-4">
+                            <button 
+                                type="button"
+                                id="cancel-new-module-empty"
+                                class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                type="submit" 
+                                class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                            >
+                                Create Module
+                            </button>
+                        </div>
+                    </form>
                 </div>
             {% endif %}
         </div>
@@ -260,6 +409,61 @@
                 }
             });
         });
+        
+        // Handle "Add New Module" button in regular view
+        const newModuleButton = document.getElementById('new-module-button');
+        if (newModuleButton) {
+            newModuleButton.addEventListener('click', function() {
+                const newModuleSection = document.getElementById('new-module-section');
+                if (newModuleSection) {
+                    newModuleSection.classList.toggle('hidden');
+                    
+                    // Update button text
+                    const addText = newModuleButton.querySelector('.add-text');
+                    const cancelText = newModuleButton.querySelector('.cancel-text');
+                    
+                    if (addText && cancelText) {
+                        if (newModuleSection.classList.contains('hidden')) {
+                            // Form is closed
+                            addText.classList.remove('hidden');
+                            cancelText.classList.add('hidden');
+                        } else {
+                            // Form is open
+                            addText.classList.add('hidden');
+                            cancelText.classList.remove('hidden');
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Handle "Add New Module" button in empty state view
+        const newModuleButtonEmpty = document.getElementById('new-module-button-empty');
+        if (newModuleButtonEmpty) {
+            newModuleButtonEmpty.addEventListener('click', function() {
+                const emptyState = document.getElementById('empty-state');
+                const newModuleFormEmpty = document.getElementById('new-module-form-empty');
+                
+                if (emptyState && newModuleFormEmpty) {
+                    emptyState.classList.add('hidden');
+                    newModuleFormEmpty.classList.remove('hidden');
+                }
+            });
+        }
+        
+        // Handle "Cancel" button in empty state form
+        const cancelNewModuleEmpty = document.getElementById('cancel-new-module-empty');
+        if (cancelNewModuleEmpty) {
+            cancelNewModuleEmpty.addEventListener('click', function() {
+                const emptyState = document.getElementById('empty-state');
+                const newModuleFormEmpty = document.getElementById('new-module-form-empty');
+                
+                if (emptyState && newModuleFormEmpty) {
+                    emptyState.classList.remove('hidden');
+                    newModuleFormEmpty.classList.add('hidden');
+                }
+            });
+        }
     });
 </script>
 {% endblock %}
