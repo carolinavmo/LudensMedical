@@ -1,7 +1,10 @@
 from datetime import datetime
 from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
+import json
+from app import db
 
-# In-memory databases
+# Keep in-memory databases for compatibility during migration
 user_db = {}
 course_db = {}
 module_db = {}
@@ -10,21 +13,30 @@ question_db = {}
 enrollment_db = {}
 certificate_db = {}
 
-class User(UserMixin):
-    def __init__(self, id, username, email, password_hash, role='student', first_name='', last_name='', bio='', profile_picture=None, created_at=None):
-        self.id = id
-        self.username = username
-        self.email = email
-        self.password_hash = password_hash
-        self.role = role  # 'student' or 'admin'
-        self.first_name = first_name
-        self.last_name = last_name
-        self.bio = bio
-        self.profile_picture = profile_picture
-        self.created_at = created_at or datetime.now()
+class User(UserMixin, db.Model):
+    __tablename__ = 'users'
     
-    def get_id(self):
-        return str(self.id)
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+    role = db.Column(db.String(20), default='student', nullable=False)
+    first_name = db.Column(db.String(50))
+    last_name = db.Column(db.String(50))
+    bio = db.Column(db.Text)
+    profile_picture = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    
+    # Relationships
+    courses = db.relationship('Course', backref='instructor', lazy='dynamic')
+    enrollments = db.relationship('Enrollment', backref='user', lazy='dynamic')
+    certificates = db.relationship('Certificate', backref='user', lazy='dynamic')
+    
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+    
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
     
     def is_admin(self):
         return self.role == 'admin'
@@ -44,30 +56,31 @@ class User(UserMixin):
             'created_at': self.created_at
         }
 
-class Course:
-    def __init__(self, id, title, description, category, level, price, instructor_id, image_url=None, created_at=None, updated_at=None):
-        self.id = id
-        self.title = title
-        self.description = description
-        self.category = category  # e.g., 'Cardiology', 'Neurology', 'General Practice'
-        self.level = level  # e.g., 'Beginner', 'Intermediate', 'Advanced'
-        self.price = price
-        self.instructor_id = instructor_id
-        self.image_url = image_url
-        self.created_at = created_at or datetime.now()
-        self.updated_at = updated_at or self.created_at
+
+class Course(db.Model):
+    __tablename__ = 'courses'
     
-    def get_instructor(self):
-        return user_db.get(self.instructor_id)
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    category = db.Column(db.String(50), nullable=False)
+    level = db.Column(db.String(20), nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    instructor_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    image_url = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    
+    # Relationships
+    modules = db.relationship('Module', backref='course', lazy='dynamic')
+    enrollments = db.relationship('Enrollment', backref='course', lazy='dynamic')
+    certificates = db.relationship('Certificate', backref='course', lazy='dynamic')
     
     def get_modules(self):
-        return [module for module in module_db.values() if module.course_id == self.id]
-    
-    def get_enrollments(self):
-        return [enrollment for enrollment in enrollment_db.values() if enrollment.course_id == self.id]
+        return self.modules.order_by(Module.order).all()
     
     def get_enrollment_count(self):
-        return len(self.get_enrollments())
+        return self.enrollments.count()
     
     def to_dict(self):
         return {
@@ -83,27 +96,28 @@ class Course:
             'updated_at': self.updated_at
         }
 
-class Module:
-    def __init__(self, id, course_id, title, content, order, video_url=None, pdf_url=None, 
-                 video_file=None, pdf_file=None, created_at=None, updated_at=None):
-        self.id = id
-        self.course_id = course_id
-        self.title = title
-        self.content = content
-        self.order = order
-        self.video_url = video_url  # External URL
-        self.pdf_url = pdf_url      # External URL
-        self.video_file = video_file  # Path to locally uploaded video
-        self.pdf_file = pdf_file      # Path to locally uploaded PDF
-        self.created_at = created_at or datetime.now()
-        self.updated_at = updated_at or self.created_at
+
+class Module(db.Model):
+    __tablename__ = 'modules'
     
-    def get_course(self):
-        return course_db.get(self.course_id)
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
+    title = db.Column(db.String(100), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    order = db.Column(db.Integer, nullable=False)
+    video_url = db.Column(db.String(255))
+    pdf_url = db.Column(db.String(255))
+    video_file = db.Column(db.String(255))
+    pdf_file = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    
+    # Relationships
+    quiz = db.relationship('Quiz', backref='module', uselist=False)
     
     def get_quiz(self):
-        return next((quiz for quiz in quiz_db.values() if quiz.module_id == self.id), None)
-
+        return self.quiz
+    
     def to_dict(self):
         return {
             'id': self.id,
@@ -119,21 +133,23 @@ class Module:
             'updated_at': self.updated_at
         }
 
-class Quiz:
-    def __init__(self, id, module_id, title, description, passing_score, created_at=None, updated_at=None):
-        self.id = id
-        self.module_id = module_id
-        self.title = title
-        self.description = description
-        self.passing_score = passing_score  # Percentage required to pass
-        self.created_at = created_at or datetime.now()
-        self.updated_at = updated_at or self.created_at
+
+class Quiz(db.Model):
+    __tablename__ = 'quizzes'
     
-    def get_module(self):
-        return module_db.get(self.module_id)
+    id = db.Column(db.Integer, primary_key=True)
+    module_id = db.Column(db.Integer, db.ForeignKey('modules.id'), nullable=False)
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    passing_score = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    
+    # Relationships
+    questions = db.relationship('QuizQuestion', backref='quiz', lazy='dynamic')
     
     def get_questions(self):
-        return [question for question in question_db.values() if question.quiz_id == self.id]
+        return self.questions.order_by(QuizQuestion.order).all()
     
     def to_dict(self):
         return {
@@ -146,49 +162,49 @@ class Quiz:
             'updated_at': self.updated_at
         }
 
-class QuizQuestion:
-    def __init__(self, id, quiz_id, question, options, correct_answer, order, created_at=None):
-        self.id = id
-        self.quiz_id = quiz_id
-        self.question = question
-        self.options = options  # List of possible answers
-        self.correct_answer = correct_answer
-        self.order = order
-        self.created_at = created_at or datetime.now()
+
+class QuizQuestion(db.Model):
+    __tablename__ = 'quiz_questions'
     
-    def get_quiz(self):
-        return quiz_db.get(self.quiz_id)
+    id = db.Column(db.Integer, primary_key=True)
+    quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.id'), nullable=False)
+    question = db.Column(db.String(255), nullable=False)
+    options = db.Column(db.Text, nullable=False)  # JSON string of options
+    correct_answer = db.Column(db.Integer, nullable=False)
+    order = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    
+    def get_options(self):
+        return json.loads(self.options)
+    
+    def set_options(self, options_list):
+        self.options = json.dumps(options_list)
     
     def to_dict(self):
         return {
             'id': self.id,
             'quiz_id': self.quiz_id,
             'question': self.question,
-            'options': self.options,
+            'options': self.get_options(),
             'correct_answer': self.correct_answer,
             'order': self.order,
             'created_at': self.created_at
         }
 
-class Enrollment:
-    def __init__(self, id, user_id, course_id, progress=0, completed=False, created_at=None, updated_at=None):
-        self.id = id
-        self.user_id = user_id
-        self.course_id = course_id
-        self.progress = progress  # Percentage of course completed
-        self.completed = completed
-        self.created_at = created_at or datetime.now()
-        self.updated_at = updated_at or self.created_at
+
+class Enrollment(db.Model):
+    __tablename__ = 'enrollments'
     
-    def get_user(self):
-        return user_db.get(self.user_id)
-    
-    def get_course(self):
-        return course_db.get(self.course_id)
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
+    progress = db.Column(db.Integer, default=0, nullable=False)
+    completed = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
     def get_certificate(self):
-        return next((cert for cert in certificate_db.values() 
-                    if cert.user_id == self.user_id and cert.course_id == self.course_id), None)
+        return Certificate.query.filter_by(user_id=self.user_id, course_id=self.course_id).first()
     
     def to_dict(self):
         return {
@@ -201,18 +217,14 @@ class Enrollment:
             'updated_at': self.updated_at
         }
 
-class Certificate:
-    def __init__(self, id, user_id, course_id, issue_date=None):
-        self.id = id
-        self.user_id = user_id
-        self.course_id = course_id
-        self.issue_date = issue_date or datetime.now()
+
+class Certificate(db.Model):
+    __tablename__ = 'certificates'
     
-    def get_user(self):
-        return user_db.get(self.user_id)
-    
-    def get_course(self):
-        return course_db.get(self.course_id)
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
+    issue_date = db.Column(db.DateTime, default=datetime.now)
     
     def to_dict(self):
         return {
