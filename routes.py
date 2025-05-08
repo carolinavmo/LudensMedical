@@ -1538,6 +1538,9 @@ def admin_question_new(quiz_id):
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
+    # Add debug logging
+    app.logger.debug(f"Creating a new question for quiz {quiz_id}")
+    
     quiz = quiz_db.get(quiz_id)
     if not quiz:
         flash('Quiz not found', 'error')

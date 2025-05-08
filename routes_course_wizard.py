@@ -140,12 +140,22 @@ def admin_course_wizard_step3(course_id):
     quizzes = list(quiz_db.values())
     questions = list(question_db.values())
     
+    # Check if question_added parameter is passed
+    question_added = request.args.get('question_added', False)
+    quiz_added = request.args.get('quiz_added', False)
+    
+    # Add debug logging
+    app.logger.debug(f"Loading course wizard step 3 for course {course_id}")
+    app.logger.debug(f"Found {len(modules)} modules, {len(quizzes)} quizzes, {len(questions)} questions")
+    
     return render_template('admin/course_wizard_step3.html',
                           course=course,
                           modules=modules,
                           quizzes=quizzes,
                           questions=questions,
                           edit_mode=True,
+                          question_added=question_added,
+                          quiz_added=quiz_added,
                           wizard_title='Course Setup - Step 3: Create Quizzes',
                           step=3,
                           progress_percentage=75)
@@ -371,7 +381,8 @@ def admin_quiz_wizard(module_id=None, quiz_id=None):
             quiz_db[quiz_id] = quiz
             flash('Quiz created successfully', 'success')
         
-        return redirect(url_for('admin_course_wizard_step3', course_id=course.id))
+        # Add quiz_added parameter to indicate that a quiz was just created
+        return redirect(url_for('admin_course_wizard_step3', course_id=course.id, quiz_added=True))
     
     return render_template('admin/quiz_wizard.html',
                           form=form,
