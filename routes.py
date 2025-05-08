@@ -1417,36 +1417,58 @@ def admin_quiz_new(module_id):
     
     # If we're in POST method, we're handling a form submission
     if request.method == 'POST':
-        form = QuizForm()
-        if form.validate_on_submit():
-            if existing_quiz:
-                # Update existing quiz
-                existing_quiz.title = form.title.data
-                existing_quiz.description = form.description.data
-                existing_quiz.passing_score = form.passing_score.data
-                existing_quiz.updated_at = datetime.now()
-                flash('Quiz updated successfully.', 'success')
-                quiz_id = existing_quiz.id
-            else:
-                # Create new quiz
-                quiz_id = get_next_id(quiz_db)
-                quiz = Quiz(
-                    id=quiz_id,
-                    module_id=module_id,
-                    title=form.title.data,
-                    description=form.description.data,
-                    passing_score=form.passing_score.data,
-                    created_at=datetime.now()
-                )
-                quiz_db[quiz_id] = quiz
-                flash('Quiz created successfully.', 'success')
+        app.logger.debug(f"Quiz form POST data: {request.form}")
+        
+        # Get form data directly from request.form
+        title = request.form.get('title', '')
+        description = request.form.get('description', '')
+        passing_score_str = request.form.get('passing_score', '70')
+        
+        # Basic validation
+        if not title:
+            flash('Quiz title is required', 'error')
+            return redirect(url_for('admin_course_wizard_step3', course_id=course.id))
             
-            # Check if the request came from the course wizard
-            referer = request.headers.get('Referer', '')
-            if 'course-wizard/step3' in referer:
+        if not description:
+            flash('Quiz description is required', 'error')
+            return redirect(url_for('admin_course_wizard_step3', course_id=course.id))
+        
+        try:
+            passing_score = int(passing_score_str)
+            if passing_score < 1 or passing_score > 100:
+                flash('Passing score must be between 1 and 100', 'error')
                 return redirect(url_for('admin_course_wizard_step3', course_id=course.id))
-            else:
-                return redirect(url_for('admin_quiz_edit', quiz_id=quiz_id))
+        except ValueError:
+            passing_score = 70  # Default if conversion fails
+            
+        if existing_quiz:
+            # Update existing quiz
+            existing_quiz.title = title
+            existing_quiz.description = description
+            existing_quiz.passing_score = passing_score
+            existing_quiz.updated_at = datetime.now()
+            flash('Quiz updated successfully.', 'success')
+            quiz_id = existing_quiz.id
+        else:
+            # Create new quiz
+            quiz_id = get_next_id(quiz_db)
+            quiz = Quiz(
+                id=quiz_id,
+                module_id=module_id,
+                title=title,
+                description=description,
+                passing_score=passing_score,
+                created_at=datetime.now()
+            )
+            quiz_db[quiz_id] = quiz
+            flash('Quiz created successfully.', 'success')
+        
+        # Check if the request came from the course wizard
+        referer = request.headers.get('Referer', '')
+        if 'course-wizard/step3' in referer:
+            return redirect(url_for('admin_course_wizard_step3', course_id=course.id))
+        else:
+            return redirect(url_for('admin_quiz_edit', quiz_id=quiz_id))
     
     # If we're in GET mode or the form submission failed, and this is not from the accordion
     if existing_quiz and 'course-wizard/step3' not in request.headers.get('Referer', ''):

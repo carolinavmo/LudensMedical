@@ -93,7 +93,7 @@
                             
                             <!-- Accordion Content (Initially Hidden) -->
                             <div class="hidden accordion-content px-4 py-4 sm:px-6 border-t border-gray-200 bg-gray-50" id="accordion-content-{{ module.id }}">
-                                <form action="{{ url_for('admin_quiz_new', module_id=module.id) }}" method="POST">
+                                <form action="{{ url_for('admin_quiz_new', module_id=module.id) }}" method="POST" class="quiz-form">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     
                                     <div class="grid grid-cols-6 gap-6">
