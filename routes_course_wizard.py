@@ -5,7 +5,7 @@ import os
 from werkzeug.utils import secure_filename
 from app import app, db
 from forms import CourseForm, ModuleForm, QuizForm, QuestionForm
-from models import Course, Module, Quiz, course_db, module_db, quiz_db, question_db, populate_in_memory_db
+from models import Course, Module, Quiz, QuizQuestion, course_db, module_db, quiz_db, question_db, populate_in_memory_db
 from utils import get_next_id, get_course_modules
 
 # Course Wizard Step 1 - Course Details
@@ -396,15 +396,36 @@ def admin_quiz_wizard(module_id=None, quiz_id=None):
                 db.session.commit()
                 app.logger.debug(f"Quiz created with ID: {quiz_id} and saved to database")
                 
+                # Add debug info before re-populating in-memory DB
+                app.logger.debug(f"Before refresh: quiz_db has {len(quiz_db)} quizzes")
+                for qid, q in quiz_db.items():
+                    app.logger.debug(f"Quiz ID {qid}, module_id {q.module_id}, title: {q.title}")
+                
                 # Re-populate the in-memory database to ensure consistency
-                populate_in_memory_db()
-                
-                # Re-fetch the quiz to ensure it's in the updated in-memory DB
-                created_quiz = next((q for q in quiz_db.values() if q.id == quiz_id), None)
-                app.logger.debug(f"Refreshed in-memory database after quiz creation, quiz found: {created_quiz is not None}")
-                
-                if created_quiz is None:
-                    app.logger.warning(f"Quiz with ID {quiz_id} not found in refreshed in-memory DB, re-adding")
+                try:
+                    # Clear and re-populate
+                    db.session.commit()  # Ensure the transaction is fully committed
+                    
+                    # Get all quizzes from the database
+                    all_quizzes = Quiz.query.all()
+                    app.logger.debug(f"Found {len(all_quizzes)} quizzes in database")
+                    
+                    # Clear the in-memory db and repopulate
+                    quiz_db.clear()
+                    for q in all_quizzes:
+                        quiz_db[q.id] = q
+                        app.logger.debug(f"Added quiz ID {q.id} '{q.title}' for module {q.module_id} to in-memory DB")
+                    
+                    # Also refresh the questions
+                    all_questions = QuizQuestion.query.all()
+                    question_db.clear()
+                    for q in all_questions:
+                        question_db[q.id] = q
+                    
+                    app.logger.debug(f"After refresh: quiz_db has {len(quiz_db)} quizzes")
+                except Exception as e:
+                    app.logger.error(f"Error refreshing in-memory DB: {str(e)}")
+                    # Ensure the new quiz is in memory even if refresh failed
                     quiz_db[quiz_id] = new_quiz
                 
                 flash('Quiz created successfully', 'success')
