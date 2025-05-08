@@ -147,7 +147,7 @@
                                 </form>
                                 
                                 {% if module_quiz %}
-                                <div class="mt-6 border-t border-gray-200 pt-4">
+                                <div class="mt-6 border-t border-gray-200 pt-4 module-quiz" data-quiz-id="{{ module_quiz.id }}">
                                     <div class="flex justify-between items-center mb-3">
                                         <h4 class="text-sm font-medium text-gray-900">Quiz Questions</h4>
                                         <button type="button" 
@@ -348,6 +348,11 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Check if quiz was just added
+        const urlParams = new URLSearchParams(window.location.search);
+        const quizAdded = urlParams.get('quiz_added');
+        const questionAdded = urlParams.get('question_added');
+        
         // Initialize accordion functionality
         const accordionToggles = document.querySelectorAll('.accordion-toggle');
         
@@ -367,6 +372,52 @@
                 cancelText.classList.toggle('hidden');
             });
         });
+        
+        // If a quiz was just added, scroll to it and open the accordion
+        if (quizAdded === 'True' || quizAdded === 'true') {
+            console.log('Quiz was just added, expanding the accordion');
+            // Find the last accordion item since it's likely the newest quiz
+            const accordionHeaders = document.querySelectorAll('.accordion-header');
+            if (accordionHeaders.length > 0) {
+                const lastAccordionHeader = accordionHeaders[accordionHeaders.length - 1];
+                const moduleId = lastAccordionHeader.id.split('-').pop();
+                const contentId = `accordion-content-${moduleId}`;
+                const contentElement = document.getElementById(contentId);
+                
+                // Expand the accordion
+                if (contentElement) {
+                    contentElement.classList.remove('hidden');
+                    
+                    // Scroll to the accordion
+                    lastAccordionHeader.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Update toggle button text
+                    const editText = lastAccordionHeader.querySelector('.edit-text');
+                    const cancelText = lastAccordionHeader.querySelector('.cancel-text');
+                    
+                    if (editText && cancelText) {
+                        editText.classList.add('hidden');
+                        cancelText.classList.remove('hidden');
+                    }
+                    
+                    // Find the add question button and question form for this module
+                    const moduleQuiz = contentElement.querySelector('.module-quiz');
+                    if (moduleQuiz) {
+                        const quizId = moduleQuiz.getAttribute('data-quiz-id');
+                        if (quizId) {
+                            // Show the question form
+                            setTimeout(() => {
+                                const addQuestionBtn = document.getElementById(`add-question-btn-${quizId}`);
+                                if (addQuestionBtn) {
+                                    console.log("Clicking the add question button");
+                                    addQuestionBtn.click();
+                                }
+                            }, 500);
+                        }
+                    }
+                }
+            }
+        }
         
         // Handle quiz form submission
         const quizForms = document.querySelectorAll('.quiz-form');
