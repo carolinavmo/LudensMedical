@@ -3,6 +3,7 @@ import logging
 from datetime import datetime, timedelta
 from flask import Flask
 from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Setup logging
@@ -13,6 +14,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+csrf = CSRFProtect(app)
 
 # Initialize Flask-Login
 login_manager = LoginManager()
@@ -46,7 +48,7 @@ with app.app_context():
         )
         user_db[admin.id] = admin
         logging.info(f"Created admin user: {admin.email}")
-    
+
     # Create a student user for testing
     if not any(user.email == 'student@ludens.medical' for user in user_db.values()):
         from werkzeug.security import generate_password_hash
