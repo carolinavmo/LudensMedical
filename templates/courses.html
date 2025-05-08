@@ -3,7 +3,6 @@
 {% block title %}Courses - Ludens Medical Academy{% endblock %}
 
 {% block student_content %}
-{% if current_user.is_authenticated %}
 <div class="bg-white">
     <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div class="text-center">
@@ -71,7 +70,7 @@
                                 {% if course.image_url %}
                                     <img class="h-full w-full object-cover" src="{{ course.image_url }}" alt="{{ course.title }}">
                                 {% else %}
-                                    <img class="h-full w-full object-cover" src="https://pixabay.com/get/g273014e9f99f79e4586155750007f2f4760c386109a456e08e0c844794d32cd3390aa6584b071484f454159ab8b8aedbd259232971033ce3ed5ee7d8cae51465_1280.jpg" alt="{{ course.title }}">
+                                    <img class="h-full w-full object-cover" src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?ixlib=rb-4.0.3&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=2070&amp;q=80" alt="{{ course.title }}">
                                 {% endif %}
                                 <div class="absolute top-0 right-0 mt-2 mr-2">
                                     <span class="px-2 py-1 text-xs font-semibold rounded-full bg-white text-primary-800 shadow">
@@ -117,7 +116,6 @@
         </div>
     </div>
 </div>
-{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -189,7 +187,7 @@
                                 {% if course.image_url %}
                                     <img class="h-full w-full object-cover" src="{{ course.image_url }}" alt="{{ course.title }}">
                                 {% else %}
-                                    <img class="h-full w-full object-cover" src="https://pixabay.com/get/g273014e9f99f79e4586155750007f2f4760c386109a456e08e0c844794d32cd3390aa6584b071484f454159ab8b8aedbd259232971033ce3ed5ee7d8cae51465_1280.jpg" alt="{{ course.title }}">
+                                    <img class="h-full w-full object-cover" src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?ixlib=rb-4.0.3&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=2070&amp;q=80" alt="{{ course.title }}">
                                 {% endif %}
                                 <div class="absolute top-0 right-0 mt-2 mr-2">
                                     <span class="px-2 py-1 text-xs font-semibold rounded-full bg-white text-primary-800 shadow">
