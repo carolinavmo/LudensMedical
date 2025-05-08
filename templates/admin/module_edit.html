@@ -57,7 +57,7 @@
                 </div>
             </div>
             <div class="mt-5 md:mt-0 md:col-span-2">
-                <form action="{{ url_for('admin_module_edit', module_id=module.id) if edit_mode else url_for('admin_module_new', course_id=course.id) }}" method="POST">
+                <form action="{{ url_for('admin_module_edit', module_id=module.id) if edit_mode else url_for('admin_module_new', course_id=course.id) }}" method="POST" enctype="multipart/form-data">
                     {{ form.hidden_tag() }}
                     <div class="shadow sm:rounded-md sm:overflow-hidden">
                         <div class="px-4 py-5 bg-white space-y-6 sm:p-6">

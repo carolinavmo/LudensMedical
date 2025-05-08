@@ -84,14 +84,17 @@ class Course:
         }
 
 class Module:
-    def __init__(self, id, course_id, title, content, order, video_url=None, pdf_url=None, created_at=None, updated_at=None):
+    def __init__(self, id, course_id, title, content, order, video_url=None, pdf_url=None, 
+                 video_file=None, pdf_file=None, created_at=None, updated_at=None):
         self.id = id
         self.course_id = course_id
         self.title = title
         self.content = content
         self.order = order
-        self.video_url = video_url
-        self.pdf_url = pdf_url
+        self.video_url = video_url  # External URL
+        self.pdf_url = pdf_url      # External URL
+        self.video_file = video_file  # Path to locally uploaded video
+        self.pdf_file = pdf_file      # Path to locally uploaded PDF
         self.created_at = created_at or datetime.now()
         self.updated_at = updated_at or self.created_at
     
@@ -110,6 +113,8 @@ class Module:
             'order': self.order,
             'video_url': self.video_url,
             'pdf_url': self.pdf_url,
+            'video_file': self.video_file,
+            'pdf_file': self.pdf_file,
             'created_at': self.created_at,
             'updated_at': self.updated_at
         }

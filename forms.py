@@ -1,4 +1,5 @@
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileAllowed
 from wtforms import StringField, PasswordField, TextAreaField, SelectField, FloatField, IntegerField, BooleanField, HiddenField, RadioField, FieldList, FormField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional, URL, ValidationError
 
@@ -60,8 +61,16 @@ class ModuleForm(FlaskForm):
     title = StringField('Module Title', validators=[DataRequired(), Length(max=100)])
     content = TextAreaField('Content', validators=[DataRequired()])
     order = IntegerField('Order', validators=[DataRequired(), NumberRange(min=1)])
-    video_url = StringField('Video URL', validators=[Optional(), URL()])
-    pdf_url = StringField('PDF URL', validators=[Optional(), URL()])
+    video_url = StringField('Video URL (External)', validators=[Optional(), URL()])
+    video_file = FileField('Video File Upload', validators=[
+        Optional(),
+        FileAllowed(['mp4', 'webm', 'ogg'], 'Videos only!')
+    ])
+    pdf_url = StringField('PDF URL (External)', validators=[Optional(), URL()])
+    pdf_file = FileField('PDF File Upload', validators=[
+        Optional(),
+        FileAllowed(['pdf'], 'PDFs only!')
+    ])
 
 class QuizForm(FlaskForm):
     title = StringField('Quiz Title', validators=[DataRequired(), Length(max=100)])
