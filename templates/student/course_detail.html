@@ -1,12 +1,8 @@
-{% extends 'student_layout.html' if current_user.is_authenticated else 'base.html' %}
+{% extends 'student_layout.html' %}
 
 {% block title %}{{ course.title }} - Ludens Medical Academy{% endblock %}
 
-{% if current_user.is_authenticated %}
-  {% block student_content %}
-{% else %}
-  {% block content %}
-{% endif %}
+{% block student_content %}
 <div class="bg-white">
     <!-- Course Header -->
     <div class="bg-primary-700">
@@ -25,7 +21,7 @@
                                 <img class="h-10 w-10 rounded-full" src="{{ instructor.profile_picture }}" alt="{{ instructor.get_full_name() }}">
                             {% else %}
                                 <span class="h-10 w-10 rounded-full bg-primary-300 flex items-center justify-center text-white">
-                                    {{ instructor.first_name[0] if instructor else 'I' }}
+                                    {{ instructor.first_name[0] if instructor and instructor.first_name else 'I' }}
                                 </span>
                             {% endif %}
                         </div>
@@ -281,16 +277,6 @@
                                                 PDF Resources
                                             </span>
                                         {% endif %}
-                                        
-                                        {% if False %}{# Temporarily disable quiz badges due to DB relationship issue #}
-                                            <span class="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                                                <svg class="mr-1.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                                                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
-                                                </svg>
-                                                Quiz Assessment
-                                            </span>
-                                        {% endif %}
                                     </div>
                                     
                                     {% if enrolled %}
@@ -410,11 +396,7 @@
         </div>
     </div>
 </div>
-{% if current_user.is_authenticated %}
-  {% endblock student_content %}
-{% else %}
-  {% endblock content %}
-{% endif %}
+{% endblock %}
 
 {% block head %}
 <style>

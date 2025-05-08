@@ -1,9 +1,9 @@
 
-{% extends 'student_layout.html' %}
+{% extends 'student_layout.html' if current_user.is_authenticated else 'base.html' %}
 
 {% block title %}All Courses - Ludens Medical Academy{% endblock %}
 
-{% block student_content %}
+{% block student_content if current_user.is_authenticated else content %}
 <div class="flex justify-between items-center mb-6">
     <div>
         <h1 class="text-2xl font-bold text-gray-900">Medical Courses</h1>

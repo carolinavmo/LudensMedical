@@ -109,7 +109,8 @@ def course_detail(course_id):
             next_module_id = modules[current_module_index].id
             
             # We'll pass this ID to the template to create the proper link
-            return render_template('course_detail.html', 
+            template = 'student/course_detail.html' if current_user.is_authenticated else 'course_detail.html'
+            return render_template(template, 
                                   course=course, 
                                   modules=modules, 
                                   instructor=instructor,
@@ -117,7 +118,8 @@ def course_detail(course_id):
                                   progress=progress,
                                   next_module_id=next_module_id)
     
-    return render_template('course_detail.html', 
+    template = 'student/course_detail.html' if current_user.is_authenticated else 'course_detail.html'
+    return render_template(template, 
                           course=course, 
                           modules=modules, 
                           instructor=instructor,
