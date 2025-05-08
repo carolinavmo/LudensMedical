@@ -799,7 +799,7 @@ def show_certificate(certificate_id):
     certificate = certificate_db.get(certificate_id)
     
     # Allow admins to view any certificate
-    if not certificate or (certificate.user_id != current_user.id and not current_user.is_admin()):
+    if not certificate or (certificate.user_id != current_user.id and current_user.role != 'admin'):
         flash('Certificate not found', 'error')
         return redirect(url_for('dashboard'))
     
@@ -823,7 +823,7 @@ def download_certificate(certificate_id):
     certificate = certificate_db.get(certificate_id)
     
     # Allow admins to download any certificate
-    if not certificate or (certificate.user_id != current_user.id and not current_user.is_admin()):
+    if not certificate or (certificate.user_id != current_user.id and current_user.role != 'admin'):
         flash('Certificate not found', 'error')
         return redirect(url_for('dashboard'))
     
@@ -864,7 +864,7 @@ def admin_dashboard():
 @app.route('/admin/courses')
 @login_required
 def admin_courses():
-    if not current_user.is_admin():
+    if current_user.role != 'admin':
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
@@ -882,7 +882,7 @@ def admin_courses():
 @app.route('/admin/courses/new', methods=['GET', 'POST'])
 @login_required
 def admin_course_new():
-    if not current_user.is_admin():
+    if current_user.role != 'admin':
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
@@ -914,7 +914,7 @@ def admin_course_new():
 @app.route('/admin/courses/<int:course_id>/edit', methods=['GET', 'POST'])
 @login_required
 def admin_course_edit(course_id):
-    if not current_user.is_admin():
+    if current_user.role != 'admin':
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
@@ -947,7 +947,7 @@ def admin_course_edit(course_id):
 @app.route('/admin/courses/<int:course_id>/modules/reorder', methods=['POST'])
 @login_required
 def admin_modules_reorder(course_id):
-    if not current_user.is_admin():
+    if current_user.role != 'admin':
         return jsonify({'success': False, 'message': 'Access denied'}), 403
     
     course = course_db.get(course_id)
@@ -983,7 +983,7 @@ def admin_modules_reorder(course_id):
 @app.route('/admin/courses/<int:course_id>/delete', methods=['POST'])
 @login_required
 def admin_course_delete(course_id):
-    if not current_user.is_admin():
+    if current_user.role != 'admin':
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
@@ -1030,7 +1030,7 @@ def admin_course_delete(course_id):
 @app.route('/admin/courses/<int:course_id>/modules/new', methods=['GET', 'POST'])
 @login_required
 def admin_module_new(course_id):
-    if not current_user.is_admin():
+    if current_user.role != 'admin':
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
@@ -1095,7 +1095,7 @@ def admin_module_new(course_id):
 @app.route('/admin/modules/<int:module_id>/edit', methods=['GET', 'POST'])
 @login_required
 def admin_module_edit(module_id):
-    if not current_user.is_admin():
+    if current_user.role != 'admin':
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
@@ -1176,7 +1176,7 @@ def admin_module_edit(module_id):
 @app.route('/admin/modules/<int:module_id>/delete', methods=['POST'])
 @login_required
 def admin_module_delete(module_id):
-    if not current_user.is_admin():
+    if current_user.role != 'admin':
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
