@@ -94,3 +94,8 @@ with app.app_context():
         db.session.add(student)
         db.session.commit()
         logging.info(f"Created student user: student@ludens.medical")
+    
+    # Seed initial data
+    from utils import seed_data
+    seed_data(user_db, course_db, module_db)
+    logging.info("Seeded initial data")

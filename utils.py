@@ -179,6 +179,61 @@ def generate_certificate(user, course, certificate_id):
     
     return img_io
 
+def seed_data(user_db, course_db, module_db):
+    """Seed initial data for testing."""
+    from werkzeug.security import generate_password_hash
+    
+    # Create admin user
+    admin = User(
+        id=1,
+        username='admin',
+        email='admin@example.com',
+        password_hash=generate_password_hash('admin123'),
+        role='admin',
+        first_name='Admin',
+        last_name='User',
+        created_at=datetime.now()
+    )
+    user_db[1] = admin
+
+    # Create regular users
+    users = [
+        ('john', 'john@example.com', 'password123', 'John', 'Smith'),
+        ('sarah', 'sarah@example.com', 'password123', 'Sarah', 'Johnson')
+    ]
+    
+    for i, (username, email, password, fname, lname) in enumerate(users, start=2):
+        user = User(
+            id=i,
+            username=username,
+            email=email, 
+            password_hash=generate_password_hash(password),
+            role='student',
+            first_name=fname,
+            last_name=lname,
+            created_at=datetime.now()
+        )
+        user_db[i] = user
+
+    # Create courses
+    courses = [
+        ('Introduction to Cardiology', 'Learn the basics of cardiology', 'cardiology', 'beginner', 99.99),
+        ('Advanced Neurology', 'Deep dive into neurology', 'neurology', 'advanced', 149.99)
+    ]
+
+    for i, (title, desc, category, level, price) in enumerate(courses, start=1):
+        course = Course(
+            id=i,
+            title=title,
+            description=desc,
+            category=category,
+            level=level,
+            price=price,
+            instructor_id=1,
+            created_at=datetime.now()
+        )
+        course_db[i] = course
+
 def get_stats(user_db, course_db, enrollment_db):
     """Get statistics for the admin dashboard."""
     total_users = len(user_db)
