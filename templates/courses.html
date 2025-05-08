@@ -3,7 +3,11 @@
 
 {% block title %}All Courses - Ludens Medical Academy{% endblock %}
 
-{% block student_content if current_user.is_authenticated else content %}
+{% if current_user.is_authenticated %}
+  {% block student_content %}
+{% else %}
+  {% block content %}
+{% endif %}
 <div class="flex justify-between items-center mb-6">
     <div>
         <h1 class="text-2xl font-bold text-gray-900">Medical Courses</h1>
@@ -107,4 +111,8 @@
         </div>
     </div>
 {% endif %}
-{% endblock %}
+{% if current_user.is_authenticated %}
+  {% endblock student_content %}
+{% else %}
+  {% endblock content %}
+{% endif %}
