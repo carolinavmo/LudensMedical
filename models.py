@@ -13,6 +13,58 @@ question_db = {}
 enrollment_db = {}
 certificate_db = {}
 
+def populate_in_memory_db():
+    """Populate in-memory dictionaries from the database."""
+    # Clear current data
+    user_db.clear()
+    course_db.clear()
+    module_db.clear()
+    quiz_db.clear()
+    question_db.clear()
+    enrollment_db.clear()
+    certificate_db.clear()
+    
+    # Populate from database
+    try:
+        # Users
+        users = User.query.all()
+        for user in users:
+            user_db[user.id] = user
+        
+        # Courses
+        courses = Course.query.all()
+        for course in courses:
+            course_db[course.id] = course
+        
+        # Modules
+        modules = Module.query.all()
+        for module in modules:
+            module_db[module.id] = module
+        
+        # Quizzes
+        quizzes = Quiz.query.all()
+        for quiz in quizzes:
+            quiz_db[quiz.id] = quiz
+        
+        # Questions
+        questions = QuizQuestion.query.all()
+        for question in questions:
+            question_db[question.id] = question
+        
+        # Enrollments
+        enrollments = Enrollment.query.all()
+        for enrollment in enrollments:
+            enrollment_db[enrollment.id] = enrollment
+        
+        # Certificates
+        certificates = Certificate.query.all()
+        for certificate in certificates:
+            certificate_db[certificate.id] = certificate
+        
+        print(f"Populated in-memory DB with: {len(user_db)} users, {len(course_db)} courses, {len(module_db)} modules")
+    except Exception as e:
+        print(f"Error populating in-memory database: {str(e)}")
+
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     

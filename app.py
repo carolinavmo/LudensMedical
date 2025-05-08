@@ -44,6 +44,7 @@ login_manager.login_message_category = 'info'
 # Import models after db is created to avoid circular imports
 from models import User, Course, Module, Quiz, QuizQuestion, Enrollment, Certificate
 from models import user_db, course_db, module_db, quiz_db, question_db, enrollment_db, certificate_db
+from models import populate_in_memory_db
 
 # Import routes after app is created to avoid circular imports
 import routes  # noqa: F401
@@ -94,3 +95,10 @@ with app.app_context():
         db.session.add(student)
         db.session.commit()
         logging.info(f"Created student user: student@ludens.medical")
+    
+    # Populate in-memory DB from the database
+    try:
+        populate_in_memory_db()
+        logging.info("In-memory databases populated from PostgreSQL")
+    except Exception as e:
+        logging.error(f"Error populating in-memory databases: {str(e)}")

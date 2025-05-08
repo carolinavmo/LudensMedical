@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 from app import app, db
 from models import User, Course, Module, Quiz, QuizQuestion, Enrollment, Certificate
 from models import user_db, course_db, module_db, quiz_db, question_db, enrollment_db, certificate_db
+from models import populate_in_memory_db
 from forms import (LoginForm, SignupForm, ResetPasswordRequestForm, ResetPasswordForm, 
                   CourseForm, ModuleForm, QuizForm, QuestionForm, QuizSubmissionForm,
                   ProfileForm, PasswordChangeForm, UserForm)
