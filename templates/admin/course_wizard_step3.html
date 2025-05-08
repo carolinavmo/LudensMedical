@@ -368,6 +368,29 @@
             });
         });
         
+        // Handle quiz form submission
+        const quizForms = document.querySelectorAll('.quiz-form');
+        quizForms.forEach(form => {
+            form.addEventListener('submit', function(event) {
+                // Log form submission for debugging
+                console.log('Quiz form is being submitted');
+                
+                // Make sure all form fields have values
+                const title = form.querySelector('[name="title"]').value;
+                const description = form.querySelector('[name="description"]').value;
+                const passingScore = form.querySelector('[name="passing_score"]').value;
+                
+                if (!title || !description || !passingScore) {
+                    event.preventDefault();
+                    alert('Please fill out all required fields');
+                    return false;
+                }
+                
+                // Allow form to submit normally
+                return true;
+            });
+        });
+        
         // Handle Add Question buttons
         const addQuestionButtons = document.querySelectorAll('[id^="add-question-btn-"]');
         addQuestionButtons.forEach(button => {
