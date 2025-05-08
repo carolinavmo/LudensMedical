@@ -487,7 +487,7 @@
             questionList.innerHTML = '';
             noQuestionsMessage.textContent = 'Loading questions...';
             
-            // Fetch questions for this quiz
+            // Fetch questions for this quiz using our new endpoint
             fetch(`/admin/quiz/${quizId}/questions-json`)
                 .then(response => response.json())
                 .then(data => {
@@ -632,7 +632,7 @@
             const quizId = formData.get('quiz_id');
             
             // Send the data
-            fetch(`/admin/quiz/${quizId}/question/new`, {
+            fetch(`/admin/quiz/${quizId}/question/new-json`, {
                 method: 'POST',
                 body: formData
             })
