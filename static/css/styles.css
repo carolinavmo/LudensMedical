@@ -61,6 +61,20 @@
     animation: slideInFromBottom 0.5s ease-in-out;
 }
 
+/* Aspect ratio utilities */
+.aspect-w-16 {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+}
+
+.aspect-h-9 {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
 /* Responsive design adjustments */
 @media (max-width: 640px) {
     .container {

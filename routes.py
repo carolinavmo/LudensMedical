@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from urllib.parse import urlparse
-from app import app
+from app import app, db
 from models import User, Course, Module, Quiz, QuizQuestion, Enrollment, Certificate
 from models import user_db, course_db, module_db, quiz_db, question_db, enrollment_db, certificate_db
 from forms import (LoginForm, SignupForm, ResetPasswordRequestForm, ResetPasswordForm, 
