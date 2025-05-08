@@ -217,6 +217,197 @@ def dashboard():
                           certificates=certificates,
                           certificate_courses=certificate_courses)
 
+@app.route('/course/<int:course_id>/module/<int:module_id>')
+@login_required
+def module_detail(course_id, module_id):
+    # Check if course exists
+    course = course_db.get(course_id)
+    if not course:
+        flash('Course not found', 'error')
+        return redirect(url_for('courses'))
+    
+    # Check if module exists
+    module = module_db.get(module_id)
+    if not module or module.course_id != course_id:
+        flash('Module not found', 'error')
+        return redirect(url_for('course_detail', course_id=course_id))
+    
+    # Check if user is enrolled
+    enrolled = False
+    progress = 0
+    for enrollment in enrollment_db.values():
+        if enrollment.user_id == current_user.id and enrollment.course_id == course_id:
+            enrolled = True
+            progress = enrollment.progress
+            break
+    
+    if not enrolled and not current_user.is_admin():
+        flash('You must enroll in this course to view modules', 'error')
+        return redirect(url_for('course_detail', course_id=course_id))
+    
+    # Get all modules for navigation
+    modules = get_course_modules(course_id, module_db)
+    
+    # Find previous and next modules
+    prev_module = None
+    next_module = None
+    for i, mod in enumerate(modules):
+        if mod.id == module_id:
+            if i > 0:
+                prev_module = modules[i-1]
+            if i < len(modules) - 1:
+                next_module = modules[i+1]
+            break
+    
+    # Get quiz for this module if exists
+    quiz = None
+    quiz_completed = False
+    quiz_score = 0
+    for q in quiz_db.values():
+        if q.module_id == module_id:
+            quiz = q
+            # Check if user has completed this quiz
+            if hasattr(q, 'user_scores') and current_user.id in q.user_scores:
+                quiz_completed = True
+                quiz_score = q.user_scores[current_user.id]
+            break
+    
+    # Check if all modules are completed (for certificate link)
+    all_modules_completed = False
+    if enrolled and progress >= 100:
+        all_modules_completed = True
+    
+    return render_template('module_detail.html',
+                          course=course,
+                          module=module,
+                          modules=modules,
+                          prev_module=prev_module,
+                          next_module=next_module,
+                          quiz=quiz,
+                          quiz_completed=quiz_completed,
+                          quiz_score=quiz_score,
+                          progress=progress,
+                          all_modules_completed=all_modules_completed)
+
+@app.route('/course/<int:course_id>/module/<int:module_id>/quiz/<int:quiz_id>', methods=['GET', 'POST'])
+@login_required
+def take_quiz(course_id, module_id, quiz_id):
+    # Check if course exists
+    course = course_db.get(course_id)
+    if not course:
+        flash('Course not found', 'error')
+        return redirect(url_for('courses'))
+    
+    # Check if module exists
+    module = module_db.get(module_id)
+    if not module or module.course_id != course_id:
+        flash('Module not found', 'error')
+        return redirect(url_for('course_detail', course_id=course_id))
+    
+    # Check if quiz exists
+    quiz = quiz_db.get(quiz_id)
+    if not quiz or quiz.module_id != module_id:
+        flash('Quiz not found', 'error')
+        return redirect(url_for('module_detail', course_id=course_id, module_id=module_id))
+    
+    # Check if user is enrolled
+    enrolled = False
+    for enrollment in enrollment_db.values():
+        if enrollment.user_id == current_user.id and enrollment.course_id == course_id:
+            enrolled = True
+            break
+    
+    if not enrolled and not current_user.is_admin():
+        flash('You must be enrolled in this course to take quizzes', 'error')
+        return redirect(url_for('course_detail', course_id=course_id))
+    
+    # Get questions for this quiz
+    questions = [q for q in question_db.values() if q.quiz_id == quiz_id]
+    if not questions:
+        flash('This quiz has no questions', 'info')
+        return redirect(url_for('module_detail', course_id=course_id, module_id=module_id))
+    
+    # Generate the form
+    form = QuizSubmissionForm()
+    
+    return render_template('take_quiz.html',
+                          course=course,
+                          module=module,
+                          quiz=quiz,
+                          questions=questions,
+                          form=form)
+
+@app.route('/course/<int:course_id>/module/<int:module_id>/quiz/<int:quiz_id>/submit', methods=['POST'])
+@login_required
+def submit_quiz(course_id, module_id, quiz_id):
+    # Check if course exists
+    course = course_db.get(course_id)
+    if not course:
+        flash('Course not found', 'error')
+        return redirect(url_for('courses'))
+    
+    # Check if module exists
+    module = module_db.get(module_id)
+    if not module or module.course_id != course_id:
+        flash('Module not found', 'error')
+        return redirect(url_for('course_detail', course_id=course_id))
+    
+    # Check if quiz exists
+    quiz = quiz_db.get(quiz_id)
+    if not quiz or quiz.module_id != module_id:
+        flash('Quiz not found', 'error')
+        return redirect(url_for('module_detail', course_id=course_id, module_id=module_id))
+    
+    # Get questions for this quiz
+    questions = [q for q in question_db.values() if q.quiz_id == quiz_id]
+    
+    # Get user's answers
+    answers = {}
+    for question in questions:
+        answer_key = f'question_{question.id}'
+        if answer_key in request.form:
+            try:
+                answers[question.id] = int(request.form[answer_key])
+            except ValueError:
+                answers[question.id] = -1  # Invalid answer
+    
+    # Calculate score
+    correct_count = 0
+    results = []
+    
+    for question in questions:
+        user_answer = answers.get(question.id, -1)
+        is_correct = user_answer == int(question.correct_answer)
+        if is_correct:
+            correct_count += 1
+        results.append((question, user_answer, is_correct))
+    
+    score = int((correct_count / len(questions)) * 100) if questions else 0
+    
+    # Store the score
+    if not hasattr(quiz, 'user_scores'):
+        quiz.user_scores = {}
+    quiz.user_scores[current_user.id] = score
+    
+    # Update course progress if quiz passed (score >= 70%)
+    if score >= 70:
+        # Find enrollment
+        for enrollment in enrollment_db.values():
+            if enrollment.user_id == current_user.id and enrollment.course_id == course_id:
+                # Update progress - increment by 10% for each passed quiz
+                new_progress = min(100, enrollment.progress + 10)
+                enrollment.progress = new_progress
+                if new_progress == 100:
+                    enrollment.completed = True
+                break
+    
+    return render_template('quiz_result.html',
+                          course=course,
+                          module=module,
+                          quiz=quiz,
+                          score=score,
+                          results=results)
+
 @app.route('/enroll/<int:course_id>', methods=['POST'])
 @login_required
 def enroll(course_id):
@@ -292,6 +483,49 @@ def profile_edit():
     
     return render_template('profile_edit.html', form=form)
 
+@app.route('/course/<int:course_id>/certificate')
+@login_required
+def course_certificate(course_id):
+    # Check if course exists
+    course = course_db.get(course_id)
+    if not course:
+        flash('Course not found', 'error')
+        return redirect(url_for('courses'))
+    
+    # Check if user has completed the course
+    enrollment_completed = False
+    for enrollment in enrollment_db.values():
+        if enrollment.user_id == current_user.id and enrollment.course_id == course_id:
+            if enrollment.completed or enrollment.progress >= 100:
+                enrollment_completed = True
+            break
+    
+    # Allow admins to view certificates without enrollment
+    if not enrollment_completed and not current_user.is_admin():
+        flash('You must complete the course to receive a certificate', 'error')
+        return redirect(url_for('course_detail', course_id=course_id))
+    
+    # Check if certificate already exists
+    certificate = None
+    for cert in certificate_db.values():
+        if cert.user_id == current_user.id and cert.course_id == course_id:
+            certificate = cert
+            break
+    
+    # Create certificate if it doesn't exist
+    if not certificate:
+        certificate_id = get_next_id(certificate_db)
+        certificate = Certificate(
+            id=certificate_id,
+            user_id=current_user.id,
+            course_id=course_id,
+            issue_date=datetime.now()
+        )
+        certificate_db[certificate_id] = certificate
+        flash('Certificate generated successfully', 'success')
+    
+    return render_template('certificate.html', certificate=certificate, course=course)
+
 @app.route('/update_progress/<int:course_id>/<int:progress>', methods=['POST'])
 @login_required
 def update_progress(course_id, progress):
@@ -339,30 +573,65 @@ def update_progress(course_id, progress):
 @login_required
 def view_certificate(certificate_id):
     certificate = certificate_db.get(certificate_id)
-    if not certificate or certificate.user_id != current_user.id:
+    
+    # Allow admins to view any certificate
+    if not certificate or (certificate.user_id != current_user.id and not current_user.is_admin()):
         flash('Certificate not found', 'error')
         return redirect(url_for('dashboard'))
     
     user = user_db.get(certificate.user_id)
     course = course_db.get(certificate.course_id)
+    if not course:
+        flash('Course not found', 'error')
+        return redirect(url_for('dashboard'))
     
     return render_template('certificate.html', 
                           certificate=certificate, 
                           user=user, 
                           course=course)
 
-@app.route('/certificate/<int:certificate_id>/download')
+@app.route('/certificate/<int:certificate_id>/show')
 @login_required
-def download_certificate(certificate_id):
+def show_certificate(certificate_id):
     certificate = certificate_db.get(certificate_id)
-    if not certificate or certificate.user_id != current_user.id:
+    
+    # Allow admins to view any certificate
+    if not certificate or (certificate.user_id != current_user.id and not current_user.is_admin()):
         flash('Certificate not found', 'error')
         return redirect(url_for('dashboard'))
     
     user = user_db.get(certificate.user_id)
     course = course_db.get(certificate.course_id)
+    if not course:
+        flash('Course not found', 'error')
+        return redirect(url_for('dashboard'))
     
     cert_img = generate_certificate(user, course, certificate.id)
+    
+    return send_file(
+        cert_img,
+        mimetype='image/png',
+        as_attachment=False
+    )
+
+@app.route('/certificate/<int:certificate_id>/download')
+@login_required
+def download_certificate(certificate_id):
+    certificate = certificate_db.get(certificate_id)
+    
+    # Allow admins to download any certificate
+    if not certificate or (certificate.user_id != current_user.id and not current_user.is_admin()):
+        flash('Certificate not found', 'error')
+        return redirect(url_for('dashboard'))
+    
+    user = user_db.get(certificate.user_id)
+    course = course_db.get(certificate.course_id)
+    if not course:
+        flash('Course not found', 'error')
+        return redirect(url_for('dashboard'))
+    
+    cert_img = generate_certificate(user, course, certificate.id)
+    
     return send_file(cert_img, 
                      mimetype='image/png',
                      as_attachment=True,
