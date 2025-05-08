@@ -280,7 +280,8 @@
                                         </div>
                                     </div>
                                     
-                                    {% if question_count > 0 %}
+                                    {% set quiz_questions = [q for q in questions if q.quiz_id == module_quiz.id] %}
+                                    {% if quiz_questions|length > 0 %}
                                     <ul class="divide-y divide-gray-200 bg-white rounded-md border border-gray-200">
                                         {% for question in questions %}
                                             {% if question.quiz_id == module_quiz.id %}
