@@ -46,7 +46,7 @@
                             <fieldset class="mt-4">
                                 <legend class="sr-only">Answer for question {{ loop.index }}</legend>
                                 <div class="space-y-3">
-                                    {% for choice in question.choices.split('|') %}
+                                    {% for choice in question.get_options() %}
                                     <div class="flex items-start">
                                         <div class="flex items-center h-5">
                                             <input 

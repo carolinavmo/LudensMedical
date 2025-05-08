@@ -462,13 +462,16 @@ def module_detail(course_id, module_id):
     # Update progress to track that this module was viewed
     if enrolled and current_user.role != 'admin':
         try:
-            if enrollment:
+            # Get enrollment directly from the database
+            enrollment_record = Enrollment.query.filter_by(user_id=current_user.id, course_id=course_id).first()
+            
+            if enrollment_record:
                 # Increment progress slightly for viewing the module
                 module_count = len(modules)
                 if module_count > 0:
                     view_increment = int(50 / module_count)  # 50% of progress is from viewing
                     if progress < 100:  # Only update if not already completed
-                        enrollment.progress = min(100, progress + view_increment)
+                        enrollment_record.progress = min(100, progress + view_increment)
                         db.session.commit()
         except Exception as e:
             logging.error(f"Error updating progress: {str(e)}")
