@@ -1,8 +1,9 @@
-{% extends 'base.html' %}
+{% extends 'student_layout.html' if current_user.is_authenticated else 'base.html' %}
 
 {% block title %}Courses - Ludens Medical Academy{% endblock %}
 
-{% block content %}
+{% block content %}{% if not current_user.is_authenticated %}{% endif %}
+{% block student_content %}{% if current_user.is_authenticated %}
 <div class="bg-white">
     <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div class="text-center">
@@ -116,4 +117,8 @@
         </div>
     </div>
 </div>
+{% if current_user.is_authenticated %}
+{% endblock %}
+{% else %}
+{% endif %}
 {% endblock %}

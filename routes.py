@@ -47,6 +47,20 @@ def courses():
                           current_level=level,
                           search=search)
 
+@app.route('/my-courses')
+@login_required
+def my_courses():
+    # Get courses the user is enrolled in
+    user_enrollments = get_user_enrollments(current_user.id, enrollment_db)
+    courses = [course_db[enrollment.course_id] for enrollment in user_enrollments]
+    
+    # Calculate progress for each course
+    progress = {}
+    for course in courses:
+        progress[course.id] = calculate_course_progress(current_user.id, course.id, enrollment_db)
+    
+    return render_template('my_courses.html', courses=courses, progress=progress)
+
 @app.route('/courses/<int:course_id>')
 def course_detail(course_id):
     course = course_db.get(course_id)
