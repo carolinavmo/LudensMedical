@@ -88,9 +88,11 @@ def login():
         login_user(user, remember=form.remember_me.data)
         next_page = request.args.get('next')
         if not next_page or urlparse(next_page).netloc != '':
-            if user.is_admin():
+            if user.role == 'admin':
+                logging.info(f"User {user.username} has role: {user.role}, redirecting to admin dashboard")
                 next_page = url_for('admin_dashboard')
             else:
+                logging.info(f"User {user.username} has role: {user.role}, redirecting to student dashboard")
                 next_page = url_for('dashboard')
         return redirect(next_page)
     
@@ -190,11 +192,11 @@ def reset_password(token):
 @login_required
 def dashboard():
     # Log user role for debugging
-    logging.info(f"User {current_user.username} has role: {current_user.role}, is_admin: {current_user.is_admin()}")
+    logging.info(f"User {current_user.username} has role: {current_user.role}")
     
     # Only redirect if the user is an admin AND is directly accessing the dashboard route
     # This prevents an infinite redirect loop but still maintains proper access control
-    if current_user.is_admin() and request.path == '/dashboard':
+    if current_user.role == 'admin' and request.path == '/dashboard':
         logging.info(f"Redirecting admin user to admin dashboard")
         return redirect(url_for('admin_dashboard'))
     
@@ -303,7 +305,7 @@ def module_detail(course_id, module_id):
                 progress = e.progress
                 break
     
-    if not enrolled and not current_user.is_admin():
+    if not enrolled and current_user.role != 'admin':
         flash('You must enroll in this course to view modules', 'error')
         return redirect(url_for('course_detail', course_id=course_id))
     
@@ -359,7 +361,7 @@ def module_detail(course_id, module_id):
     all_modules_completed = enrolled and progress >= 100
     
     # Update progress to track that this module was viewed
-    if enrolled and not current_user.is_admin():
+    if enrolled and current_user.role != 'admin':
         try:
             if enrollment:
                 # Increment progress slightly for viewing the module
@@ -447,7 +449,7 @@ def take_quiz(course_id, module_id, quiz_id):
                 enrolled = True
                 break
     
-    if not enrolled and not current_user.is_admin():
+    if not enrolled and current_user.role != 'admin':
         flash('You must be enrolled in this course to take quizzes', 'error')
         return redirect(url_for('course_detail', course_id=course_id))
     
@@ -702,7 +704,7 @@ def course_certificate(course_id):
             break
     
     # Allow admins to view certificates without enrollment
-    if not enrollment_completed and not current_user.is_admin():
+    if not enrollment_completed and current_user.role != 'admin':
         flash('You must complete the course to receive a certificate', 'error')
         return redirect(url_for('course_detail', course_id=course_id))
     
@@ -776,7 +778,7 @@ def view_certificate(certificate_id):
     certificate = certificate_db.get(certificate_id)
     
     # Allow admins to view any certificate
-    if not certificate or (certificate.user_id != current_user.id and not current_user.is_admin()):
+    if not certificate or (certificate.user_id != current_user.id and current_user.role != 'admin'):
         flash('Certificate not found', 'error')
         return redirect(url_for('dashboard'))
     
