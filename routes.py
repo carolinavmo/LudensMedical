@@ -387,37 +387,81 @@ def module_detail(course_id, module_id):
 @app.route('/course/<int:course_id>/module/<int:module_id>/quiz/<int:quiz_id>', methods=['GET', 'POST'])
 @login_required
 def take_quiz(course_id, module_id, quiz_id):
-    # Check if course exists
-    course = course_db.get(course_id)
+    # Try to get the course from SQLAlchemy
+    try:
+        course = Course.query.get(course_id)
+        if not course:
+            course = course_db.get(course_id)
+    except Exception as e:
+        logging.error(f"Error accessing course database: {str(e)}")
+        course = course_db.get(course_id)
+    
     if not course:
         flash('Course not found', 'error')
         return redirect(url_for('courses'))
     
-    # Check if module exists
-    module = module_db.get(module_id)
-    if not module or module.course_id != course_id:
+    # Try to get the module from SQLAlchemy
+    try:
+        module = Module.query.get(module_id)
+        if not module or module.course_id != course_id:
+            module = module_db.get(module_id)
+            if module and module.course_id != course_id:
+                module = None
+    except Exception as e:
+        logging.error(f"Error accessing module database: {str(e)}")
+        module = module_db.get(module_id)
+        if module and module.course_id != course_id:
+            module = None
+    
+    if not module:
         flash('Module not found', 'error')
         return redirect(url_for('course_detail', course_id=course_id))
     
-    # Check if quiz exists
-    quiz = quiz_db.get(quiz_id)
-    if not quiz or quiz.module_id != module_id:
+    # Try to get the quiz from SQLAlchemy
+    try:
+        quiz = Quiz.query.get(quiz_id)
+        if not quiz or quiz.module_id != module_id:
+            quiz = quiz_db.get(quiz_id)
+            if quiz and quiz.module_id != module_id:
+                quiz = None
+    except Exception as e:
+        logging.error(f"Error accessing quiz database: {str(e)}")
+        quiz = quiz_db.get(quiz_id)
+        if quiz and quiz.module_id != module_id:
+            quiz = None
+    
+    if not quiz:
         flash('Quiz not found', 'error')
         return redirect(url_for('module_detail', course_id=course_id, module_id=module_id))
     
-    # Check if user is enrolled
-    enrolled = False
-    for enrollment in enrollment_db.values():
-        if enrollment.user_id == current_user.id and enrollment.course_id == course_id:
-            enrolled = True
-            break
+    # Check if user is enrolled using SQLAlchemy
+    try:
+        enrollment = Enrollment.query.filter_by(user_id=current_user.id, course_id=course_id).first()
+        enrolled = enrollment is not None
+    except Exception as e:
+        logging.error(f"Error accessing enrollment database: {str(e)}")
+        # Fall back to in-memory database
+        enrolled = False
+        for e in enrollment_db.values():
+            if e.user_id == current_user.id and e.course_id == course_id:
+                enrolled = True
+                break
     
     if not enrolled and not current_user.is_admin():
         flash('You must be enrolled in this course to take quizzes', 'error')
         return redirect(url_for('course_detail', course_id=course_id))
     
-    # Get questions for this quiz
-    questions = [q for q in question_db.values() if q.quiz_id == quiz_id]
+    # Get questions for this quiz using SQLAlchemy
+    try:
+        questions = QuizQuestion.query.filter_by(quiz_id=quiz_id).order_by(QuizQuestion.order).all()
+        if not questions:
+            # Fall back to in-memory database
+            questions = [q for q in question_db.values() if q.quiz_id == quiz_id]
+    except Exception as e:
+        logging.error(f"Error accessing question database: {str(e)}")
+        # Fall back to in-memory database
+        questions = [q for q in question_db.values() if q.quiz_id == quiz_id]
+    
     if not questions:
         flash('This quiz has no questions', 'info')
         return redirect(url_for('module_detail', course_id=course_id, module_id=module_id))
@@ -506,30 +550,71 @@ def submit_quiz(course_id, module_id, quiz_id):
 @app.route('/enroll/<int:course_id>', methods=['POST'])
 @login_required
 def enroll(course_id):
-    course = course_db.get(course_id)
+    # Try to use SQLAlchemy models
+    try:
+        course = Course.query.get(course_id)
+        if not course:
+            course = course_db.get(course_id)
+    except:
+        course = course_db.get(course_id)
+    
     if not course:
         flash('Course not found', 'error')
         return redirect(url_for('courses'))
     
-    # Check if already enrolled
-    for enrollment in enrollment_db.values():
-        if enrollment.user_id == current_user.id and enrollment.course_id == course_id:
+    # Check if already enrolled using SQLAlchemy
+    try:
+        existing_enrollment = Enrollment.query.filter_by(user_id=current_user.id, course_id=course_id).first()
+        if existing_enrollment:
             flash('You are already enrolled in this course', 'info')
             return redirect(url_for('course_detail', course_id=course_id))
+    except:
+        # Fall back to in-memory check
+        for enrollment in enrollment_db.values():
+            if enrollment.user_id == current_user.id and enrollment.course_id == course_id:
+                flash('You are already enrolled in this course', 'info')
+                return redirect(url_for('course_detail', course_id=course_id))
     
     # Create new enrollment
-    enrollment_id = get_next_id(enrollment_db)
-    enrollment = Enrollment(
-        id=enrollment_id,
-        user_id=current_user.id,
-        course_id=course_id,
-        progress=0,
-        completed=False,
-        created_at=datetime.now()
-    )
-    enrollment_db[enrollment_id] = enrollment
+    try:
+        # Try to create a new enrollment in the database
+        new_enrollment = Enrollment(
+            user_id=current_user.id,
+            course_id=course_id,
+            progress=0,
+            completed=False
+        )
+        db.session.add(new_enrollment)
+        db.session.commit()
+        logging.info(f"User {current_user.username} enrolled in course {course.title} (SQLAlchemy)")
+    except Exception as e:
+        logging.error(f"Database enrollment error: {str(e)}")
+        # Fall back to in-memory enrollment
+        enrollment_id = get_next_id(enrollment_db)
+        enrollment = Enrollment(
+            id=enrollment_id,
+            user_id=current_user.id,
+            course_id=course_id,
+            progress=0,
+            completed=False,
+            created_at=datetime.now()
+        )
+        enrollment_db[enrollment_id] = enrollment
+        logging.info(f"User {current_user.username} enrolled in course {course.title} (In-memory)")
     
     flash(f'Successfully enrolled in {course.title}', 'success')
+    
+    # Redirect to the first module if available
+    try:
+        first_module = Module.query.filter_by(course_id=course_id).order_by(Module.order).first()
+        if first_module:
+            return redirect(url_for('module_detail', course_id=course_id, module_id=first_module.id))
+    except:
+        modules = get_course_modules(course_id, module_db)
+        if modules:
+            return redirect(url_for('module_detail', course_id=course_id, module_id=modules[0].id))
+    
+    # If no modules, go to dashboard
     return redirect(url_for('dashboard'))
 
 @app.route('/profile')
