@@ -473,7 +473,44 @@
         // Check if quiz was just added
         const urlParams = new URLSearchParams(window.location.search);
         const quizAdded = urlParams.get('quiz_added');
+        const moduleId = urlParams.get('module_id'); 
         const questionAdded = urlParams.get('question_added');
+        
+        // Highlight the module that had a quiz added if specified
+        if (quizAdded === 'true' && moduleId) {
+            console.log(`Highlighting module ${moduleId} that had a quiz added`);
+            const moduleHeader = document.querySelector(`#accordion-header-${moduleId}`);
+            if (moduleHeader) {
+                // Add a highlight animation
+                moduleHeader.style.transition = 'background-color 0.5s ease';
+                moduleHeader.style.backgroundColor = '#f0f9ff'; // Light blue background
+                
+                // Flash effect
+                setTimeout(() => {
+                    moduleHeader.style.backgroundColor = '#f3f4f6'; // Return to default gray
+                }, 1500);
+                setTimeout(() => {
+                    moduleHeader.style.backgroundColor = '#f0f9ff'; // Back to blue
+                }, 2000);
+                setTimeout(() => {
+                    moduleHeader.style.backgroundColor = ''; // Remove background
+                    moduleHeader.style.transition = '';
+                }, 2500);
+                
+                // Also highlight the quiz status indicator
+                const quizIndicator = moduleHeader.querySelector('.bg-green-100');
+                if (quizIndicator) {
+                    quizIndicator.style.transition = 'transform 0.5s ease, box-shadow 0.5s ease';
+                    quizIndicator.style.transform = 'scale(1.1)';
+                    quizIndicator.style.boxShadow = '0 0 8px rgba(16, 185, 129, 0.5)'; // Green glow
+                    
+                    setTimeout(() => {
+                        quizIndicator.style.transform = '';
+                        quizIndicator.style.boxShadow = '';
+                    }, 2500);
+                }
+            }
+        }
         
         // Initialize accordion functionality
         const accordionToggles = document.querySelectorAll('.accordion-toggle');
@@ -705,6 +742,19 @@
                     const jsonData = JSON.parse(data);
                     console.log('Quiz creation successful:', jsonData);
                     
+                    // Force a full page reload to ensure everything is in sync
+                    // This is a temporary fix - in the future we can use more targeted DOM updates 
+                    // but for now we need to make sure the UI always shows the correct state
+                    console.log("Triggering full page reload to ensure UI consistency");
+                    window.location.href = `/admin/course-wizard/step3/${courseId}?quiz_added=true&module_id=${moduleId}`;
+                    
+                    // Note: We'll skip the rest of this code since we're doing a full page reload
+                    // This is more reliable than trying to update the DOM elements dynamically
+                    return;
+                    
+                    // The following code is left commented for future reference
+                    // when we implement a more sophisticated DOM update approach
+                    /*
                     // Make an AJAX call to get updated quiz info
                     fetch(`/admin/course-wizard/step3/${courseId}`)
                     .then(response => response.text())
@@ -761,11 +811,7 @@
                             console.error(`Could not find module container for module ${moduleId}`);
                         }
                     })
-                    .catch(error => {
-                        console.error('Error refreshing quiz info:', error);
-                        // Fall back to full page refresh if AJAX update fails
-                        window.location.reload();
-                    });
+                    */
                 } catch (e) {
                     console.log('Response was not JSON, handling as text response', e);
                     
