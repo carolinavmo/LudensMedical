@@ -157,11 +157,27 @@ def logout():
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
+        return redirect(url_for('dashboard'))
     
     form = SignupForm()
     if form.validate_on_submit():
-        # Check if email already exists
+        try:
+            # Check if email already exists in database first
+            user_exists_db = User.query.filter_by(email=form.email.data).first()
+            if user_exists_db:
+                flash('Email already registered', 'error')
+                return redirect(url_for('signup'))
+                
+            # Check if username already exists in database
+            username_exists_db = User.query.filter_by(username=form.username.data).first()
+            if username_exists_db:
+                flash('Username already taken', 'error')
+                return redirect(url_for('signup'))
+        except Exception as e:
+            logging.error(f"Error checking database for existing user: {str(e)}")
+            # Continue with in-memory checks
+        
+        # Also check in-memory data
         if find_user_by_email(form.email.data, user_db):
             flash('Email already registered', 'error')
             return redirect(url_for('signup'))
@@ -171,22 +187,54 @@ def signup():
             flash('Username already taken', 'error')
             return redirect(url_for('signup'))
         
-        # Create new user
-        user_id = get_next_id(user_db)
-        user = User(
-            id=user_id,
-            username=form.username.data,
-            email=form.email.data,
-            password_hash=generate_password_hash(form.password.data),
-            role='student',
-            first_name=form.first_name.data,
-            last_name=form.last_name.data,
-            created_at=datetime.now()
-        )
-        user_db[user_id] = user
-        
-        flash('Account created successfully! You can now log in.', 'success')
-        return redirect(url_for('login'))
+        try:
+            # Try to create user in the database first
+            password_hash = generate_password_hash(form.password.data)
+            new_user = User(
+                username=form.username.data,
+                email=form.email.data,
+                password_hash=password_hash,
+                role='student',  # Always set role to student for signup
+                first_name=form.first_name.data,
+                last_name=form.last_name.data,
+                created_at=datetime.now()
+            )
+            
+            db.session.add(new_user)
+            db.session.commit()
+            logging.info(f"New user created in database: {new_user.username}")
+            
+            # Refresh in-memory data
+            populate_in_memory_db()
+            
+            flash('Account created successfully! You can now log in.', 'success')
+            return redirect(url_for('login'))
+        except Exception as e:
+            logging.error(f"Error creating user in database: {str(e)}")
+            db.session.rollback()
+            
+            # Fall back to in-memory storage
+            user_id = get_next_id(user_db)
+            # Generate the password hash again in case it wasn't defined earlier
+            password_hash = generate_password_hash(form.password.data)
+            user = User(
+                id=user_id,
+                username=form.username.data,
+                email=form.email.data,
+                password_hash=password_hash,
+                role='student',  # Always set role to student for signup
+                first_name=form.first_name.data,
+                last_name=form.last_name.data,
+                created_at=datetime.now()
+            )
+            user_db[user_id] = user
+            
+            flash('Account created successfully! You can now log in.', 'success')
+            return redirect(url_for('login'))
+    
+    # Add this for debugging form validation errors
+    if form.errors:
+        logging.error(f"Form validation errors: {form.errors}")
     
     return render_template('signup.html', form=form)
 

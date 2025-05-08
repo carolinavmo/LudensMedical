@@ -15,6 +15,9 @@
                     sign in to your existing account
                 </a>
             </p>
+            <p class="mt-2 text-center text-sm text-primary-600 font-semibold">
+                Student Registration Only
+            </p>
         </div>
         <form class="mt-8 space-y-6" action="{{ url_for('signup') }}" method="POST">
             {{ form.hidden_tag() }}
