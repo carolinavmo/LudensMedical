@@ -247,7 +247,7 @@
                                             </span>
                                         {% endif %}
                                         
-                                        {% if module.quiz %}
+                                        {% if module.quiz is defined and module.quiz %}
                                             <span class="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
                                                 <svg class="mr-1.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                                     <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
