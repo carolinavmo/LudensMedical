@@ -19,6 +19,47 @@
                     <li>Quizzes: {{ quizzes|length }} ({% for q in quizzes %}{{ q.id }}:m{{ q.module_id }}{% if not loop.last %}, {% endif %}{% endfor %})</li>
                     <li>Questions: {{ questions|length }}</li>
                 </ul>
+                <div class="hidden debug-info mt-3 pt-2 border-t border-gray-200">
+                    <h4 class="font-semibold mb-1">Detailed Module & Quiz Data:</h4>
+                    <table class="w-full text-xs border-collapse">
+                        <thead>
+                            <tr>
+                                <th class="py-1 px-2 bg-gray-100 text-left">Module ID</th>
+                                <th class="py-1 px-2 bg-gray-100 text-left">Module Title</th>
+                                <th class="py-1 px-2 bg-gray-100 text-left">Quiz ID</th>
+                                <th class="py-1 px-2 bg-gray-100 text-left">Quiz Title</th>
+                                <th class="py-1 px-2 bg-gray-100 text-left">Questions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for module in modules %}
+                                {% set has_quiz = false %}
+                                {% set quiz_info = {'id': 'None', 'title': 'No Quiz', 'question_count': 0} %}
+                                
+                                {% for quiz in quizzes %}
+                                    {% if quiz.module_id == module.id %}
+                                        {% set has_quiz = true %}
+                                        {% set quiz_question_count = 0 %}
+                                        {% for question in questions %}
+                                            {% if question.quiz_id == quiz.id %}
+                                                {% set quiz_question_count = quiz_question_count + 1 %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {% set _ = quiz_info.update({'id': quiz.id, 'title': quiz.title, 'question_count': quiz_question_count}) %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                <tr class="hover:bg-gray-50">
+                                    <td class="py-1 px-2 border">{{ module.id }}</td>
+                                    <td class="py-1 px-2 border">{{ module.title }}</td>
+                                    <td class="py-1 px-2 border">{{ quiz_info.id }}</td>
+                                    <td class="py-1 px-2 border">{{ quiz_info.title }}</td>
+                                    <td class="py-1 px-2 border">{{ quiz_info.question_count }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
             
             <p class="text-sm text-gray-500 mb-6">
@@ -403,9 +444,30 @@
         if (toggleDebugBtn) {
             toggleDebugBtn.addEventListener('click', function() {
                 const debugInfoElements = document.querySelectorAll('.debug-info');
+                const isHidden = debugInfoElements[0]?.classList.contains('hidden');
+                
+                // Update button text
+                toggleDebugBtn.textContent = isHidden ? 'Hide Detailed Debug' : 'Show Detailed Debug';
+                
+                // Toggle visibility of all debug elements
                 debugInfoElements.forEach(el => {
                     el.classList.toggle('hidden');
                 });
+                
+                // Log debug info to console as well for easier troubleshooting
+                if (isHidden) {
+                    console.log('Debug information:');
+                    console.log(`Modules: ${document.querySelectorAll('.accordion-item').length}`);
+                    console.log(`Quizzes: ${document.querySelectorAll('.module-quiz').length}`);
+                    
+                    // Log quiz info for each module
+                    document.querySelectorAll('.accordion-header').forEach(header => {
+                        const moduleId = header.id.split('-').pop();
+                        const moduleTitle = header.querySelector('p.text-sm').textContent.trim();
+                        const quizInfo = header.querySelector('div.mt-1');
+                        console.log(`Module ${moduleId}: ${moduleTitle} - ${quizInfo.textContent.trim()}`);
+                    });
+                }
             });
         }
         // Check if quiz was just added
