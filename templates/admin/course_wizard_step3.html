@@ -8,7 +8,12 @@
             
             <!-- Debug Information Panel -->
             <div class="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200 text-xs text-gray-600">
-                <p class="font-medium">Debug Information:</p>
+                <div class="flex justify-between items-center">
+                    <p class="font-medium">Debug Information:</p>
+                    <button id="toggle-debug-btn" class="px-2 py-1 border border-gray-300 rounded text-xs font-medium text-gray-500 bg-white hover:bg-gray-50 focus:outline-none">
+                        Show Detailed Debug
+                    </button>
+                </div>
                 <ul class="list-disc ml-5 mt-1">
                     <li>Modules: {{ modules|length }} ({% for m in modules %}{{ m.id }}{% if not loop.last %}, {% endif %}{% endfor %})</li>
                     <li>Quizzes: {{ quizzes|length }} ({% for q in quizzes %}{{ q.id }}:m{{ q.module_id }}{% if not loop.last %}, {% endif %}{% endfor %})</li>
@@ -36,6 +41,18 @@
                                     <!-- Check if there's a quiz for this module -->
                                     {% set module_quiz = None %}
                                     {% set question_count = 0 %}
+                                    
+                                    <!-- Debug info: Module ID = {{ module.id }} -->
+                                    <div class="hidden debug-info">
+                                        <p>Debug - Module ID: {{ module.id }}</p>
+                                        <p>Debug - Available quizzes:</p>
+                                        <ul>
+                                            {% for quiz in quizzes %}
+                                                <li>Quiz ID: {{ quiz.id }}, Module ID: {{ quiz.module_id }}, Title: {{ quiz.title }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                    
                                     {% for quiz in quizzes %}
                                         {% if quiz.module_id == module.id %}
                                             {% set module_quiz = quiz %}
@@ -381,6 +398,16 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Debug toggle button functionality
+        const toggleDebugBtn = document.getElementById('toggle-debug-btn');
+        if (toggleDebugBtn) {
+            toggleDebugBtn.addEventListener('click', function() {
+                const debugInfoElements = document.querySelectorAll('.debug-info');
+                debugInfoElements.forEach(el => {
+                    el.classList.toggle('hidden');
+                });
+            });
+        }
         // Check if quiz was just added
         const urlParams = new URLSearchParams(window.location.search);
         const quizAdded = urlParams.get('quiz_added');
@@ -610,8 +637,55 @@
                     toastMessage.remove();
                 }, 3000);
                 
-                // Refresh the page to show updated quiz info
-                window.location.href = `/admin/course-wizard/step3/${courseId}`;
+                // Refresh the page component instead of navigating
+                // Make an AJAX call to get updated quiz info
+                fetch(`/admin/course-wizard/step3/${courseId}`)
+                .then(response => response.text())
+                .then(html => {
+                    // Create a temporary DOM element to parse the HTML
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    
+                    // Find the quiz container for this module
+                    const moduleContainer = document.querySelector(`.accordion-header#accordion-header-${moduleId}`);
+                    if (moduleContainer) {
+                        // Find the updated quiz info for this module in the new HTML
+                        const newModuleContainer = tempDiv.querySelector(`.accordion-header#accordion-header-${moduleId}`);
+                        if (newModuleContainer) {
+                            // Update just the quiz info part
+                            const quizInfo = moduleContainer.querySelector('div > div.mt-1');
+                            const newQuizInfo = newModuleContainer.querySelector('div > div.mt-1');
+                            if (quizInfo && newQuizInfo) {
+                                quizInfo.innerHTML = newQuizInfo.innerHTML;
+                                
+                                // Close the accordion
+                                const contentId = `accordion-content-${moduleId}`;
+                                const content = document.getElementById(contentId);
+                                if (content) {
+                                    content.classList.add('hidden');
+                                }
+                                
+                                // Update the button style for modules with quizzes
+                                const toggleButton = moduleContainer.querySelector('.accordion-toggle');
+                                if (toggleButton && toggleButton.classList.contains('bg-yellow-50')) {
+                                    toggleButton.classList.remove('border-yellow-300', 'text-yellow-800', 'bg-yellow-50', 'hover:bg-yellow-100');
+                                    toggleButton.classList.add('border-transparent', 'text-primary-700', 'bg-primary-100', 'hover:bg-primary-200');
+                                    
+                                    // Update button text
+                                    const editText = toggleButton.querySelector('.edit-text');
+                                    if (editText) {
+                                        editText.textContent = 'Edit Quiz';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error refreshing quiz info:', error);
+                    // Fall back to full page refresh if AJAX update fails
+                    window.location.reload();
+                });
             })
             .catch(error => {
                 console.error('Error:', error);
