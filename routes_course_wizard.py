@@ -148,7 +148,8 @@ def admin_course_wizard_step3(course_id):
     app.logger.debug(f"Loading course wizard step 3 for course {course_id}")
     app.logger.debug(f"Found {len(modules)} modules, {len(quizzes)} quizzes, {len(questions)} questions")
     
-    return render_template('admin/course_wizard_step3.html',
+    # Use the new quiz management template
+    return render_template('admin/quiz_management.html',
                           course=course,
                           modules=modules,
                           quizzes=quizzes,
