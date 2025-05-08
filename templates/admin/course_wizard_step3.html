@@ -399,32 +399,21 @@
         if (quizAdded === 'True' || quizAdded === 'true') {
             console.log('Quiz was just added, expanding the accordion');
             
-            // We need to refresh the page to ensure all data is up to date
-            // This ensures the quiz that was just created is properly loaded
-            // But first let's find out which module might have the new quiz
+            // Check if we have a specific module ID from the redirect
+            const specificModuleId = urlParams.get('module_id');
+            console.log('Specific module ID from URL:', specificModuleId);
             
-            // Get all modules with quizzes
-            const moduleQuizzes = document.querySelectorAll('.module-quiz');
-            const quizIds = Array.from(moduleQuizzes).map(element => element.getAttribute('data-quiz-id'));
-            console.log('Found quiz IDs:', quizIds);
-            
-            // First check if any quiz already exists and show it
-            if (moduleQuizzes.length > 0) {
-                // Look through all accordion headers
-                const accordionHeaders = document.querySelectorAll('.accordion-header');
-                
-                for (let i = 0; i < accordionHeaders.length; i++) {
-                    const header = accordionHeaders[i];
-                    const moduleId = header.id.split('-').pop();
-                    const contentId = `accordion-content-${moduleId}`;
+            // Function to find and open a module's quiz
+            function findAndOpenModuleQuiz() {
+                // If we have a specific module ID, try to open that one first
+                if (specificModuleId) {
+                    console.log(`Attempting to find and open module ID: ${specificModuleId}`);
+                    const header = document.getElementById(`accordion-header-${specificModuleId}`);
+                    const contentId = `accordion-content-${specificModuleId}`;
                     const contentElement = document.getElementById(contentId);
                     
-                    // Check if this module has a quiz
-                    const moduleQuiz = contentElement.querySelector('.module-quiz');
-                    
-                    if (moduleQuiz) {
-                        // This module has a quiz, expand it
-                        console.log('Found module with quiz:', moduleId);
+                    if (header && contentElement) {
+                        console.log(`Found specific module ID: ${specificModuleId}`);
                         
                         // Expand the accordion
                         contentElement.classList.remove('hidden');
@@ -441,29 +430,112 @@
                             cancelText.classList.remove('hidden');
                         }
                         
-                        const quizId = moduleQuiz.getAttribute('data-quiz-id');
-                        console.log('Quiz ID for this module:', quizId);
-                        
-                        // Show the question form
-                        setTimeout(() => {
-                            const addQuestionBtn = document.getElementById(`add-question-btn-${quizId}`);
-                            if (addQuestionBtn) {
-                                console.log("Clicking the add question button for quiz:", quizId);
-                                addQuestionBtn.click();
-                            } else {
-                                console.log("Could not find add question button for quiz:", quizId);
-                            }
-                        }, 500);
-                        
-                        // Only expand one
-                        break;
+                        // Find the quiz in this module
+                        const moduleQuiz = contentElement.querySelector('.module-quiz');
+                        if (moduleQuiz) {
+                            const quizId = moduleQuiz.getAttribute('data-quiz-id');
+                            console.log(`Found quiz ID ${quizId} for module ${specificModuleId}`);
+                            
+                            // Show the question form after a short delay
+                            setTimeout(() => {
+                                const addQuestionBtn = document.getElementById(`add-question-btn-${quizId}`);
+                                if (addQuestionBtn) {
+                                    console.log("Clicking the add question button for quiz:", quizId);
+                                    addQuestionBtn.click();
+                                } else {
+                                    console.log("Could not find add question button for quiz:", quizId);
+                                }
+                            }, 1000);
+                            
+                            return true; // Successfully found and opened
+                        }
                     }
                 }
-            } else {
-                // No quizzes found, reload the page to ensure we get the latest data
-                console.log("No quizzes found, reloading page to refresh data");
-                window.location.reload();
+                
+                // If we don't have a specific module ID or couldn't find it,
+                // fall back to checking all modules
+                const moduleQuizzes = document.querySelectorAll('.module-quiz');
+                const quizIds = Array.from(moduleQuizzes).map(element => element.getAttribute('data-quiz-id'));
+                console.log('Found quiz IDs:', quizIds);
+                
+                // Check if any quiz exists
+                if (moduleQuizzes.length > 0) {
+                    // Look through all accordion headers
+                    const accordionHeaders = document.querySelectorAll('.accordion-header');
+                    let quizFound = false;
+                    
+                    for (let i = 0; i < accordionHeaders.length; i++) {
+                        const header = accordionHeaders[i];
+                        const moduleId = header.id.split('-').pop();
+                        const contentId = `accordion-content-${moduleId}`;
+                        const contentElement = document.getElementById(contentId);
+                        
+                        if (!contentElement) continue;
+                        
+                        // Check if this module has a quiz
+                        const moduleQuiz = contentElement.querySelector('.module-quiz');
+                        
+                        if (moduleQuiz) {
+                            // This module has a quiz, expand it
+                            console.log('Found module with quiz:', moduleId);
+                            quizFound = true;
+                            
+                            // Expand the accordion
+                            contentElement.classList.remove('hidden');
+                            
+                            // Scroll to the accordion
+                            header.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            
+                            // Update toggle button text
+                            const editText = header.querySelector('.edit-text');
+                            const cancelText = header.querySelector('.cancel-text');
+                            
+                            if (editText && cancelText) {
+                                editText.classList.add('hidden');
+                                cancelText.classList.remove('hidden');
+                            }
+                            
+                            const quizId = moduleQuiz.getAttribute('data-quiz-id');
+                            console.log('Quiz ID for this module:', quizId);
+                            
+                            // Show the question form after a short delay
+                            setTimeout(() => {
+                                const addQuestionBtn = document.getElementById(`add-question-btn-${quizId}`);
+                                if (addQuestionBtn) {
+                                    console.log("Clicking the add question button for quiz:", quizId);
+                                    addQuestionBtn.click();
+                                } else {
+                                    console.log("Could not find add question button for quiz:", quizId);
+                                }
+                            }, 1000);
+                            
+                            // Only expand one
+                            break;
+                        }
+                    }
+                    
+                    // If we didn't find a quiz, reload the page
+                    if (!quizFound) {
+                        console.log("No quiz found in any module, reloading page");
+                        // Remove the quiz_added parameter to prevent infinite reload
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete('quiz_added');
+                        url.searchParams.delete('module_id');
+                        window.location.href = url.toString();
+                    }
+                } else {
+                    // No quizzes found, reload the page to ensure we get the latest data
+                    console.log("No quizzes found, reloading page to refresh data");
+                    // Remove the quiz_added parameter to prevent infinite reload
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('quiz_added');
+                    url.searchParams.delete('module_id');
+                    window.location.href = url.toString();
+                }
             }
+            
+            // Execute after a delay to ensure DOM is fully loaded
+            setTimeout(findAndOpenModuleQuiz, 500);
         }
         
         // Handle quiz form submission

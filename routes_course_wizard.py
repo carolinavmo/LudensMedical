@@ -418,8 +418,10 @@ def admin_quiz_wizard(module_id=None, quiz_id=None):
                 app.logger.error(f"Error creating quiz: {str(e)}")
                 flash(f'Error creating quiz: {str(e)}', 'error')
         
-        # Add quiz_added parameter to indicate that a quiz was just created
-        return redirect(url_for('admin_course_wizard_step3', course_id=course.id, quiz_added=True))
+        # Add quiz_added parameter and module_id to indicate that a quiz was just created
+        # and which module it was created for
+        app.logger.debug(f"Redirecting after quiz creation with module_id={module_id} for course_id={course.id}")
+        return redirect(url_for('admin_course_wizard_step3', course_id=course.id, quiz_added=True, module_id=module_id))
     
     return render_template('admin/quiz_wizard.html',
                           form=form,
