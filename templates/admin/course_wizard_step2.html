@@ -2,7 +2,6 @@
 
 {% block head %}
 {{ super() }}
-<script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.8.2/dist/alpine.min.js" defer></script>
 <style>
     [x-cloak] { display: none !important; }
 </style>
@@ -377,21 +376,18 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
 <script src="{{ url_for('static', filename='js/module-reorder.js') }}"></script>
 <script>
-    // Function to open modal programmatically
-    function openModuleModal(moduleId) {
-        window.dispatchEvent(new CustomEvent('open-modal', {
-            detail: 'edit-module-' + moduleId
-        }));
-    }
-    
-    // Add click event listeners to all module edit buttons
     document.addEventListener('DOMContentLoaded', function() {
         const editButtons = document.querySelectorAll('[data-module-edit]');
         editButtons.forEach(button => {
             button.addEventListener('click', function(e) {
                 e.preventDefault();
                 const moduleId = this.getAttribute('data-module-id');
-                openModuleModal(moduleId);
+                // Use direct dispatch for Alpine.js v3
+                window.dispatchEvent(
+                    new CustomEvent('open-modal', {
+                        detail: 'edit-module-' + moduleId
+                    })
+                );
             });
         });
     });
