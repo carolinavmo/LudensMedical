@@ -367,6 +367,51 @@
                 cancelText.classList.toggle('hidden');
             });
         });
+        
+        // Handle Add Question buttons
+        const addQuestionButtons = document.querySelectorAll('[id^="add-question-btn-"]');
+        addQuestionButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const quizId = this.id.split('-').pop();
+                const questionForm = document.getElementById(`new-question-form-${quizId}`);
+                
+                if (questionForm) {
+                    questionForm.classList.toggle('hidden');
+                    
+                    // Update button text
+                    const addText = this.querySelector('.add-text');
+                    const cancelText = this.querySelector('.cancel-text');
+                    
+                    if (addText && cancelText) {
+                        addText.classList.toggle('hidden');
+                        cancelText.classList.toggle('hidden');
+                    }
+                }
+            });
+        });
+        
+        // Handle Cancel Question buttons
+        const cancelQuestionButtons = document.querySelectorAll('.cancel-question-btn');
+        cancelQuestionButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const quizId = this.getAttribute('data-quiz-id');
+                const questionForm = document.getElementById(`new-question-form-${quizId}`);
+                const addQuestionBtn = document.getElementById(`add-question-btn-${quizId}`);
+                
+                if (questionForm && addQuestionBtn) {
+                    questionForm.classList.add('hidden');
+                    
+                    // Update button text on the add question button
+                    const addText = addQuestionBtn.querySelector('.add-text');
+                    const cancelText = addQuestionBtn.querySelector('.cancel-text');
+                    
+                    if (addText && cancelText) {
+                        addText.classList.remove('hidden');
+                        cancelText.classList.add('hidden');
+                    }
+                }
+            });
+        });
     });
 </script>
 {% endblock %}
