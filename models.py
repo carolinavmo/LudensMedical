@@ -13,6 +13,29 @@ question_db = {}
 enrollment_db = {}
 certificate_db = {}
 
+def refresh_quizzes():
+    """Refresh only the quiz-related data in the in-memory dictionaries."""
+    # Clear quiz data
+    quiz_db.clear()
+    question_db.clear()
+    
+    try:
+        # Quizzes
+        quizzes = Quiz.query.all()
+        for quiz in quizzes:
+            quiz_db[quiz.id] = quiz
+        
+        # Questions
+        questions = QuizQuestion.query.all()
+        for question in questions:
+            question_db[question.id] = question
+            
+        print(f"Refreshed quiz data: {len(quiz_db)} quizzes, {len(question_db)} questions")
+        return True
+    except Exception as e:
+        print(f"Error refreshing quiz data: {str(e)}")
+        return False
+
 def populate_in_memory_db():
     """Populate in-memory dictionaries from the database."""
     # Clear current data

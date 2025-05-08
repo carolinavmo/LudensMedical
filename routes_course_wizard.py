@@ -413,28 +413,32 @@ def admin_quiz_wizard(module_id=None, quiz_id=None):
                 for qid, q in quiz_db.items():
                     app.logger.debug(f"Quiz ID {qid}, module_id {q.module_id}, title: {q.title}")
                 
-                # Re-populate the in-memory database to ensure consistency
+                # Use the new dedicated refresh function for quizzes
                 try:
-                    # Clear and re-populate
-                    db.session.commit()  # Ensure the transaction is fully committed
+                    # Ensure the transaction is fully committed
+                    db.session.commit()
                     
-                    # Get all quizzes from the database
-                    all_quizzes = Quiz.query.all()
-                    app.logger.debug(f"Found {len(all_quizzes)} quizzes in database")
+                    # Refresh the quiz data using the new function
+                    from models import refresh_quizzes
                     
-                    # Clear the in-memory db and repopulate
-                    quiz_db.clear()
-                    for q in all_quizzes:
-                        quiz_db[q.id] = q
-                        app.logger.debug(f"Added quiz ID {q.id} '{q.title}' for module {q.module_id} to in-memory DB")
+                    # Log before refresh
+                    app.logger.debug(f"Before refresh: quiz_db has {len(quiz_db)} quizzes")
+                    for qid, q in quiz_db.items():
+                        app.logger.debug(f"Before: Quiz ID {qid}, module_id {q.module_id}, title: {q.title}")
                     
-                    # Also refresh the questions
-                    all_questions = QuizQuestion.query.all()
-                    question_db.clear()
-                    for q in all_questions:
-                        question_db[q.id] = q
+                    # Perform the refresh
+                    refresh_result = refresh_quizzes()
                     
+                    # Log after refresh
+                    app.logger.debug(f"Refresh result: {refresh_result}")
                     app.logger.debug(f"After refresh: quiz_db has {len(quiz_db)} quizzes")
+                    for qid, q in quiz_db.items():
+                        app.logger.debug(f"After: Quiz ID {qid}, module_id {q.module_id}, title: {q.title}")
+                        
+                    # Ensure the new quiz exists in the in-memory DB
+                    if quiz_id not in quiz_db:
+                        app.logger.warning(f"Quiz ID {quiz_id} not found in quiz_db after refresh. Adding it manually.")
+                        quiz_db[quiz_id] = new_quiz
                 except Exception as e:
                     app.logger.error(f"Error refreshing in-memory DB: {str(e)}")
                     # Ensure the new quiz is in memory even if refresh failed
