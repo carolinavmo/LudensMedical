@@ -227,10 +227,18 @@ class QuizQuestion(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now)
     
     def get_options(self):
-        return json.loads(self.options)
+        try:
+            return json.loads(self.options)
+        except (json.JSONDecodeError, TypeError):
+            # Return a default list if JSON decoding fails
+            return ["Option 1", "Option 2", "Option 3", "Option 4"]
     
     def set_options(self, options_list):
-        self.options = json.dumps(options_list)
+        if isinstance(options_list, list):
+            self.options = json.dumps(options_list)
+        else:
+            # Handle case where options_list is not a list
+            self.options = json.dumps(["Option 1", "Option 2", "Option 3", "Option 4"])
     
     def to_dict(self):
         return {

@@ -373,6 +373,18 @@ def admin_quiz_wizard(module_id=None, quiz_id=None):
             quiz.updated_at = datetime.now()
             flash('Quiz updated successfully', 'success')
         else:
+            # Check if this module already has a quiz
+            existing_quiz = None
+            for q in quiz_db.values():
+                if q.module_id == module_id:
+                    existing_quiz = q
+                    break
+                    
+            if existing_quiz:
+                app.logger.warning(f"Module {module_id} already has quiz {existing_quiz.id}: '{existing_quiz.title}'")
+                flash(f'This module already has a quiz: "{existing_quiz.title}". Please edit the existing quiz.', 'warning')
+                return redirect(url_for('admin_quiz_wizard', module_id=module_id, quiz_id=existing_quiz.id))
+            
             # Create new quiz
             quiz_id = get_next_id(quiz_db)
             app.logger.debug(f"Creating new quiz with ID: {quiz_id} for module: {module_id}")

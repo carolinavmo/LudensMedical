@@ -54,21 +54,21 @@
                                                     <svg class="-ml-0.5 mr-1.5 h-3 w-3 text-green-400" fill="currentColor" viewBox="0 0 8 8">
                                                         <circle cx="4" cy="4" r="3" />
                                                     </svg>
-                                                    Quiz: {{ module_quiz.title }}
+                                                    Quiz ID {{ module_quiz.id }}: {{ module_quiz.title }}
                                                 </span>
                                                 <span class="ml-2 text-xs text-gray-500">
-                                                    {{ question_count }} question{% if question_count != 1 %}s{% endif %}
+                                                    <strong>{{ question_count }}</strong> question{% if question_count != 1 %}s{% endif %}
                                                 </span>
                                             </div>
                                             <p class="mt-1 text-sm text-gray-500 max-w-2xl truncate">
                                                 {{ module_quiz.description }}
                                             </p>
                                         {% else %}
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                                <svg class="-ml-0.5 mr-1.5 h-3 w-3 text-gray-400" fill="currentColor" viewBox="0 0 8 8">
-                                                    <circle cx="4" cy="4" r="3" />
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                <svg class="-ml-0.5 mr-1.5 h-3 w-3 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                                                 </svg>
-                                                No Quiz
+                                                <strong>No Quiz Yet</strong> - Add one with the button to the right
                                             </span>
                                         {% endif %}
                                     </div>
@@ -88,7 +88,7 @@
                                         </button>
                                     {% else %}
                                         <button type="button" 
-                                            class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 accordion-toggle"
+                                            class="inline-flex items-center px-3 py-1.5 border border-yellow-300 shadow-sm text-xs font-medium rounded-md text-yellow-800 bg-yellow-50 hover:bg-yellow-100 accordion-toggle"
                                             data-target="accordion-content-{{ module.id }}"
                                         >
                                             <svg class="-ml-0.5 mr-1.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
