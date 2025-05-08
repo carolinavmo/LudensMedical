@@ -550,69 +550,90 @@ def submit_quiz(course_id, module_id, quiz_id):
 @app.route('/enroll/<int:course_id>', methods=['POST'])
 @login_required
 def enroll(course_id):
-    # Try to use SQLAlchemy models
-    try:
-        course = Course.query.get(course_id)
-        if not course:
-            course = course_db.get(course_id)
-    except:
-        course = course_db.get(course_id)
+    # First, check if the course exists in the in-memory database
+    course = course_db.get(course_id)
+    
+    if not course:
+        try:
+            # Also try to get from SQL database as a fallback
+            course = Course.query.get(course_id)
+        except Exception as e:
+            logging.error(f"Error checking for course in database: {str(e)}")
+            course = None
     
     if not course:
         flash('Course not found', 'error')
         return redirect(url_for('courses'))
     
-    # Check if already enrolled using SQLAlchemy
-    try:
-        existing_enrollment = Enrollment.query.filter_by(user_id=current_user.id, course_id=course_id).first()
-        if existing_enrollment:
-            flash('You are already enrolled in this course', 'info')
-            return redirect(url_for('course_detail', course_id=course_id))
-    except:
-        # Fall back to in-memory check
-        for enrollment in enrollment_db.values():
-            if enrollment.user_id == current_user.id and enrollment.course_id == course_id:
-                flash('You are already enrolled in this course', 'info')
-                return redirect(url_for('course_detail', course_id=course_id))
+    # Now check if already enrolled - first check in-memory
+    is_enrolled = False
+    for enrollment in enrollment_db.values():
+        if enrollment.user_id == current_user.id and enrollment.course_id == course_id:
+            is_enrolled = True
+            break
     
-    # Create new enrollment
+    # If not found in memory, try SQL
+    if not is_enrolled:
+        try:
+            existing_enrollment = Enrollment.query.filter_by(user_id=current_user.id, course_id=course_id).first()
+            is_enrolled = existing_enrollment is not None
+        except Exception as e:
+            logging.error(f"Error checking enrollment in database: {str(e)}")
+    
+    if is_enrolled:
+        flash('You are already enrolled in this course', 'info')
+        return redirect(url_for('course_detail', course_id=course_id))
+    
+    # Not enrolled yet, so create new enrollment - first try in-memory
+    enrollment_id = get_next_id(enrollment_db)
+    new_enrollment = Enrollment(
+        id=enrollment_id,
+        user_id=current_user.id,
+        course_id=course_id,
+        progress=0,
+        completed=False,
+        created_at=datetime.now()
+    )
+    enrollment_db[enrollment_id] = new_enrollment
+    
+    # Only try to create in SQL if we have both a user and course in the SQL database
     try:
-        # Try to create a new enrollment in the database
-        new_enrollment = Enrollment(
-            user_id=current_user.id,
-            course_id=course_id,
-            progress=0,
-            completed=False
-        )
-        db.session.add(new_enrollment)
-        db.session.commit()
-        logging.info(f"User {current_user.username} enrolled in course {course.title} (SQLAlchemy)")
+        # Check if user and course exist in SQL DB first
+        db_user = User.query.get(current_user.id)
+        db_course = Course.query.get(course_id)
+        
+        if db_user and db_course:
+            # Both exist, so create enrollment
+            sql_enrollment = Enrollment(
+                user_id=current_user.id,
+                course_id=course_id,
+                progress=0,
+                completed=False
+            )
+            db.session.add(sql_enrollment)
+            db.session.commit()
+            logging.info(f"User {current_user.username} enrolled in course {course.title} (SQLAlchemy)")
+        else:
+            logging.info(f"User {current_user.username} enrolled in course {course.title} (In-memory only - SQL entities not found)")
     except Exception as e:
-        logging.error(f"Database enrollment error: {str(e)}")
-        # Fall back to in-memory enrollment
-        enrollment_id = get_next_id(enrollment_db)
-        enrollment = Enrollment(
-            id=enrollment_id,
-            user_id=current_user.id,
-            course_id=course_id,
-            progress=0,
-            completed=False,
-            created_at=datetime.now()
-        )
-        enrollment_db[enrollment_id] = enrollment
-        logging.info(f"User {current_user.username} enrolled in course {course.title} (In-memory)")
+        logging.error(f"Database enrollment error (non-critical): {str(e)}")
+        # We continue with the in-memory enrollment, which we already created
+        db.session.rollback()  # Ensure session is cleaned up
     
     flash(f'Successfully enrolled in {course.title}', 'success')
     
-    # Redirect to the first module if available
+    # Find the first module - check in-memory first
+    modules = get_course_modules(course_id, module_db)
+    if modules:
+        return redirect(url_for('module_detail', course_id=course_id, module_id=modules[0].id))
+    
+    # Also check SQL for modules
     try:
         first_module = Module.query.filter_by(course_id=course_id).order_by(Module.order).first()
         if first_module:
             return redirect(url_for('module_detail', course_id=course_id, module_id=first_module.id))
-    except:
-        modules = get_course_modules(course_id, module_db)
-        if modules:
-            return redirect(url_for('module_detail', course_id=course_id, module_id=modules[0].id))
+    except Exception as e:
+        logging.error(f"Error finding modules in database: {str(e)}")
     
     # If no modules, go to dashboard
     return redirect(url_for('dashboard'))
@@ -824,7 +845,7 @@ def admin_dashboard():
     # Add additional logging for debugging
     logging.info(f"Admin dashboard access by user: {current_user.username}, role: {current_user.role}")
     
-    if not current_user.is_admin():
+    if current_user.role != 'admin':
         logging.warning(f"Access denied to admin dashboard for user: {current_user.username}, role: {current_user.role}")
         flash('Access denied: Admin privileges required', 'error')
         return redirect(url_for('dashboard'))
