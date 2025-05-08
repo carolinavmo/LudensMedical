@@ -3,9 +3,9 @@ from flask_login import login_required, current_user
 from datetime import datetime
 import os
 from werkzeug.utils import secure_filename
-from app import app
+from app import app, db
 from forms import CourseForm, ModuleForm, QuizForm, QuestionForm
-from models import Course, Module, Quiz, db, course_db, module_db, quiz_db, question_db
+from models import Course, Module, Quiz, course_db, module_db, quiz_db, question_db, populate_in_memory_db
 from utils import get_next_id, get_course_modules
 
 # Course Wizard Step 1 - Course Details
@@ -359,7 +359,12 @@ def admin_quiz_wizard(module_id=None, quiz_id=None):
     # Create form
     form = QuizForm(obj=quiz if edit_mode else None)
     
+    # Add extra debugging for quiz creation
+    app.logger.debug(f"Quiz wizard: edit_mode={edit_mode}, module_id={module_id}, quiz_id={quiz_id}")
+    app.logger.debug(f"Form data: {request.form}")
+    
     if form.validate_on_submit():
+        app.logger.debug(f"Quiz form is valid, creating/updating quiz")
         if edit_mode:
             # Update existing quiz
             quiz.title = form.title.data
@@ -370,7 +375,10 @@ def admin_quiz_wizard(module_id=None, quiz_id=None):
         else:
             # Create new quiz
             quiz_id = get_next_id(quiz_db)
-            quiz = Quiz(
+            app.logger.debug(f"Creating new quiz with ID: {quiz_id} for module: {module_id}")
+            
+            # Create the quiz object
+            new_quiz = Quiz(
                 id=quiz_id,
                 module_id=module_id,
                 title=form.title.data,
@@ -378,8 +386,25 @@ def admin_quiz_wizard(module_id=None, quiz_id=None):
                 passing_score=form.passing_score.data,
                 created_at=datetime.now()
             )
-            quiz_db[quiz_id] = quiz
-            flash('Quiz created successfully', 'success')
+            
+            # Add to both in-memory DB and PostgreSQL
+            quiz_db[quiz_id] = new_quiz
+            
+            # Add to the SQLAlchemy session and commit
+            try:
+                db.session.add(new_quiz)
+                db.session.commit()
+                app.logger.debug(f"Quiz created with ID: {quiz_id} and saved to database")
+                
+                # Re-populate the in-memory database to ensure consistency
+                populate_in_memory_db()
+                app.logger.debug(f"Refreshed in-memory database after quiz creation")
+                
+                flash('Quiz created successfully', 'success')
+            except Exception as e:
+                db.session.rollback()
+                app.logger.error(f"Error creating quiz: {str(e)}")
+                flash(f'Error creating quiz: {str(e)}', 'error')
         
         # Add quiz_added parameter to indicate that a quiz was just created
         return redirect(url_for('admin_course_wizard_step3', course_id=course.id, quiz_added=True))

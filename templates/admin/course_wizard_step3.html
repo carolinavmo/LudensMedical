@@ -236,6 +236,8 @@
                                                             <option value="2">Option 3</option>
                                                             <option value="3">Option 4</option>
                                                         </select>
+                                                        <!-- Add debugging info to help identify issues with quiz fields -->
+                                                        <p class="text-xs text-gray-500 mt-1">Quiz ID: {{ module_quiz.id }}</p>
                                                     </div>
                                                     
                                                     <div>
@@ -266,6 +268,11 @@
                                                     >
                                                         Save Question
                                                     </button>
+                                                </div>
+                                                
+                                                <!-- Debug information to verify form values -->
+                                                <div class="mt-4 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                                                    <p>Form debugging: Quiz ID: {{ module_quiz.id }}</p>
                                                 </div>
                                             </form>
                                         </div>
