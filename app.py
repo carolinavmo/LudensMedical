@@ -46,3 +46,19 @@ with app.app_context():
         )
         user_db[admin.id] = admin
         logging.info(f"Created admin user: {admin.email}")
+    
+    # Create a student user for testing
+    if not any(user.email == 'student@ludens.medical' for user in user_db.values()):
+        from werkzeug.security import generate_password_hash
+        student = User(
+            id=len(user_db) + 1,
+            username='student',
+            email='student@ludens.medical',
+            password_hash=generate_password_hash('student123'),
+            role='student',
+            first_name='Student',
+            last_name='User',
+            created_at=datetime.now()
+        )
+        user_db[student.id] = student
+        logging.info(f"Created student user: {student.email}")

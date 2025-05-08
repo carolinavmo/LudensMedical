@@ -188,9 +188,14 @@ def reset_password(token):
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    # Log user role for debugging
+    logging.info(f"User {current_user.username} has role: {current_user.role}, is_admin: {current_user.is_admin()}")
+    
     if current_user.is_admin():
+        logging.info(f"Redirecting admin user to admin dashboard")
         return redirect(url_for('admin_dashboard'))
     
+    logging.info(f"Loading student dashboard for user: {current_user.username}")
     enrollments = get_user_enrollments(current_user.id, enrollment_db)
     courses = [course_db.get(e.course_id) for e in enrollments]
     courses = [c for c in courses if c]  # Filter out None values
@@ -366,8 +371,12 @@ def download_certificate(certificate_id):
 @app.route('/admin/dashboard')
 @login_required
 def admin_dashboard():
+    # Add additional logging for debugging
+    logging.info(f"Admin dashboard access by user: {current_user.username}, role: {current_user.role}")
+    
     if not current_user.is_admin():
-        flash('Access denied', 'error')
+        logging.warning(f"Access denied to admin dashboard for user: {current_user.username}, role: {current_user.role}")
+        flash('Access denied: Admin privileges required', 'error')
         return redirect(url_for('dashboard'))
     
     stats = get_stats(user_db, course_db, enrollment_db)
