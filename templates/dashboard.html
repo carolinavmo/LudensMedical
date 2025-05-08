@@ -3,158 +3,281 @@
 {% block title %}My Dashboard - Ludens Medical Academy{% endblock %}
 
 {% block content %}
-<div class="bg-gray-50">
-    <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <div class="lg:text-center">
-            <h1 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-                Welcome, {{ current_user.get_full_name() }}
-            </h1>
-            <p class="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
-                Track your progress and continue your medical education journey
-            </p>
-        </div>
-
-        <!-- Dashboard Overview -->
-        <div class="mt-10 bg-white shadow overflow-hidden sm:rounded-lg">
-            <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
-                <div>
-                    <h2 class="text-lg leading-6 font-medium text-gray-900">Your Learning Dashboard</h2>
-                    <p class="mt-1 max-w-2xl text-sm text-gray-500">Personal details and learning progress.</p>
+<div class="bg-gray-50 min-h-screen">
+    <div class="flex flex-col md:flex-row">
+        <!-- Left Sidebar -->
+        <div class="w-full md:w-64 bg-white shadow-md">
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <span class="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-700">
+                        {{ current_user.username[0].upper() }}
+                    </span>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">{{ current_user.get_full_name() }}</p>
+                        <p class="text-xs text-gray-500">{{ current_user.role|title }}</p>
+                    </div>
                 </div>
-                <a href="{{ url_for('courses') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
-                    Browse Courses
-                </a>
             </div>
-            <div class="border-t border-gray-200">
-                <dl>
-                    <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt class="text-sm font-medium text-gray-500">Full name</dt>
-                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ current_user.get_full_name() }}</dd>
+            <div class="py-4">
+                <div class="px-4 mb-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Main Menu
+                </div>
+                <nav>
+                    <a href="{{ url_for('dashboard') }}" class="flex items-center px-4 py-3 text-sm text-gray-700 bg-primary-50 border-l-4 border-primary-500">
+                        <svg class="mr-3 h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                        </svg>
+                        Dashboard
+                    </a>
+                    <a href="{{ url_for('courses') }}" class="flex items-center px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                        <svg class="mr-3 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
+                        </svg>
+                        Explore Courses
+                    </a>
+                    <div class="px-4 mt-4 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Categories
                     </div>
-                    <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt class="text-sm font-medium text-gray-500">Email address</dt>
-                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ current_user.email }}</dd>
+                    <a href="{{ url_for('courses') }}?category=cardiology" class="flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                        <svg class="mr-3 h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
+                        </svg>
+                        Cardiology
+                    </a>
+                    <a href="{{ url_for('courses') }}?category=neurology" class="flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                        <svg class="mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z" />
+                            <path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z" />
+                            <path d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z" />
+                        </svg>
+                        Neurology
+                    </a>
+                    <a href="{{ url_for('courses') }}?category=emergency" class="flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                        <svg class="mr-3 h-5 w-5 text-yellow-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                        Emergency
+                    </a>
+                    <a href="{{ url_for('courses') }}" class="flex items-center px-4 py-2 text-sm text-primary-600 hover:bg-gray-50">
+                        <svg class="mr-3 h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+                        </svg>
+                        All Categories
+                    </a>
+                    <div class="px-4 mt-4 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Personal
                     </div>
-                    <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt class="text-sm font-medium text-gray-500">Enrolled courses</dt>
-                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ courses|length }}</dd>
-                    </div>
-                    <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt class="text-sm font-medium text-gray-500">Earned certificates</dt>
-                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ certificates|length }}</dd>
-                    </div>
-                </dl>
+                    <a href="{{ url_for('dashboard') }}" class="flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                        <svg class="mr-3 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                        </svg>
+                        My Courses
+                    </a>
+                    <a href="{{ url_for('profile') }}" class="flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                        <svg class="mr-3 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                        </svg>
+                        Profile
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                        <svg class="mr-3 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V7.414l-5.707-5.707A1 1 0 009.586 1H3zm7 3.293V2l4 4h-3.293A1 1 0 0110 5.293zM3 15V3h7v.293l.707.707L11.414 4l.293.293V6a1 1 0 001 1h2v8H3z" clip-rule="evenodd" />
+                        </svg>
+                        My Certificates
+                    </a>
+                </nav>
             </div>
         </div>
 
-        <!-- Enrolled Courses -->
-        <div class="mt-10">
-            <h2 class="text-xl font-bold text-gray-900">Your Enrolled Courses</h2>
-            {% if courses %}
-                <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {% for course in courses %}
-                        <div class="bg-white shadow-md rounded-lg overflow-hidden">
-                            <div class="h-40 bg-gray-200 relative">
-                                {% if course.image_url %}
-                                    <img class="h-full w-full object-cover" src="{{ course.image_url }}" alt="{{ course.title }}">
-                                {% else %}
-                                    <img class="h-full w-full object-cover" src="https://pixabay.com/get/gea002c703b68579dabc8033e6ba4abaf4a887ee91baa23c3057bab94ce5bd9f9304827cc5d53785a297cc69926f47ad4810613e7ac1d3b0d1afeaca033140e87_1280.jpg" alt="{{ course.title }}">
-                                {% endif %}
+        <!-- Main Content -->
+        <div class="flex-1 p-4 md:p-8">
+            <div class="max-w-4xl mx-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Welcome, {{ current_user.get_full_name() }}</h1>
+                        <p class="mt-1 text-gray-500">Track your progress and continue your medical education journey</p>
+                    </div>
+                    <a href="{{ url_for('courses') }}" class="hidden sm:inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
+                        Browse Courses
+                    </a>
+                </div>
+
+                <!-- Statistics Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-white rounded-lg shadow p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-primary-100 rounded-md p-3">
+                                <svg class="h-6 w-6 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
                             </div>
-                            <div class="p-4">
-                                <div class="flex justify-between items-center mb-2">
-                                    <span class="px-2 py-1 text-xs rounded-full bg-primary-100 text-primary-800">
-                                        {{ course.category|replace('_', ' ')|title }}
-                                    </span>
-                                    <span class="text-xs text-gray-500">{{ course.level|title }}</span>
-                                </div>
-                                <h3 class="text-lg font-medium text-gray-900 truncate">{{ course.title }}</h3>
-                                
-                                <div class="mt-4" data-progress-course="{{ course.id }}">
-                                    <div class="flex justify-between items-center text-sm text-gray-500 mb-1">
-                                        <span>Progress</span>
-                                        <span class="progress-text">{{ progress[course.id] }}%</span>
-                                    </div>
-                                    <div class="progress-bar">
-                                        <div class="progress-bar-fill" style="width: {{ progress[course.id] }}%"></div>
-                                    </div>
-                                </div>
-                                
-                                <div class="mt-4 flex justify-between">
-                                    <a href="{{ url_for('course_detail', course_id=course.id) }}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                        Continue
-                                    </a>
-                                    {% if progress[course.id] == 100 %}
-                                        <span class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-green-700 bg-green-100">
-                                            <svg class="mr-1.5 h-4 w-4 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                            </svg>
-                                            Completed
-                                        </span>
-                                    {% endif %}
-                                </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Full Name</dt>
+                                    <dd class="text-lg font-semibold text-gray-900">{{ current_user.get_full_name() }}</dd>
+                                </dl>
                             </div>
                         </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="mt-6 text-center py-10 bg-white rounded-lg shadow-sm">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                    <h3 class="mt-2 text-lg font-medium text-gray-900">No courses yet</h3>
-                    <p class="mt-1 text-sm text-gray-500">Start your learning journey by enrolling in a course.</p>
-                    <div class="mt-6">
-                        <a href="{{ url_for('courses') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
-                            Explore Courses
-                        </a>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-blue-100 rounded-md p-3">
+                                <svg class="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Email</dt>
+                                    <dd class="text-lg font-semibold text-gray-900">{{ current_user.email }}</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-green-100 rounded-md p-3">
+                                <svg class="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                </svg>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Enrolled Courses</dt>
+                                    <dd class="text-lg font-semibold text-gray-900">{{ courses|length }}</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-yellow-100 rounded-md p-3">
+                                <svg class="h-6 w-6 text-yellow-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                </svg>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Earned Certificates</dt>
+                                    <dd class="text-lg font-semibold text-gray-900">{{ certificates|length }}</dd>
+                                </dl>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            {% endif %}
-        </div>
 
-        <!-- Your Certificates -->
-        <div class="mt-10">
-            <h2 class="text-xl font-bold text-gray-900">Your Certificates</h2>
-            {% if certificates %}
-                <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {% for certificate in certificates %}
-                        {% set course = certificate_courses[loop.index0] if loop.index0 < certificate_courses|length else None %}
-                        {% if course %}
-                            <div class="bg-white shadow-md rounded-lg overflow-hidden">
-                                <div class="p-4 certificate">
-                                    <div class="text-center">
-                                        <h3 class="text-lg font-bold text-primary-800">Certificate of Completion</h3>
-                                        <p class="mt-2 text-sm text-gray-600">This certifies that</p>
-                                        <p class="mt-1 text-lg font-medium text-gray-900">{{ current_user.get_full_name() }}</p>
-                                        <p class="mt-2 text-sm text-gray-600">has successfully completed the course</p>
-                                        <p class="mt-1 text-base font-medium text-primary-700">{{ course.title }}</p>
-                                        <p class="mt-2 text-xs text-gray-500">Issued on: {{ certificate.issue_date.strftime('%B %d, %Y') }}</p>
+                <!-- Enrolled Courses -->
+                <div class="mb-8">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">Your Enrolled Courses</h2>
+                    {% if courses %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {% for course in courses %}
+                                <div class="bg-white shadow-md rounded-lg overflow-hidden course-card">
+                                    <div class="h-40 bg-gray-200 relative">
+                                        {% if course.image_url %}
+                                            <img class="h-full w-full object-cover" src="{{ course.image_url }}" alt="{{ course.title }}">
+                                        {% else %}
+                                            <img class="h-full w-full object-cover" src="https://pixabay.com/get/gea002c703b68579dabc8033e6ba4abaf4a887ee91baa23c3057bab94ce5bd9f9304827cc5d53785a297cc69926f47ad4810613e7ac1d3b0d1afeaca033140e87_1280.jpg" alt="{{ course.title }}">
+                                        {% endif %}
+                                        <div class="absolute top-2 right-2 px-2 py-1 text-xs rounded-full bg-primary-100 text-primary-800">
+                                            {{ course.category|replace('_', ' ')|title }}
+                                        </div>
                                     </div>
-                                    
-                                    <div class="mt-4 flex justify-center">
-                                        <a href="{{ url_for('view_certificate', certificate_id=certificate.id) }}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 mr-4">
-                                            View
-                                        </a>
-                                        <a href="{{ url_for('download_certificate', certificate_id=certificate.id) }}" class="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
-                                            Download
-                                        </a>
+                                    <div class="p-4">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h3 class="text-lg font-medium text-gray-900 truncate">{{ course.title }}</h3>
+                                            <span class="text-xs text-gray-500">{{ course.level|title }}</span>
+                                        </div>
+                                        
+                                        <div class="mt-4" data-progress-course="{{ course.id }}">
+                                            <div class="flex justify-between items-center text-sm text-gray-500 mb-1">
+                                                <span>Progress</span>
+                                                <span class="progress-text">{{ progress[course.id] }}%</span>
+                                            </div>
+                                            <div class="progress-bar">
+                                                <div class="progress-bar-fill" style="width: {{ progress[course.id] }}%"></div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mt-4 flex justify-between">
+                                            <a href="{{ url_for('course_detail', course_id=course.id) }}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                                Continue
+                                            </a>
+                                            {% if progress[course.id] == 100 %}
+                                                <span class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-green-700 bg-green-100">
+                                                    <svg class="mr-1.5 h-4 w-4 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                                    </svg>
+                                                    Completed
+                                                </span>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                 </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-10 bg-white rounded-lg shadow-sm">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                            <h3 class="mt-2 text-lg font-medium text-gray-900">No courses yet</h3>
+                            <p class="mt-1 text-sm text-gray-500">Start your learning journey by enrolling in a course.</p>
+                            <div class="mt-6">
+                                <a href="{{ url_for('courses') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
+                                    Explore Courses
+                                </a>
                             </div>
-                        {% endif %}
-                    {% endfor %}
+                        </div>
+                    {% endif %}
                 </div>
-            {% else %}
-                <div class="mt-6 text-center py-10 bg-white rounded-lg shadow-sm">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <h3 class="mt-2 text-lg font-medium text-gray-900">No certificates yet</h3>
-                    <p class="mt-1 text-sm text-gray-500">Complete a course to earn your first certificate.</p>
+
+                <!-- Your Certificates -->
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">Your Certificates</h2>
+                    {% if certificates %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {% for certificate in certificates %}
+                                {% set course = certificate_courses[loop.index0] if loop.index0 < certificate_courses|length else None %}
+                                {% if course %}
+                                    <div class="bg-white shadow-md rounded-lg overflow-hidden course-card">
+                                        <div class="p-4 certificate">
+                                            <div class="text-center">
+                                                <h3 class="text-lg font-bold text-primary-800">Certificate of Completion</h3>
+                                                <p class="mt-2 text-sm text-gray-600">This certifies that</p>
+                                                <p class="mt-1 text-lg font-medium text-gray-900">{{ current_user.get_full_name() }}</p>
+                                                <p class="mt-2 text-sm text-gray-600">has successfully completed the course</p>
+                                                <p class="mt-1 text-base font-medium text-primary-700">{{ course.title }}</p>
+                                                <p class="mt-2 text-xs text-gray-500">Issued on: {{ certificate.issue_date.strftime('%B %d, %Y') }}</p>
+                                            </div>
+                                            
+                                            <div class="mt-4 flex justify-center">
+                                                <a href="{{ url_for('view_certificate', certificate_id=certificate.id) }}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 mr-4">
+                                                    View
+                                                </a>
+                                                <a href="{{ url_for('download_certificate', certificate_id=certificate.id) }}" class="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                                                    Download
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-10 bg-white rounded-lg shadow-sm">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <h3 class="mt-2 text-lg font-medium text-gray-900">No certificates yet</h3>
+                            <p class="mt-1 text-sm text-gray-500">Complete a course to earn your first certificate.</p>
+                        </div>
+                    {% endif %}
                 </div>
-            {% endif %}
+            </div>
         </div>
     </div>
 </div>
+
+<!-- CSS styles moved to static/css/styles.css -->
 {% endblock %}
