@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}Quiz: {{ quiz.title }} - Ludens Medical Academy{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Quiz Header -->
+    <header class="bg-white shadow">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                <div class="flex-1 min-w-0">
+                    <h1 class="text-2xl font-bold text-gray-900 truncate">
+                        {{ quiz.title }}
+                    </h1>
+                    <p class="mt-1 text-sm text-gray-500">
+                        {{ module.title }} - {{ course.title }}
+                    </p>
+                </div>
+                <div class="mt-4 flex md:mt-0 md:ml-4">
+                    <a href="{{ url_for('module_detail', course_id=course.id, module_id=module.id) }}" 
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                        Back to Module
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h2 class="text-xl font-medium text-gray-900 mb-4">{{ quiz.title }}</h2>
+                <p class="text-sm text-gray-500 mb-6">{{ quiz.description }}</p>
+                
+                <form id="quizForm" action="{{ url_for('submit_quiz', course_id=course.id, module_id=module.id, quiz_id=quiz.id) }}" method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="space-y-8">
+                        {% for question in questions %}
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h3 class="text-base font-medium text-gray-900 mb-3 flex items-start">
+                                <span class="bg-primary-100 text-primary-800 px-2 py-1 rounded-full text-xs font-medium mr-2 flex-shrink-0">Q{{ loop.index }}</span>
+                                <span>{{ question.text }}</span>
+                            </h3>
+                            
+                            <fieldset class="mt-4">
+                                <legend class="sr-only">Answer for question {{ loop.index }}</legend>
+                                <div class="space-y-3">
+                                    {% for choice in question.choices.split('|') %}
+                                    <div class="flex items-start">
+                                        <div class="flex items-center h-5">
+                                            <input 
+                                                id="q{{ question.id }}_{{ loop.index }}" 
+                                                name="question_{{ question.id }}" 
+                                                value="{{ loop.index0 }}" 
+                                                type="radio" 
+                                                class="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300"
+                                            >
+                                        </div>
+                                        <div class="ml-3 text-sm">
+                                            <label for="q{{ question.id }}_{{ loop.index }}" class="font-medium text-gray-700">{{ choice }}</label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </fieldset>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mt-8 border-t border-gray-200 pt-6">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-500">
+                                {{ questions|length }} questions total
+                            </span>
+                            <button 
+                                type="submit" 
+                                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                            >
+                                Submit Quiz
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const quizForm = document.getElementById('quizForm');
+        
+        quizForm.addEventListener('submit', function(e) {
+            // Check that all questions are answered
+            const questions = document.querySelectorAll('fieldset');
+            let allAnswered = true;
+            
+            questions.forEach((question, index) => {
+                const answered = question.querySelector('input:checked');
+                if (!answered) {
+                    allAnswered = false;
+                    const questionEl = question.closest('.bg-gray-50');
+                    questionEl.classList.add('border', 'border-red-300');
+                    
+                    // Remove error styling after the user makes a selection
+                    question.querySelectorAll('input').forEach(input => {
+                        input.addEventListener('change', function() {
+                            questionEl.classList.remove('border', 'border-red-300');
+                        }, { once: true });
+                    });
+                }
+            });
+            
+            if (!allAnswered) {
+                e.preventDefault();
+                alert('Please answer all questions before submitting.');
+                
+                // Scroll to the first unanswered question
+                const firstUnanswered = document.querySelector('.border-red-300');
+                if (firstUnanswered) {
+                    firstUnanswered.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
