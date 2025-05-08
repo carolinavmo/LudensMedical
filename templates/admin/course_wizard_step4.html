@@ -1,0 +1,166 @@
+{% extends 'admin/course_wizard.html' %}
+
+{% block wizard_content %}
+<div class="px-4 py-5 sm:p-6">
+    <div class="grid grid-cols-6 gap-6">
+        <div class="col-span-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-5">Certificate Settings</h2>
+            
+            <p class="text-sm text-gray-500 mb-6">
+                Students who complete this course will receive a certificate. You can customize how the certificate looks and what information is included.
+            </p>
+            
+            <div class="mb-8 bg-white shadow sm:rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">
+                        Certificate Preview
+                    </h3>
+                    <div class="mt-5 border-2 border-gray-300 border-dashed rounded-lg p-6 flex justify-center">
+                        <div class="bg-white shadow-lg rounded-lg overflow-hidden w-full max-w-2xl" style="aspect-ratio: 1.414">
+                            <!-- Certificate Preview -->
+                            <div class="relative w-full h-full flex flex-col items-center justify-center p-10 text-center bg-gradient-to-r from-primary-50 to-primary-100">
+                                <!-- Border design -->
+                                <div class="absolute inset-4 border-4 border-primary-200 rounded-lg"></div>
+                                
+                                <!-- Logo -->
+                                <div class="mb-6">
+                                    <svg class="h-12 w-auto text-primary-600" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 14l9-5-9-5-9 5 9 5z" />
+                                        <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                                        <path d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-8 6h16" />
+                                    </svg>
+                                </div>
+                                
+                                <!-- Certificate title -->
+                                <h1 class="text-2xl font-bold text-primary-900 mb-1">Certificate of Completion</h1>
+                                
+                                <div class="w-24 h-1 bg-primary-500 rounded mb-6"></div>
+                                
+                                <!-- Text -->
+                                <p class="text-gray-600 mb-2">This is to certify that</p>
+                                
+                                <!-- Student name placeholder -->
+                                <p class="text-xl font-bold text-primary-800 mb-2">[Student Name]</p>
+                                
+                                <p class="text-gray-600 mb-6">has successfully completed the course</p>
+                                
+                                <!-- Course title -->
+                                <p class="text-xl font-bold text-primary-800 mb-6">{{ course.title }}</p>
+                                
+                                <!-- Date -->
+                                <p class="text-gray-600 mb-8">Issued on [Date]</p>
+                                
+                                <!-- Signature line -->
+                                <div class="flex items-center justify-center space-x-12">
+                                    <div class="text-center">
+                                        <div class="w-32 h-px bg-gray-400 mb-2"></div>
+                                        <p class="text-sm text-gray-600">Course Instructor</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="w-32 h-px bg-gray-400 mb-2"></div>
+                                        <p class="text-sm text-gray-600">Program Director</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <form action="{{ url_for('admin_course_wizard_step4_complete', course_id=course.id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                
+                <div class="bg-white shadow sm:rounded-lg mb-6">
+                    <div class="px-4 py-5 sm:p-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Certificate Settings</h3>
+                        <div class="mt-5 grid grid-cols-1 gap-5">
+                            <div class="col-span-1">
+                                <label for="certificate_title" class="block text-sm font-medium text-gray-700">Certificate Title</label>
+                                <input type="text" name="certificate_title" id="certificate_title" value="Certificate of Completion" class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                            </div>
+                            
+                            <div class="col-span-1">
+                                <label for="custom_message" class="block text-sm font-medium text-gray-700">Custom Message (Optional)</label>
+                                <textarea id="custom_message" name="custom_message" rows="2" class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" placeholder="Add a custom message to appear on the certificate"></textarea>
+                            </div>
+                            
+                            <div class="col-span-1">
+                                <label class="block text-sm font-medium text-gray-700">Information to Include</label>
+                                <div class="mt-2 space-y-2">
+                                    <div class="flex items-start">
+                                        <div class="flex items-center h-5">
+                                            <input id="include_date" name="include_date" type="checkbox" checked class="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 rounded">
+                                        </div>
+                                        <div class="ml-3 text-sm">
+                                            <label for="include_date" class="font-medium text-gray-700">Issue Date</label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex items-start">
+                                        <div class="flex items-center h-5">
+                                            <input id="include_signatures" name="include_signatures" type="checkbox" checked class="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 rounded">
+                                        </div>
+                                        <div class="ml-3 text-sm">
+                                            <label for="include_signatures" class="font-medium text-gray-700">Signature Lines</label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex items-start">
+                                        <div class="flex items-center h-5">
+                                            <input id="include_logo" name="include_logo" type="checkbox" checked class="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 rounded">
+                                        </div>
+                                        <div class="ml-3 text-sm">
+                                            <label for="include_logo" class="font-medium text-gray-700">Academy Logo</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white shadow sm:rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Certificate Requirements</h3>
+                        <div class="mt-2 space-y-5">
+                            <div>
+                                <label for="completion_threshold" class="block text-sm font-medium text-gray-700">Course Completion Threshold</label>
+                                <div class="mt-1 flex rounded-md shadow-sm">
+                                    <input type="number" name="completion_threshold" id="completion_threshold" min="1" max="100" class="focus:ring-primary-500 focus:border-primary-500 flex-1 block w-full rounded-none rounded-l-md sm:text-sm border-gray-300" value="100">
+                                    <span class="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm">
+                                        %
+                                    </span>
+                                </div>
+                                <p class="mt-1 text-sm text-gray-500">Students must complete this percentage of the course to earn a certificate.</p>
+                            </div>
+                            
+                            <div>
+                                <div class="flex items-start">
+                                    <div class="flex items-center h-5">
+                                        <input id="require_quiz_passing" name="require_quiz_passing" type="checkbox" checked class="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 rounded">
+                                    </div>
+                                    <div class="ml-3 text-sm">
+                                        <label for="require_quiz_passing" class="font-medium text-gray-700">Require passing all quizzes</label>
+                                        <p class="text-gray-500">Students must pass all quizzes to earn a certificate.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            
+                <!-- Navigation Buttons -->
+                <div class="mt-6 flex justify-between">
+                    <a href="{{ url_for('admin_course_wizard_step3', course_id=course.id) }}" class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        Back: Quizzes
+                    </a>
+                    
+                    <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        Complete Course Setup
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

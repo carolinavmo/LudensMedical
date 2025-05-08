@@ -1,0 +1,118 @@
+{% extends 'admin/course_wizard.html' %}
+
+{% block wizard_content %}
+<div class="px-4 py-5 sm:p-6">
+    <div class="grid grid-cols-6 gap-6">
+        <div class="col-span-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-5">Module Quizzes</h2>
+            
+            <p class="text-sm text-gray-500 mb-6">
+                Adding quizzes to your modules helps test student comprehension and reinforces learning.
+                Each module can have one quiz with multiple questions.
+            </p>
+            
+            {% if modules %}
+                <div class="bg-white shadow overflow-hidden sm:rounded-md">
+                    <ul class="divide-y divide-gray-200">
+                        {% for module in modules %}
+                        <li>
+                            <div class="px-4 py-4 sm:px-6 flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-primary-600 truncate">
+                                        Module {{ module.order }}: {{ module.title }}
+                                    </p>
+                                    
+                                    <!-- Check if there's a quiz for this module -->
+                                    {% set module_quiz = None %}
+                                    {% set question_count = 0 %}
+                                    {% for quiz in quizzes %}
+                                        {% if quiz.module_id == module.id %}
+                                            {% set module_quiz = quiz %}
+                                            {% for question in questions %}
+                                                {% if question.quiz_id == quiz.id %}
+                                                    {% set question_count = question_count + 1 %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    <div class="mt-1">
+                                        {% if module_quiz %}
+                                            <div class="flex items-center">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                    <svg class="-ml-0.5 mr-1.5 h-3 w-3 text-green-400" fill="currentColor" viewBox="0 0 8 8">
+                                                        <circle cx="4" cy="4" r="3" />
+                                                    </svg>
+                                                    Quiz: {{ module_quiz.title }}
+                                                </span>
+                                                <span class="ml-2 text-xs text-gray-500">
+                                                    {{ question_count }} question{% if question_count != 1 %}s{% endif %}
+                                                </span>
+                                            </div>
+                                            <p class="mt-1 text-sm text-gray-500 max-w-2xl truncate">
+                                                {{ module_quiz.description }}
+                                            </p>
+                                        {% else %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                <svg class="-ml-0.5 mr-1.5 h-3 w-3 text-gray-400" fill="currentColor" viewBox="0 0 8 8">
+                                                    <circle cx="4" cy="4" r="3" />
+                                                </svg>
+                                                No Quiz
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div>
+                                    {% if module_quiz %}
+                                        <a href="{{ url_for('admin_quiz_edit', quiz_id=module_quiz.id) }}" class="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200">
+                                            <svg class="-ml-0.5 mr-1.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                            </svg>
+                                            Edit Quiz
+                                        </a>
+                                    {% else %}
+                                        <a href="{{ url_for('admin_quiz_new', module_id=module.id) }}" class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                            <svg class="-ml-0.5 mr-1.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                                            </svg>
+                                            Add Quiz
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% else %}
+                <div class="text-center py-12 bg-gray-50 rounded-lg">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No modules available</h3>
+                    <p class="mt-1 text-sm text-gray-500">You need to create modules before adding quizzes.</p>
+                    <div class="mt-6">
+                        <a href="{{ url_for('admin_course_wizard_step2', course_id=course.id) }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                            Go back to add modules
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Navigation Buttons -->
+<div class="px-4 py-3 bg-gray-50 text-right sm:px-6 flex justify-between">
+    <a href="{{ url_for('admin_course_wizard_step2', course_id=course.id) }}" class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+        Back: Modules
+    </a>
+    
+    <form action="{{ url_for('admin_course_wizard_step3_next', course_id=course.id) }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+            Next: Certificate
+        </button>
+    </form>
+</div>
+{% endblock %}

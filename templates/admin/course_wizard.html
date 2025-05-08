@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ wizard_title }} - Ludens Medical Academy{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Admin Header -->
+    <header class="bg-white shadow">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center">
+                <h1 class="text-3xl font-bold text-gray-900">
+                    {{ wizard_title }}
+                </h1>
+                <div class="flex space-x-4">
+                    <a href="{{ url_for('admin_courses') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                        Back to Courses
+                    </a>
+                    {% if edit_mode and course %}
+                        <a href="{{ url_for('course_detail', course_id=course.id) }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                            View Course
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Progress Steps -->
+        <div class="mb-8 px-4 sm:px-0">
+            <div class="relative">
+                <!-- Progress Bar -->
+                <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200">
+                    <div style="width:{{ progress_percentage }}%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary-500 transition-all duration-500"></div>
+                </div>
+                
+                <!-- Steps -->
+                <div class="flex justify-between">
+                    <!-- Step 1: Course Details -->
+                    <div class="relative flex flex-col items-center">
+                        <div class="rounded-full h-12 w-12 flex items-center justify-center {{ 'bg-primary-600 text-white' if step >= 1 else 'bg-white border-2 border-gray-300 text-gray-600' }}">
+                            {% if step > 1 %}
+                                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            {% else %}
+                                <span>1</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-xs mt-2 text-center {{ 'font-medium text-primary-600' if step >= 1 else 'text-gray-500' }}">Course Details</div>
+                    </div>
+                    
+                    <!-- Step 2: Modules -->
+                    <div class="relative flex flex-col items-center">
+                        <div class="rounded-full h-12 w-12 flex items-center justify-center {{ 'bg-primary-600 text-white' if step >= 2 else 'bg-white border-2 border-gray-300 text-gray-600' }}">
+                            {% if step > 2 %}
+                                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            {% else %}
+                                <span>2</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-xs mt-2 text-center {{ 'font-medium text-primary-600' if step >= 2 else 'text-gray-500' }}">Add Modules</div>
+                    </div>
+                    
+                    <!-- Step 3: Quizzes -->
+                    <div class="relative flex flex-col items-center">
+                        <div class="rounded-full h-12 w-12 flex items-center justify-center {{ 'bg-primary-600 text-white' if step >= 3 else 'bg-white border-2 border-gray-300 text-gray-600' }}">
+                            {% if step > 3 %}
+                                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            {% else %}
+                                <span>3</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-xs mt-2 text-center {{ 'font-medium text-primary-600' if step >= 3 else 'text-gray-500' }}">Create Quizzes</div>
+                    </div>
+                    
+                    <!-- Step 4: Certificate -->
+                    <div class="relative flex flex-col items-center">
+                        <div class="rounded-full h-12 w-12 flex items-center justify-center {{ 'bg-primary-600 text-white' if step >= 4 else 'bg-white border-2 border-gray-300 text-gray-600' }}">
+                            <span>4</span>
+                        </div>
+                        <div class="text-xs mt-2 text-center {{ 'font-medium text-primary-600' if step >= 4 else 'text-gray-500' }}">Certificate</div>
+                    </div>
+                </div>
+                
+                <!-- Connecting Lines -->
+                <div class="absolute top-6 left-0 w-full">
+                    <div class="h-0.5 w-full bg-gray-200 absolute top-0" style="z-index: -1;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Content Area -->
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            {% block wizard_content %}
+            <!-- This will be replaced by specific content for each step -->
+            {% endblock %}
+        </div>
+    </main>
+</div>
+{% endblock %}

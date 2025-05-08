@@ -1,0 +1,92 @@
+{% extends 'admin/course_wizard.html' %}
+
+{% block wizard_content %}
+<form action="{{ url_for('admin_course_wizard_step1', course_id=course.id) if edit_mode else url_for('admin_course_wizard_step1') }}" method="POST">
+    {{ form.hidden_tag() }}
+    <div class="px-4 py-5 sm:p-6">
+        <div class="grid grid-cols-6 gap-6">
+            <div class="col-span-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-5">Course Information</h2>
+            </div>
+
+            <div class="col-span-6">
+                <label for="title" class="block text-sm font-medium text-gray-700">Course Title</label>
+                {{ form.title(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md") }}
+                {% if form.title.errors %}
+                    <div class="text-red-500 text-xs mt-1">
+                        {% for error in form.title.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="col-span-6">
+                <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                {{ form.description(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md", rows=5) }}
+                {% if form.description.errors %}
+                    <div class="text-red-500 text-xs mt-1">
+                        {% for error in form.description.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="col-span-6 sm:col-span-3">
+                <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
+                {{ form.category(class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm") }}
+                {% if form.category.errors %}
+                    <div class="text-red-500 text-xs mt-1">
+                        {% for error in form.category.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="col-span-6 sm:col-span-3">
+                <label for="level" class="block text-sm font-medium text-gray-700">Level</label>
+                {{ form.level(class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm") }}
+                {% if form.level.errors %}
+                    <div class="text-red-500 text-xs mt-1">
+                        {% for error in form.level.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="col-span-6 sm:col-span-3">
+                <label for="price" class="block text-sm font-medium text-gray-700">Price (USD)</label>
+                {{ form.price(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md") }}
+                {% if form.price.errors %}
+                    <div class="text-red-500 text-xs mt-1">
+                        {% for error in form.price.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="col-span-6 sm:col-span-3">
+                <label for="image_url" class="block text-sm font-medium text-gray-700">Image URL (Optional)</label>
+                {{ form.image_url(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md") }}
+                {% if form.image_url.errors %}
+                    <div class="text-red-500 text-xs mt-1">
+                        {% for error in form.image_url.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <p class="mt-1 text-sm text-gray-500">Enter a URL for the course cover image</p>
+            </div>
+        </div>
+    </div>
+    <div class="px-4 py-3 bg-gray-50 text-right sm:px-6">
+        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+            Next: Add Modules
+        </button>
+    </div>
+</form>
+{% endblock %}
