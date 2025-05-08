@@ -72,53 +72,111 @@ def calculate_course_progress(user_id, course_id, enrollment_db):
     return 0
 
 def generate_certificate(user, course, certificate_id):
-    """Generate a certificate for a completed course."""
-    # Create a new white image
-    width, height = 800, 600
+    """Generate a certificate for a completed course with personalized user name."""
+    # Create a new white image with higher resolution
+    width, height = 1200, 900
     certificate = Image.new('RGB', (width, height), color=(255, 255, 255))
     draw = ImageDraw.Draw(certificate)
     
-    # Draw border
-    draw.rectangle([(20, 20), (width-20, height-20)], outline=(0, 102, 204), width=5)
+    # Add decorative background
+    # Draw a light blue background pattern with gradient
+    for y in range(0, height, 5):
+        color_value = int(240 + (y / height) * 15)  # Subtle gradient
+        draw.line([(0, y), (width, y)], fill=(color_value, color_value, 255), width=1)
     
-    # Add header
+    # Draw border with rounded corners effect
+    border_width = 10
+    for i in range(border_width):
+        offset = i
+        draw.rectangle(
+            [(20 + offset, 20 + offset), (width - 20 - offset, height - 20 - offset)], 
+            outline=(0, 102 - i*5, 204 - i*10), 
+            width=1
+        )
+    
+    # Draw decorative corners
+    corner_size = 40
+    for x, y in [(20, 20), (width-20-corner_size, 20), (20, height-20-corner_size), (width-20-corner_size, height-20-corner_size)]:
+        draw.rectangle([(x, y), (x+corner_size, y+corner_size)], fill=(0, 82, 184), outline=None)
+    
+    # Use default font since custom fonts might not be available
     header_font = ImageFont.load_default()
+    body_font = ImageFont.load_default()
+    
+    # Add header with larger size
     header = "CERTIFICATE OF COMPLETION"
-    draw.text((width/2, 80), header, fill=(0, 51, 102), anchor="mm", font=header_font)
+    draw.text((width/2, 120), header, fill=(0, 51, 102), anchor="mm", font=header_font)
     
     # Add Ludens Medical Academy text
     academy_text = "Ludens Medical Academy"
-    draw.text((width/2, 130), academy_text, fill=(0, 102, 204), anchor="mm", font=header_font)
+    draw.text((width/2, 190), academy_text, fill=(0, 102, 204), anchor="mm", font=header_font)
     
-    # Add recipient name
-    name_text = f"This certifies that {user.get_full_name()}"
-    draw.text((width/2, 200), name_text, fill=(0, 0, 0), anchor="mm", font=header_font)
+    # Add decorative line
+    draw.line([(width/4, 240), (width*3/4, 240)], fill=(0, 102, 204), width=3)
     
-    # Add course completion text
-    completion_text = f"has successfully completed the course"
-    draw.text((width/2, 250), completion_text, fill=(0, 0, 0), anchor="mm", font=header_font)
+    # Add "This certifies that" text
+    cert_intro_text = "This certifies that"
+    draw.text((width/2, 300), cert_intro_text, fill=(0, 0, 0), anchor="mm", font=body_font)
     
-    # Add course title
-    course_text = f"\"{course.title}\""
-    draw.text((width/2, 300), course_text, fill=(0, 51, 102), anchor="mm", font=header_font)
+    # Add recipient name with emphasis
+    full_name = user.get_full_name()
+    # Make the name stand out by drawing it larger and with a different color
+    draw.text((width/2, 360), full_name, fill=(0, 51, 102), anchor="mm", font=header_font)
     
-    # Add date
-    date_text = f"Issued on: {datetime.now().strftime('%B %d, %Y')}"
-    draw.text((width/2, 370), date_text, fill=(0, 0, 0), anchor="mm", font=header_font)
+    # Add completion text
+    completion_text = "has successfully completed the course"
+    draw.text((width/2, 430), completion_text, fill=(0, 0, 0), anchor="mm", font=body_font)
+    
+    # Add course name with emphasis
+    course_text = f'"{course.title}"'
+    draw.text((width/2, 500), course_text, fill=(0, 51, 102), anchor="mm", font=header_font)
+    
+    # Add course category and level
+    category = course.category.replace('_', ' ').title()
+    level = course.level.title()
+    course_details = f"Category: {category} | Level: {level}"
+    draw.text((width/2, 550), course_details, fill=(80, 80, 80), anchor="mm", font=body_font)
+    
+    # Add date with nice formatting
+    issue_date = datetime.now().strftime('%B %d, %Y')
+    date_text = f"Issued on {issue_date}"
+    draw.text((width/2, 620), date_text, fill=(0, 0, 0), anchor="mm", font=body_font)
     
     # Add certificate ID
     cert_id_text = f"Certificate ID: {certificate_id}"
-    draw.text((width/2, 420), cert_id_text, fill=(100, 100, 100), anchor="mm", font=header_font)
+    draw.text((width/2, 680), cert_id_text, fill=(102, 102, 102), anchor="mm", font=body_font)
+    
+    # Add verification text
+    verification_text = "This certificate can be verified on the Ludens Medical Academy website"
+    draw.text((width/2, 740), verification_text, fill=(120, 120, 120), anchor="mm", font=body_font)
     
     # Add signature line
-    draw.line([(200, 500), (600, 500)], fill=(0, 0, 0), width=1)
+    draw.line([(width/2 - 200, 800), (width/2 + 200, 800)], fill=(0, 0, 0), width=1)
     signature_text = "Authorized Signature"
-    draw.text((400, 520), signature_text, fill=(0, 0, 0), anchor="mm", font=header_font)
+    draw.text((width/2, 830), signature_text, fill=(0, 0, 0), anchor="mm", font=body_font)
     
-    # Save to BytesIO object and return
+    # Add a decorative seal/badge
+    seal_size = 100
+    seal_x = width - 150
+    seal_y = height - 150
+    
+    # Draw a circular seal
+    for i in range(3):
+        radius = seal_size//2 - i*5
+        draw.ellipse(
+            [(seal_x - radius, seal_y - radius), (seal_x + radius, seal_y + radius)],
+            outline=(0, 51, 102),
+            width=2
+        )
+    
+    # Add text to the seal
+    draw.text((seal_x, seal_y), "LMA", fill=(0, 51, 102), anchor="mm", font=body_font)
+    
+    # Save to BytesIO
     img_io = io.BytesIO()
-    certificate.save(img_io, 'PNG')
+    certificate.save(img_io, 'PNG', quality=95)
     img_io.seek(0)
+    
     return img_io
 
 def get_stats(user_db, course_db, enrollment_db):

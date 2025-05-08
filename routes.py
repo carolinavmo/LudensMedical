@@ -2,7 +2,7 @@ import os
 import logging
 from datetime import datetime
 from io import BytesIO
-from flask import render_template, redirect, url_for, flash, request, jsonify, session, abort, send_file
+from flask import render_template, redirect, url_for, flash, request, jsonify, session, abort, send_file, json
 from werkzeug.utils import secure_filename
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -471,6 +471,42 @@ def admin_course_edit(course_id):
                           course=course,
                           modules=modules,
                           edit_mode=True)
+
+@app.route('/admin/courses/<int:course_id>/modules/reorder', methods=['POST'])
+@login_required
+def admin_modules_reorder(course_id):
+    if not current_user.is_admin():
+        return jsonify({'success': False, 'message': 'Access denied'}), 403
+    
+    course = course_db.get(course_id)
+    if not course:
+        return jsonify({'success': False, 'message': 'Course not found'}), 404
+    
+    try:
+        # Get the new module order data from the request
+        data = request.get_json()
+        if not data or 'modules' not in data:
+            return jsonify({'success': False, 'message': 'Invalid data format'}), 400
+        
+        modules_data = data['modules']
+        
+        # Update the order of each module
+        for module_data in modules_data:
+            module_id = int(module_data['module_id'])
+            new_order = int(module_data['order'])
+            
+            module = module_db.get(module_id)
+            if module and module.course_id == course_id:
+                module.order = new_order
+                logging.info(f"Updated module {module_id} order to {new_order}")
+            else:
+                logging.warning(f"Module {module_id} not found or doesn't belong to course {course_id}")
+        
+        return jsonify({'success': True, 'message': 'Module order updated successfully'})
+    
+    except Exception as e:
+        logging.error(f"Error reordering modules: {str(e)}")
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
 
 @app.route('/admin/courses/<int:course_id>/delete', methods=['POST'])
 @login_required
