@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+
+{% block title %}Ludens Medical Academy - Medical Learning Platform{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="bg-gradient-to-b from-white to-primary-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+        <div class="lg:grid lg:grid-cols-12 lg:gap-8">
+            <div class="sm:text-center md:max-w-2xl md:mx-auto lg:col-span-6 lg:text-left">
+                <h1 class="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
+                    <span class="block">Advance Your</span>
+                    <span class="block text-primary-600">Medical Career</span>
+                </h1>
+                <p class="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
+                    Ludens Medical Academy offers comprehensive online courses for healthcare professionals designed to enhance your skills and advance your career.
+                </p>
+                <div class="mt-8 sm:flex sm:justify-center lg:justify-start">
+                    <div class="rounded-md shadow">
+                        <a href="{{ url_for('courses') }}" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 md:py-4 md:text-lg md:px-10">
+                            Explore Courses
+                        </a>
+                    </div>
+                    <div class="mt-3 sm:mt-0 sm:ml-3">
+                        {% if current_user.is_authenticated %}
+                            <a href="{{ url_for('dashboard') }}" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200 md:py-4 md:text-lg md:px-10">
+                                My Dashboard
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('signup') }}" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200 md:py-4 md:text-lg md:px-10">
+                                Sign Up
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="mt-12 relative sm:max-w-lg sm:mx-auto lg:mt-0 lg:max-w-none lg:mx-0 lg:col-span-6 lg:flex lg:items-center">
+                <div class="relative mx-auto w-full rounded-lg shadow-lg overflow-hidden">
+                    <img class="w-full" 
+                         src="https://pixabay.com/get/gc663b17b893a424a56f26dc3cb6f25a5518c9ac5bba7a05f57b489dd367a9bc790abf6a104a420d154a382fa095091e8fb2c1c1b227e276aee673f45afdc2e78_1280.jpg" 
+                         alt="Medical professionals learning">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="py-12 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="lg:text-center">
+            <h2 class="text-base text-primary-600 font-semibold tracking-wide uppercase">Benefits</h2>
+            <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+                Why Choose Ludens Medical Academy
+            </p>
+            <p class="mt-4 max-w-2xl text-xl text-gray-500 lg:mx-auto">
+                Our platform offers specialized courses designed specifically for medical professionals.
+            </p>
+        </div>
+
+        <div class="mt-10">
+            <div class="space-y-10 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-10">
+                <div class="relative">
+                    <div class="absolute flex items-center justify-center h-12 w-12 rounded-md bg-primary-500 text-white">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                        </svg>
+                    </div>
+                    <div class="ml-16">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Expert-Led Courses</h3>
+                        <p class="mt-2 text-base text-gray-500">
+                            All our courses are developed and taught by practicing medical professionals with years of clinical experience.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <div class="absolute flex items-center justify-center h-12 w-12 rounded-md bg-primary-500 text-white">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                    </div>
+                    <div class="ml-16">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Accredited Content</h3>
+                        <p class="mt-2 text-base text-gray-500">
+                            Our courses follow the latest medical guidelines and many offer continuing education credits.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <div class="absolute flex items-center justify-center h-12 w-12 rounded-md bg-primary-500 text-white">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </div>
+                    <div class="ml-16">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Learn at Your Pace</h3>
+                        <p class="mt-2 text-base text-gray-500">
+                            Access course materials anytime, anywhere. Perfect for busy healthcare professionals with demanding schedules.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <div class="absolute flex items-center justify-center h-12 w-12 rounded-md bg-primary-500 text-white">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                        </svg>
+                    </div>
+                    <div class="ml-16">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Interactive Learning</h3>
+                        <p class="mt-2 text-base text-gray-500">
+                            Engage with interactive case studies, quizzes, and simulations designed to enhance clinical reasoning.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Featured Courses -->
+<div class="bg-gray-50 py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center">
+            <h2 class="text-base text-primary-600 font-semibold tracking-wide uppercase">Curriculum</h2>
+            <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+                Featured Courses
+            </p>
+            <p class="mt-4 max-w-2xl text-xl text-gray-500 mx-auto">
+                Explore our most popular courses designed for healthcare professionals.
+            </p>
+        </div>
+
+        <div class="mt-10">
+            <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                {% if featured_courses %}
+                    {% for course in featured_courses %}
+                        <div class="bg-white overflow-hidden shadow-lg rounded-lg course-card">
+                            <div class="relative pb-1/2">
+                                {% if course.image_url %}
+                                    <img class="absolute h-full w-full object-cover" src="{{ course.image_url }}" alt="{{ course.title }}">
+                                {% else %}
+                                    <img class="absolute h-full w-full object-cover" src="https://pixabay.com/get/gd94aa9c49cebbf1e2703df2bcdc23385fefe9302ce05757e951bfc049d6277394cb44a2fe5a8699b4ca759e1b0db4d6d81f92b31b2fdf8791d882677defac728_1280.jpg" alt="{{ course.title }}">
+                                {% endif %}
+                            </div>
+                            <div class="px-6 py-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-primary-100 text-primary-800">
+                                        {{ course.level }}
+                                    </span>
+                                    <span class="text-gray-600 text-sm">
+                                        {{ course.category }}
+                                    </span>
+                                </div>
+                                <div class="font-bold text-xl mt-2 text-gray-900">{{ course.title }}</div>
+                                <p class="text-gray-600 text-sm mt-2">
+                                    {{ course.description[:100] }}{% if course.description|length > 100 %}...{% endif %}
+                                </p>
+                            </div>
+                            <div class="px-6 pt-2 pb-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-primary-600 font-bold">${{ course.price }}</span>
+                                    <a href="{{ url_for('course_detail', course_id=course.id) }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
+                                        View Course
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-span-3 text-center py-12">
+                        <p class="text-gray-500">No courses available at the moment. Check back soon!</p>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="mt-10 text-center">
+                <a href="{{ url_for('courses') }}" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
+                    View All Courses
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Testimonials -->
+<div class="py-12 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center">
+            <h2 class="text-base text-primary-600 font-semibold tracking-wide uppercase">Testimonials</h2>
+            <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+                What Our Students Say
+            </p>
+        </div>
+        
+        <div class="mt-10">
+            <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
+                <div class="bg-primary-50 rounded-lg p-6 shadow-sm">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <svg class="h-6 w-6 text-primary-400" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-base text-gray-500">
+                                "The Advanced Cardiac Life Support course was exceptional! The content was comprehensive and the interactive simulations really helped me gain confidence in my clinical decision-making."
+                            </p>
+                            <div class="mt-4">
+                                <div class="text-base font-medium text-gray-900">Dr. Sarah Johnson</div>
+                                <div class="text-sm text-gray-500">Emergency Medicine Physician</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-primary-50 rounded-lg p-6 shadow-sm">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <svg class="h-6 w-6 text-primary-400" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-base text-gray-500">
+                                "As a nurse practitioner, the pharmacology update course has been invaluable for my daily practice. The flexibility to learn at my own pace made it possible to balance work and study."
+                            </p>
+                            <div class="mt-4">
+                                <div class="text-base font-medium text-gray-900">Michael Rodriguez, NP</div>
+                                <div class="text-sm text-gray-500">Family Practice</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-primary-50 rounded-lg p-6 shadow-sm">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <svg class="h-6 w-6 text-primary-400" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-base text-gray-500">
+                                "The certification I earned through Ludens Medical Academy helped me secure a promotion at my hospital. The curriculum was challenging but incredibly rewarding!"
+                            </p>
+                            <div class="mt-4">
+                                <div class="text-base font-medium text-gray-900">Dr. James Wong</div>
+                                <div class="text-sm text-gray-500">Cardiology Fellow</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CTA Section -->
+<div class="bg-primary-700">
+    <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8 lg:flex lg:items-center lg:justify-between">
+        <h2 class="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            <span class="block">Ready to advance your medical career?</span>
+            <span class="block text-primary-200">Start learning today!</span>
+        </h2>
+        <div class="mt-8 flex lg:mt-0 lg:flex-shrink-0">
+            <div class="inline-flex rounded-md shadow">
+                <a href="{{ url_for('courses') }}" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-primary-600 bg-white hover:bg-primary-50">
+                    Explore Courses
+                </a>
+            </div>
+            <div class="ml-3 inline-flex rounded-md shadow">
+                <a href="{{ url_for('signup') }}" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-500">
+                    Sign Up
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

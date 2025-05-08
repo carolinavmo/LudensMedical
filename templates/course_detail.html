@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ course.title }} - Ludens Medical Academy{% endblock %}
+
+{% block content %}
+<div class="bg-white">
+    <!-- Course Header -->
+    <div class="bg-primary-700">
+        <div class="max-w-7xl mx-auto py-10 px-4 sm:py-16 sm:px-6 lg:px-8">
+            <div class="lg:grid lg:grid-cols-2 lg:gap-8 items-center">
+                <div>
+                    <h1 class="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+                        {{ course.title }}
+                    </h1>
+                    <p class="mt-4 text-xl text-primary-100">
+                        {{ course.category|replace('_', ' ')|title }} | {{ course.level|title }} Level
+                    </p>
+                    <div class="mt-6 flex items-center">
+                        <div class="flex-shrink-0">
+                            {% if instructor and instructor.profile_picture %}
+                                <img class="h-10 w-10 rounded-full" src="{{ instructor.profile_picture }}" alt="{{ instructor.get_full_name() }}">
+                            {% else %}
+                                <span class="h-10 w-10 rounded-full bg-primary-300 flex items-center justify-center text-white">
+                                    {{ instructor.first_name[0] if instructor else 'I' }}
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-white">
+                                Instructor: {{ instructor.get_full_name() if instructor else 'Unknown' }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8 lg:mt-0">
+                    <div class="bg-white rounded-lg shadow-xl overflow-hidden">
+                        <div class="px-6 py-8">
+                            <div class="flex items-center justify-between">
+                                <h2 class="text-lg font-medium text-gray-900">Course Details</h2>
+                                <span class="text-2xl font-bold text-primary-600">${{ course.price }}</span>
+                            </div>
+                            <div class="mt-4 space-y-3">
+                                <div class="flex items-center text-sm text-gray-500">
+                                    <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                                    </svg>
+                                    {{ modules|length }} Modules
+                                </div>
+                                <div class="flex items-center text-sm text-gray-500">
+                                    <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                                    </svg>
+                                    Lifetime Access
+                                </div>
+                                <div class="flex items-center text-sm text-gray-500">
+                                    <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                                    </svg>
+                                    Certificate of Completion
+                                </div>
+                            </div>
+                            
+                            {% if enrolled %}
+                                <div class="mt-6">
+                                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                        <div class="bg-primary-600 h-2.5 rounded-full" style="width: {{ progress }}%"></div>
+                                    </div>
+                                    <p class="mt-2 text-sm text-gray-500">
+                                        Your progress: {{ progress }}% complete
+                                    </p>
+                                </div>
+                                <div class="mt-5">
+                                    <a href="#module-content" class="w-full flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                        Continue Learning
+                                    </a>
+                                </div>
+                            {% else %}
+                                <div class="mt-8">
+                                    <form action="{{ url_for('enroll', course_id=course.id) }}" method="POST">
+                                        <button type="submit" class="w-full flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                            Enroll Now
+                                        </button>
+                                    </form>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Content -->
+    <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        <div class="lg:grid lg:grid-cols-3 lg:gap-8">
+            <!-- Left Sidebar - Course Details -->
+            <div class="col-span-1">
+                <div class="sticky top-8">
+                    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                        <div class="px-4 py-5 sm:px-6">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900">About This Course</h3>
+                        </div>
+                        <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
+                            <dl class="sm:divide-y sm:divide-gray-200">
+                                <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                    <dt class="text-sm font-medium text-gray-500">Category</dt>
+                                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ course.category|replace('_', ' ')|title }}</dd>
+                                </div>
+                                <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                    <dt class="text-sm font-medium text-gray-500">Level</dt>
+                                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ course.level|title }}</dd>
+                                </div>
+                                <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                    <dt class="text-sm font-medium text-gray-500">Instructor</dt>
+                                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ instructor.get_full_name() if instructor else 'Unknown' }}</dd>
+                                </div>
+                                <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                    <dt class="text-sm font-medium text-gray-500">Price</dt>
+                                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">${{ course.price }}</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Content - Course Modules -->
+            <div class="mt-12 lg:mt-0 lg:col-span-2">
+                <div class="prose prose-primary prose-lg text-gray-500 mx-auto">
+                    <h2>Course Description</h2>
+                    <p>{{ course.description }}</p>
+                    
+                    {% if modules %}
+                        <h2 id="module-content" class="mt-12">Course Modules</h2>
+                        <div class="mt-4 space-y-4">
+                            {% for module in modules %}
+                                <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                                    <div class="px-4 py-5 sm:px-6 bg-gray-50">
+                                        <h3 class="text-lg leading-6 font-medium text-gray-900">
+                                            Module {{ module.order }}: {{ module.title }}
+                                        </h3>
+                                    </div>
+                                    <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+                                        <div class="prose prose-primary prose-sm text-gray-500">
+                                            {{ module.content|safe }}
+                                        </div>
+                                        
+                                        <div class="mt-6 flex flex-wrap gap-4">
+                                            {% if module.video_url %}
+                                                <a href="{{ module.video_url }}" target="_blank" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                                    <svg class="mr-2 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                                                    </svg>
+                                                    Watch Video
+                                                </a>
+                                            {% endif %}
+                                            
+                                            {% if module.pdf_url %}
+                                                <a href="{{ module.pdf_url }}" target="_blank" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                                    <svg class="mr-2 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clip-rule="evenodd" />
+                                                    </svg>
+                                                    Download PDF
+                                                </a>
+                                            {% endif %}
+                                            
+                                            {% if enrolled %}
+                                                <button data-module-course="{{ course.id }}" data-module-progress="{{ (module.order / modules|length * 100)|int }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                                                    Mark as Completed
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="mt-8 bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-yellow-700">
+                                        No modules are currently available for this course. Please check back later.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification for completion -->
+    <div id="completion-notification" class="fixed bottom-0 right-0 m-6 hidden">
+        <div class="bg-green-50 p-4 rounded-lg shadow-lg border border-green-200">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-green-800">
+                        Congratulations! You've completed this course. Your certificate is now available.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Progress tracking for the current course
+        const courseId = {{ course.id }};
+        const progressBars = document.querySelectorAll(`[data-progress-course="${courseId}"]`);
+    });
+</script>
+{% endblock %}

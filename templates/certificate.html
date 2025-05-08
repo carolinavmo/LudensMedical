@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Certificate - {{ course.title }} - Ludens Medical Academy{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-3xl mx-auto">
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+            <!-- Certificate Header -->
+            <div class="bg-primary-700 px-6 py-4 text-center">
+                <h1 class="text-xl font-bold text-white">
+                    Ludens Medical Academy
+                </h1>
+                <p class="text-primary-100">
+                    Certificate of Completion
+                </p>
+            </div>
+            
+            <!-- Certificate Content -->
+            <div class="p-8 certificate">
+                <div class="text-center">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-6">Certificate of Completion</h2>
+                    
+                    <p class="text-lg text-gray-700 mt-6">This certifies that</p>
+                    <p class="text-2xl font-bold text-primary-700 my-4">{{ user.get_full_name() }}</p>
+                    
+                    <p class="text-lg text-gray-700 mt-6">has successfully completed the course</p>
+                    <p class="text-2xl font-bold text-primary-700 my-4">"{{ course.title }}"</p>
+                    
+                    <p class="text-lg text-gray-700 mt-8">Issued on {{ certificate.issue_date.strftime('%B %d, %Y') }}</p>
+                    
+                    <p class="text-sm text-gray-500 mt-4">Certificate ID: {{ certificate.id }}</p>
+                    
+                    <div class="mt-10 border-t border-gray-300 pt-4">
+                        <p class="text-lg font-medium text-gray-900">Authorized Signature</p>
+                        <p class="text-sm text-gray-600">Dr. John Smith</p>
+                        <p class="text-sm text-gray-600">Ludens Medical Academy</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Certificate Actions -->
+            <div class="px-6 py-4 bg-gray-50 flex justify-center space-x-4">
+                <a href="{{ url_for('download_certificate', certificate_id=certificate.id) }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
+                    <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                    Download Certificate
+                </a>
+                <a href="{{ url_for('dashboard') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50">
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

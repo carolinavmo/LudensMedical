@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - Ludens Medical Academy{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50">
+    <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        <div class="lg:text-center">
+            <h1 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+                Your Profile
+            </h1>
+            <p class="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
+                Manage your personal information and view your achievements
+            </p>
+        </div>
+
+        <!-- Profile Overview -->
+        <div class="mt-10 bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+                <div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Personal Information</h3>
+                    <p class="mt-1 max-w-2xl text-sm text-gray-500">Personal details and learning progress.</p>
+                </div>
+                <a href="{{ url_for('profile_edit') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
+                    Edit Profile
+                </a>
+            </div>
+            <div class="border-t border-gray-200">
+                <dl>
+                    <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-gray-500">Full name</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ current_user.get_full_name() }}</dd>
+                    </div>
+                    <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-gray-500">Username</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ current_user.username }}</dd>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-gray-500">Email address</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ current_user.email }}</dd>
+                    </div>
+                    <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-gray-500">Member since</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ current_user.created_at.strftime('%B %d, %Y') }}</dd>
+                    </div>
+                    {% if current_user.bio %}
+                        <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt class="text-sm font-medium text-gray-500">About</dt>
+                            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ current_user.bio }}</dd>
+                        </div>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+
+        <!-- Education & Certificates -->
+        <div class="mt-10">
+            <h2 class="text-2xl font-bold text-gray-900">Your Courses & Certificates</h2>
+            
+            <div class="mt-6">
+                <div class="bg-white shadow overflow-hidden sm:rounded-md">
+                    <div class="px-4 py-5 sm:px-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Enrolled Courses</h3>
+                        <p class="mt-1 max-w-2xl text-sm text-gray-500">You are currently enrolled in {{ courses|length }} course(s).</p>
+                    </div>
+                    <ul role="list" class="divide-y divide-gray-200">
+                        {% if courses %}
+                            {% for course in courses %}
+                                <li>
+                                    <a href="{{ url_for('course_detail', course_id=course.id) }}" class="block hover:bg-gray-50">
+                                        <div class="px-4 py-4 sm:px-6">
+                                            <div class="flex items-center justify-between">
+                                                <p class="text-sm font-medium text-primary-600 truncate">{{ course.title }}</p>
+                                                <div class="ml-2 flex-shrink-0 flex">
+                                                    <p class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary-100 text-primary-800">
+                                                        {{ course.level|title }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="mt-2 sm:flex sm:justify-between">
+                                                <div class="sm:flex">
+                                                    <p class="flex items-center text-sm text-gray-500">
+                                                        <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                                                        </svg>
+                                                        {{ course.category|replace('_', ' ')|title }}
+                                                    </p>
+                                                </div>
+                                                <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
+                                                    <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                                                    </svg>
+                                                    <p>
+                                                        Continue Learning
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        {% else %}
+                            <li class="px-4 py-5 sm:px-6 text-center text-gray-500">
+                                You are not enrolled in any courses yet.
+                                <div class="mt-3">
+                                    <a href="{{ url_for('courses') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
+                                        Browse Courses
+                                    </a>
+                                </div>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="mt-8">
+                <div class="bg-white shadow overflow-hidden sm:rounded-md">
+                    <div class="px-4 py-5 sm:px-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Your Certificates</h3>
+                        <p class="mt-1 max-w-2xl text-sm text-gray-500">You have earned {{ certificates|length }} certificate(s).</p>
+                    </div>
+                    
+                    {% if certificates %}
+                        <div class="p-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                            {% for certificate in certificates %}
+                                {% set course = certificate_courses[loop.index0] if loop.index0 < certificate_courses|length else None %}
+                                {% if course %}
+                                    <div class="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200">
+                                        <div class="p-4 certificate">
+                                            <div class="text-center">
+                                                <h3 class="text-lg font-bold text-primary-800">Certificate of Completion</h3>
+                                                <p class="mt-2 text-sm text-gray-600">This certifies that</p>
+                                                <p class="mt-1 text-base font-medium text-gray-900">{{ current_user.get_full_name() }}</p>
+                                                <p class="mt-2 text-sm text-gray-600">has successfully completed the course</p>
+                                                <p class="mt-1 text-sm font-medium text-primary-700">{{ course.title }}</p>
+                                                <p class="mt-2 text-xs text-gray-500">Issued on: {{ certificate.issue_date.strftime('%B %d, %Y') }}</p>
+                                            </div>
+                                            
+                                            <div class="mt-4 flex justify-center space-x-3">
+                                                <a href="{{ url_for('view_certificate', certificate_id=certificate.id) }}" class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                                    View
+                                                </a>
+                                                <a href="{{ url_for('download_certificate', certificate_id=certificate.id) }}" class="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                                                    Download
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="px-4 py-5 sm:px-6 text-center text-gray-500">
+                            You haven't earned any certificates yet. Complete a course to earn your first certificate.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

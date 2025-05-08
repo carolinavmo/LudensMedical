@@ -1,0 +1,926 @@
+import os
+import logging
+from datetime import datetime
+from io import BytesIO
+from flask import render_template, redirect, url_for, flash, request, jsonify, session, abort, send_file
+from flask_login import login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
+from urllib.parse import urlparse
+from app import app
+from models import User, Course, Module, Quiz, QuizQuestion, Enrollment, Certificate
+from models import user_db, course_db, module_db, quiz_db, question_db, enrollment_db, certificate_db
+from forms import (LoginForm, SignupForm, ResetPasswordRequestForm, ResetPasswordForm, 
+                  CourseForm, ModuleForm, QuizForm, QuestionForm, QuizSubmissionForm,
+                  ProfileForm, PasswordChangeForm, UserForm)
+from utils import (generate_reset_token, find_user_by_email, find_user_by_username,
+                  get_user_courses, get_user_enrollments, get_user_certificates,
+                  get_course_modules, get_next_id, filter_courses, calculate_course_progress,
+                  generate_certificate, get_stats)
+
+# Public routes
+@app.route('/')
+def index():
+    # Get 3 featured courses for the homepage
+    featured_courses = list(course_db.values())[:3] if course_db else []
+    return render_template('index.html', featured_courses=featured_courses)
+
+@app.route('/courses')
+def courses():
+    category = request.args.get('category')
+    level = request.args.get('level')
+    search = request.args.get('search')
+    
+    all_courses = list(course_db.values())
+    filtered_courses = filter_courses(all_courses, category, level, search)
+    
+    # Get categories and levels for filter dropdowns
+    categories = sorted(set(c.category for c in all_courses))
+    levels = sorted(set(c.level for c in all_courses))
+    
+    return render_template('courses.html', 
+                          courses=filtered_courses, 
+                          categories=categories, 
+                          levels=levels,
+                          current_category=category,
+                          current_level=level,
+                          search=search)
+
+@app.route('/courses/<int:course_id>')
+def course_detail(course_id):
+    course = course_db.get(course_id)
+    if not course:
+        flash('Course not found', 'error')
+        return redirect(url_for('courses'))
+    
+    modules = get_course_modules(course_id, module_db)
+    instructor = user_db.get(course.instructor_id)
+    
+    # Check if user is enrolled
+    enrolled = False
+    progress = 0
+    if current_user.is_authenticated:
+        for enrollment in enrollment_db.values():
+            if enrollment.user_id == current_user.id and enrollment.course_id == course_id:
+                enrolled = True
+                progress = enrollment.progress
+                break
+    
+    return render_template('course_detail.html', 
+                          course=course, 
+                          modules=modules, 
+                          instructor=instructor,
+                          enrolled=enrolled,
+                          progress=progress)
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = find_user_by_email(form.email.data, user_db)
+        if user is None or not check_password_hash(user.password_hash, form.password.data):
+            flash('Invalid email or password', 'error')
+            return redirect(url_for('login'))
+        
+        login_user(user, remember=form.remember_me.data)
+        next_page = request.args.get('next')
+        if not next_page or urlparse(next_page).netloc != '':
+            if user.is_admin():
+                next_page = url_for('admin_dashboard')
+            else:
+                next_page = url_for('dashboard')
+        return redirect(next_page)
+    
+    return render_template('login.html', form=form)
+
+@app.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('index'))
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    
+    form = SignupForm()
+    if form.validate_on_submit():
+        # Check if email already exists
+        if find_user_by_email(form.email.data, user_db):
+            flash('Email already registered', 'error')
+            return redirect(url_for('signup'))
+        
+        # Check if username already exists
+        if find_user_by_username(form.username.data, user_db):
+            flash('Username already taken', 'error')
+            return redirect(url_for('signup'))
+        
+        # Create new user
+        user_id = get_next_id(user_db)
+        user = User(
+            id=user_id,
+            username=form.username.data,
+            email=form.email.data,
+            password_hash=generate_password_hash(form.password.data),
+            role='student',
+            first_name=form.first_name.data,
+            last_name=form.last_name.data,
+            created_at=datetime.now()
+        )
+        user_db[user_id] = user
+        
+        flash('Account created successfully! You can now log in.', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('signup.html', form=form)
+
+@app.route('/reset_password_request', methods=['GET', 'POST'])
+def reset_password_request():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    
+    form = ResetPasswordRequestForm()
+    if form.validate_on_submit():
+        user = find_user_by_email(form.email.data, user_db)
+        if user:
+            # Generate token (in a real app, you would send this by email)
+            token = generate_reset_token()
+            session['reset_token'] = token
+            session['reset_email'] = user.email
+            
+            # In a real application, you would send an email with the reset link
+            flash(f'Password reset instructions have been sent to {user.email}', 'info')
+            # For demo purposes, redirect directly to reset page
+            return redirect(url_for('reset_password', token=token))
+        else:
+            flash('Email not found', 'error')
+    
+    return render_template('reset_password_request.html', form=form)
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    
+    # Check if token is valid
+    if not session.get('reset_token') or session.get('reset_token') != token:
+        flash('Invalid or expired password reset token', 'error')
+        return redirect(url_for('reset_password_request'))
+    
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        user = find_user_by_email(session['reset_email'], user_db)
+        if user:
+            user.password_hash = generate_password_hash(form.password.data)
+            
+            # Clear session
+            session.pop('reset_token', None)
+            session.pop('reset_email', None)
+            
+            flash('Your password has been reset', 'success')
+            return redirect(url_for('login'))
+    
+    return render_template('reset_password.html', form=form)
+
+# Student routes
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    if current_user.is_admin():
+        return redirect(url_for('admin_dashboard'))
+    
+    enrollments = get_user_enrollments(current_user.id, enrollment_db)
+    courses = [course_db.get(e.course_id) for e in enrollments]
+    courses = [c for c in courses if c]  # Filter out None values
+    
+    # Get progress for each course
+    progress = {}
+    for enrollment in enrollments:
+        progress[enrollment.course_id] = enrollment.progress
+    
+    # Get certificates
+    certificates = get_user_certificates(current_user.id, certificate_db)
+    certificate_courses = [course_db.get(c.course_id) for c in certificates]
+    certificate_courses = [c for c in certificate_courses if c]  # Filter out None values
+    
+    return render_template('dashboard.html', 
+                          courses=courses, 
+                          progress=progress, 
+                          certificates=certificates,
+                          certificate_courses=certificate_courses)
+
+@app.route('/enroll/<int:course_id>', methods=['POST'])
+@login_required
+def enroll(course_id):
+    course = course_db.get(course_id)
+    if not course:
+        flash('Course not found', 'error')
+        return redirect(url_for('courses'))
+    
+    # Check if already enrolled
+    for enrollment in enrollment_db.values():
+        if enrollment.user_id == current_user.id and enrollment.course_id == course_id:
+            flash('You are already enrolled in this course', 'info')
+            return redirect(url_for('course_detail', course_id=course_id))
+    
+    # Create new enrollment
+    enrollment_id = get_next_id(enrollment_db)
+    enrollment = Enrollment(
+        id=enrollment_id,
+        user_id=current_user.id,
+        course_id=course_id,
+        progress=0,
+        completed=False,
+        created_at=datetime.now()
+    )
+    enrollment_db[enrollment_id] = enrollment
+    
+    flash(f'Successfully enrolled in {course.title}', 'success')
+    return redirect(url_for('dashboard'))
+
+@app.route('/profile')
+@login_required
+def profile():
+    enrollments = get_user_enrollments(current_user.id, enrollment_db)
+    courses = [course_db.get(e.course_id) for e in enrollments]
+    courses = [c for c in courses if c]  # Filter out None values
+    
+    # Get certificates
+    certificates = get_user_certificates(current_user.id, certificate_db)
+    certificate_courses = [course_db.get(c.course_id) for c in certificates]
+    certificate_courses = [c for c in certificate_courses if c]  # Filter out None values
+    
+    return render_template('profile.html', 
+                          user=current_user, 
+                          courses=courses, 
+                          certificates=certificates,
+                          certificate_courses=certificate_courses)
+
+@app.route('/profile/edit', methods=['GET', 'POST'])
+@login_required
+def profile_edit():
+    form = ProfileForm(obj=current_user)
+    
+    if form.validate_on_submit():
+        # Check if email is changed and already exists
+        if form.email.data != current_user.email and find_user_by_email(form.email.data, user_db):
+            flash('Email already registered', 'error')
+            return redirect(url_for('profile_edit'))
+        
+        # Check if username is changed and already exists
+        if form.username.data != current_user.username and find_user_by_username(form.username.data, user_db):
+            flash('Username already taken', 'error')
+            return redirect(url_for('profile_edit'))
+        
+        # Update user data
+        current_user.first_name = form.first_name.data
+        current_user.last_name = form.last_name.data
+        current_user.username = form.username.data
+        current_user.email = form.email.data
+        current_user.bio = form.bio.data
+        
+        flash('Profile updated successfully', 'success')
+        return redirect(url_for('profile'))
+    
+    return render_template('profile_edit.html', form=form)
+
+@app.route('/update_progress/<int:course_id>/<int:progress>', methods=['POST'])
+@login_required
+def update_progress(course_id, progress):
+    if progress < 0 or progress > 100:
+        return jsonify({"success": False, "message": "Invalid progress value"}), 400
+    
+    # Find enrollment
+    enrollment = None
+    for e in enrollment_db.values():
+        if e.user_id == current_user.id and e.course_id == course_id:
+            enrollment = e
+            break
+    
+    if not enrollment:
+        return jsonify({"success": False, "message": "Not enrolled in this course"}), 404
+    
+    # Update progress
+    enrollment.progress = progress
+    enrollment.updated_at = datetime.now()
+    
+    # Mark as completed if 100%
+    if progress == 100 and not enrollment.completed:
+        enrollment.completed = True
+        
+        # Generate certificate if doesn't exist
+        certificate_exists = False
+        for cert in certificate_db.values():
+            if cert.user_id == current_user.id and cert.course_id == course_id:
+                certificate_exists = True
+                break
+        
+        if not certificate_exists:
+            certificate_id = get_next_id(certificate_db)
+            certificate = Certificate(
+                id=certificate_id,
+                user_id=current_user.id,
+                course_id=course_id,
+                issue_date=datetime.now()
+            )
+            certificate_db[certificate_id] = certificate
+    
+    return jsonify({"success": True})
+
+@app.route('/certificate/<int:certificate_id>')
+@login_required
+def view_certificate(certificate_id):
+    certificate = certificate_db.get(certificate_id)
+    if not certificate or certificate.user_id != current_user.id:
+        flash('Certificate not found', 'error')
+        return redirect(url_for('dashboard'))
+    
+    user = user_db.get(certificate.user_id)
+    course = course_db.get(certificate.course_id)
+    
+    return render_template('certificate.html', 
+                          certificate=certificate, 
+                          user=user, 
+                          course=course)
+
+@app.route('/certificate/<int:certificate_id>/download')
+@login_required
+def download_certificate(certificate_id):
+    certificate = certificate_db.get(certificate_id)
+    if not certificate or certificate.user_id != current_user.id:
+        flash('Certificate not found', 'error')
+        return redirect(url_for('dashboard'))
+    
+    user = user_db.get(certificate.user_id)
+    course = course_db.get(certificate.course_id)
+    
+    cert_img = generate_certificate(user, course, certificate.id)
+    return send_file(cert_img, 
+                     mimetype='image/png',
+                     as_attachment=True,
+                     download_name=f'certificate_{certificate.id}.png')
+
+# Admin routes
+@app.route('/admin/dashboard')
+@login_required
+def admin_dashboard():
+    if not current_user.is_admin():
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    stats = get_stats(user_db, course_db, enrollment_db)
+    
+    # Get popular courses with full course data
+    popular_courses = [(course_db.get(course_id), count) for course_id, count in stats['popular_courses']]
+    
+    return render_template('admin/dashboard.html', 
+                          stats=stats,
+                          popular_courses=popular_courses)
+
+@app.route('/admin/courses')
+@login_required
+def admin_courses():
+    if not current_user.is_admin():
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    courses = list(course_db.values())
+    
+    # Get enrollment counts for each course
+    enrollments = {}
+    for course in courses:
+        enrollments[course.id] = sum(1 for e in enrollment_db.values() if e.course_id == course.id)
+    
+    return render_template('admin/courses.html', 
+                          courses=courses,
+                          enrollments=enrollments)
+
+@app.route('/admin/courses/new', methods=['GET', 'POST'])
+@login_required
+def admin_course_new():
+    if not current_user.is_admin():
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    form = CourseForm()
+    if form.validate_on_submit():
+        course_id = get_next_id(course_db)
+        course = Course(
+            id=course_id,
+            title=form.title.data,
+            description=form.description.data,
+            category=form.category.data,
+            level=form.level.data,
+            price=form.price.data,
+            instructor_id=current_user.id,
+            image_url=form.image_url.data,
+            created_at=datetime.now()
+        )
+        course_db[course_id] = course
+        
+        flash('Course created successfully', 'success')
+        return redirect(url_for('admin_course_edit', course_id=course_id))
+    
+    return render_template('admin/course_edit.html', 
+                          form=form,
+                          course=None,
+                          modules=[],
+                          edit_mode=False)
+
+@app.route('/admin/courses/<int:course_id>/edit', methods=['GET', 'POST'])
+@login_required
+def admin_course_edit(course_id):
+    if not current_user.is_admin():
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    course = course_db.get(course_id)
+    if not course:
+        flash('Course not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    form = CourseForm(obj=course)
+    if form.validate_on_submit():
+        course.title = form.title.data
+        course.description = form.description.data
+        course.category = form.category.data
+        course.level = form.level.data
+        course.price = form.price.data
+        course.image_url = form.image_url.data
+        course.updated_at = datetime.now()
+        
+        flash('Course updated successfully', 'success')
+        return redirect(url_for('admin_course_edit', course_id=course_id))
+    
+    modules = get_course_modules(course_id, module_db)
+    
+    return render_template('admin/course_edit.html', 
+                          form=form,
+                          course=course,
+                          modules=modules,
+                          edit_mode=True)
+
+@app.route('/admin/courses/<int:course_id>/delete', methods=['POST'])
+@login_required
+def admin_course_delete(course_id):
+    if not current_user.is_admin():
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    course = course_db.get(course_id)
+    if not course:
+        flash('Course not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    # Delete course and related data
+    # First, get all related modules
+    modules_to_delete = [m.id for m in module_db.values() if m.course_id == course_id]
+    
+    # Delete quizzes and questions related to these modules
+    for quiz in list(quiz_db.values()):
+        if quiz.module_id in modules_to_delete:
+            # Delete questions for this quiz
+            for question_id in list(question_db.keys()):
+                if question_db[question_id].quiz_id == quiz.id:
+                    del question_db[question_id]
+            # Delete the quiz
+            del quiz_db[quiz.id]
+    
+    # Delete modules
+    for module_id in modules_to_delete:
+        if module_id in module_db:
+            del module_db[module_id]
+    
+    # Delete enrollments
+    for enrollment_id in list(enrollment_db.keys()):
+        if enrollment_db[enrollment_id].course_id == course_id:
+            del enrollment_db[enrollment_id]
+    
+    # Delete certificates
+    for certificate_id in list(certificate_db.keys()):
+        if certificate_db[certificate_id].course_id == course_id:
+            del certificate_db[certificate_id]
+    
+    # Finally, delete the course
+    del course_db[course_id]
+    
+    flash('Course and all related data deleted successfully', 'success')
+    return redirect(url_for('admin_courses'))
+
+@app.route('/admin/courses/<int:course_id>/modules/new', methods=['GET', 'POST'])
+@login_required
+def admin_module_new(course_id):
+    if not current_user.is_admin():
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    course = course_db.get(course_id)
+    if not course:
+        flash('Course not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    form = ModuleForm()
+    if form.validate_on_submit():
+        module_id = get_next_id(module_db)
+        module = Module(
+            id=module_id,
+            course_id=course_id,
+            title=form.title.data,
+            content=form.content.data,
+            order=form.order.data,
+            video_url=form.video_url.data,
+            pdf_url=form.pdf_url.data,
+            created_at=datetime.now()
+        )
+        module_db[module_id] = module
+        
+        flash('Module created successfully', 'success')
+        return redirect(url_for('admin_course_edit', course_id=course_id))
+    
+    # Set default order as the next one
+    existing_modules = get_course_modules(course_id, module_db)
+    form.order.data = len(existing_modules) + 1
+    
+    return render_template('admin/module_edit.html',
+                          form=form,
+                          course=course,
+                          module=None,
+                          edit_mode=False)
+
+@app.route('/admin/modules/<int:module_id>/edit', methods=['GET', 'POST'])
+@login_required
+def admin_module_edit(module_id):
+    if not current_user.is_admin():
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    module = module_db.get(module_id)
+    if not module:
+        flash('Module not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    course = course_db.get(module.course_id)
+    if not course:
+        flash('Course not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    form = ModuleForm(obj=module)
+    if form.validate_on_submit():
+        module.title = form.title.data
+        module.content = form.content.data
+        module.order = form.order.data
+        module.video_url = form.video_url.data
+        module.pdf_url = form.pdf_url.data
+        module.updated_at = datetime.now()
+        
+        flash('Module updated successfully', 'success')
+        return redirect(url_for('admin_course_edit', course_id=course.id))
+    
+    # Get quiz if exists
+    quiz = next((q for q in quiz_db.values() if q.module_id == module_id), None)
+    
+    return render_template('admin/module_edit.html',
+                          form=form,
+                          course=course,
+                          module=module,
+                          quiz=quiz,
+                          edit_mode=True)
+
+@app.route('/admin/modules/<int:module_id>/delete', methods=['POST'])
+@login_required
+def admin_module_delete(module_id):
+    if not current_user.is_admin():
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    module = module_db.get(module_id)
+    if not module:
+        flash('Module not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    course_id = module.course_id
+    
+    # Delete quizzes and questions related to this module
+    for quiz in list(quiz_db.values()):
+        if quiz.module_id == module_id:
+            # Delete questions for this quiz
+            for question_id in list(question_db.keys()):
+                if question_db[question_id].quiz_id == quiz.id:
+                    del question_db[question_id]
+            # Delete the quiz
+            del quiz_db[quiz.id]
+    
+    # Delete the module
+    del module_db[module_id]
+    
+    flash('Module and related data deleted successfully', 'success')
+    return redirect(url_for('admin_course_edit', course_id=course_id))
+
+@app.route('/admin/modules/<int:module_id>/quiz/new', methods=['GET', 'POST'])
+@login_required
+def admin_quiz_new(module_id):
+    if not current_user.is_admin():
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    module = module_db.get(module_id)
+    if not module:
+        flash('Module not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    course = course_db.get(module.course_id)
+    
+    # Check if a quiz already exists for this module
+    existing_quiz = next((q for q in quiz_db.values() if q.module_id == module_id), None)
+    if existing_quiz:
+        flash('A quiz already exists for this module', 'info')
+        return redirect(url_for('admin_quiz_edit', quiz_id=existing_quiz.id))
+    
+    form = QuizForm()
+    if form.validate_on_submit():
+        quiz_id = get_next_id(quiz_db)
+        quiz = Quiz(
+            id=quiz_id,
+            module_id=module_id,
+            title=form.title.data,
+            description=form.description.data,
+            passing_score=form.passing_score.data,
+            created_at=datetime.now()
+        )
+        quiz_db[quiz_id] = quiz
+        
+        flash('Quiz created successfully. Now add some questions.', 'success')
+        return redirect(url_for('admin_quiz_edit', quiz_id=quiz_id))
+    
+    return render_template('admin/quiz_edit.html',
+                          form=form,
+                          module=module,
+                          course=course,
+                          quiz=None,
+                          questions=[],
+                          edit_mode=False)
+
+@app.route('/admin/quiz/<int:quiz_id>/edit', methods=['GET', 'POST'])
+@login_required
+def admin_quiz_edit(quiz_id):
+    if not current_user.is_admin():
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    quiz = quiz_db.get(quiz_id)
+    if not quiz:
+        flash('Quiz not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    module = module_db.get(quiz.module_id)
+    if not module:
+        flash('Module not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    course = course_db.get(module.course_id)
+    
+    form = QuizForm(obj=quiz)
+    if form.validate_on_submit():
+        quiz.title = form.title.data
+        quiz.description = form.description.data
+        quiz.passing_score = form.passing_score.data
+        quiz.updated_at = datetime.now()
+        
+        flash('Quiz updated successfully', 'success')
+        return redirect(url_for('admin_quiz_edit', quiz_id=quiz_id))
+    
+    # Get questions for this quiz
+    questions = [q for q in question_db.values() if q.quiz_id == quiz_id]
+    questions = sorted(questions, key=lambda q: q.order)
+    
+    return render_template('admin/quiz_edit.html',
+                          form=form,
+                          module=module,
+                          course=course,
+                          quiz=quiz,
+                          questions=questions,
+                          edit_mode=True)
+
+@app.route('/admin/quiz/<int:quiz_id>/question/new', methods=['GET', 'POST'])
+@login_required
+def admin_question_new(quiz_id):
+    if not current_user.is_admin():
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    quiz = quiz_db.get(quiz_id)
+    if not quiz:
+        flash('Quiz not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    form = QuestionForm()
+    if form.validate_on_submit():
+        question_id = get_next_id(question_db)
+        
+        # Gather options
+        options = [
+            form.option1.data,
+            form.option2.data
+        ]
+        if form.option3.data:
+            options.append(form.option3.data)
+        if form.option4.data:
+            options.append(form.option4.data)
+        
+        question = QuizQuestion(
+            id=question_id,
+            quiz_id=quiz_id,
+            question=form.question.data,
+            options=options,
+            correct_answer=int(form.correct_answer.data),
+            order=form.order.data,
+            created_at=datetime.now()
+        )
+        question_db[question_id] = question
+        
+        flash('Question added successfully', 'success')
+        return redirect(url_for('admin_quiz_edit', quiz_id=quiz_id))
+    
+    # Set default order as the next one
+    existing_questions = [q for q in question_db.values() if q.quiz_id == quiz_id]
+    form.order.data = len(existing_questions) + 1
+    
+    # Get module and course for breadcrumbs
+    module = module_db.get(quiz.module_id)
+    course = course_db.get(module.course_id) if module else None
+    
+    return render_template('admin/question_edit.html',
+                          form=form,
+                          quiz=quiz,
+                          module=module,
+                          course=course,
+                          question=None,
+                          edit_mode=False)
+
+@app.route('/admin/question/<int:question_id>/edit', methods=['GET', 'POST'])
+@login_required
+def admin_question_edit(question_id):
+    if not current_user.is_admin():
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    question = question_db.get(question_id)
+    if not question:
+        flash('Question not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    quiz = quiz_db.get(question.quiz_id)
+    module = module_db.get(quiz.module_id) if quiz else None
+    course = course_db.get(module.course_id) if module else None
+    
+    # Pre-populate the form
+    form = QuestionForm(obj=question)
+    form.option1.data = question.options[0] if len(question.options) > 0 else ""
+    form.option2.data = question.options[1] if len(question.options) > 1 else ""
+    form.option3.data = question.options[2] if len(question.options) > 2 else ""
+    form.option4.data = question.options[3] if len(question.options) > 3 else ""
+    form.correct_answer.data = str(question.correct_answer)
+    
+    if form.validate_on_submit():
+        # Gather options
+        options = [
+            form.option1.data,
+            form.option2.data
+        ]
+        if form.option3.data:
+            options.append(form.option3.data)
+        if form.option4.data:
+            options.append(form.option4.data)
+        
+        question.question = form.question.data
+        question.options = options
+        question.correct_answer = int(form.correct_answer.data)
+        question.order = form.order.data
+        
+        flash('Question updated successfully', 'success')
+        return redirect(url_for('admin_quiz_edit', quiz_id=question.quiz_id))
+    
+    return render_template('admin/question_edit.html',
+                          form=form,
+                          quiz=quiz,
+                          module=module,
+                          course=course,
+                          question=question,
+                          edit_mode=True)
+
+@app.route('/admin/question/<int:question_id>/delete', methods=['POST'])
+@login_required
+def admin_question_delete(question_id):
+    if not current_user.is_admin():
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    question = question_db.get(question_id)
+    if not question:
+        flash('Question not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    quiz_id = question.quiz_id
+    
+    # Delete the question
+    del question_db[question_id]
+    
+    flash('Question deleted successfully', 'success')
+    return redirect(url_for('admin_quiz_edit', quiz_id=quiz_id))
+
+@app.route('/admin/users')
+@login_required
+def admin_users():
+    if not current_user.is_admin():
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    users = list(user_db.values())
+    
+    # Get enrollment counts for each user
+    enrollments = {}
+    for user in users:
+        enrollments[user.id] = sum(1 for e in enrollment_db.values() if e.user_id == user.id)
+    
+    return render_template('admin/users.html', 
+                          users=users,
+                          enrollments=enrollments)
+
+@app.route('/admin/users/<int:user_id>/edit', methods=['GET', 'POST'])
+@login_required
+def admin_user_edit(user_id):
+    if not current_user.is_admin():
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    user = user_db.get(user_id)
+    if not user:
+        flash('User not found', 'error')
+        return redirect(url_for('admin_users'))
+    
+    form = UserForm(obj=user)
+    if form.validate_on_submit():
+        # Check if email is changed and already exists
+        if form.email.data != user.email and find_user_by_email(form.email.data, user_db):
+            flash('Email already registered', 'error')
+            return redirect(url_for('admin_user_edit', user_id=user_id))
+        
+        # Check if username is changed and already exists
+        if form.username.data != user.username and find_user_by_username(form.username.data, user_db):
+            flash('Username already taken', 'error')
+            return redirect(url_for('admin_user_edit', user_id=user_id))
+        
+        # Update user data
+        user.first_name = form.first_name.data
+        user.last_name = form.last_name.data
+        user.username = form.username.data
+        user.email = form.email.data
+        user.role = form.role.data
+        
+        flash('User updated successfully', 'success')
+        return redirect(url_for('admin_users'))
+    
+    return render_template('admin/user_edit.html', form=form, user=user)
+
+@app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
+@login_required
+def admin_user_delete(user_id):
+    if not current_user.is_admin():
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    if user_id == current_user.id:
+        flash('You cannot delete your own account', 'error')
+        return redirect(url_for('admin_users'))
+    
+    user = user_db.get(user_id)
+    if not user:
+        flash('User not found', 'error')
+        return redirect(url_for('admin_users'))
+    
+    # Delete user's enrollments
+    for enrollment_id in list(enrollment_db.keys()):
+        if enrollment_db[enrollment_id].user_id == user_id:
+            del enrollment_db[enrollment_id]
+    
+    # Delete user's certificates
+    for certificate_id in list(certificate_db.keys()):
+        if certificate_db[certificate_id].user_id == user_id:
+            del certificate_db[certificate_id]
+    
+    # Delete the user
+    del user_db[user_id]
+    
+    flash('User and related data deleted successfully', 'success')
+    return redirect(url_for('admin_users'))
+
+# Error handlers
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return render_template('500.html'), 500

@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ 'Edit' if edit_mode else 'New' }} Module - Ludens Medical Academy{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Admin Header -->
+    <header class="bg-white shadow">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center">
+                <h1 class="text-3xl font-bold text-gray-900">
+                    {{ 'Edit Module' if edit_mode else 'New Module' }}
+                </h1>
+                <div class="flex space-x-4">
+                    <a href="{{ url_for('admin_course_edit', course_id=course.id) }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                        Back to Course
+                    </a>
+                    {% if edit_mode and quiz %}
+                    <a href="{{ url_for('admin_quiz_edit', quiz_id=quiz.id) }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                        Edit Quiz
+                    </a>
+                    {% elif edit_mode %}
+                    <a href="{{ url_for('admin_quiz_new', module_id=module.id) }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                        Add Quiz
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="md:grid md:grid-cols-3 md:gap-6">
+            <div class="md:col-span-1">
+                <div class="px-4 sm:px-0">
+                    <h3 class="text-lg font-medium leading-6 text-gray-900">Module Information</h3>
+                    <p class="mt-1 text-sm text-gray-600">
+                        Create or edit module content for this course.
+                    </p>
+                    <div class="mt-5">
+                        <h4 class="text-md font-medium text-gray-900">Course Details</h4>
+                        <dl class="mt-2 text-sm text-gray-600">
+                            <div class="mt-1">
+                                <dt class="font-medium">Title</dt>
+                                <dd>{{ course.title }}</dd>
+                            </div>
+                            <div class="mt-1">
+                                <dt class="font-medium">Category</dt>
+                                <dd>{{ course.category|replace('_', ' ')|title }}</dd>
+                            </div>
+                            <div class="mt-1">
+                                <dt class="font-medium">Level</dt>
+                                <dd>{{ course.level|title }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-5 md:mt-0 md:col-span-2">
+                <form action="{{ url_for('admin_module_edit', module_id=module.id) if edit_mode else url_for('admin_module_new', course_id=course.id) }}" method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="shadow sm:rounded-md sm:overflow-hidden">
+                        <div class="px-4 py-5 bg-white space-y-6 sm:p-6">
+                            <div class="grid grid-cols-6 gap-6">
+                                <div class="col-span-6">
+                                    <label for="title" class="block text-sm font-medium text-gray-700">Module Title</label>
+                                    {{ form.title(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md") }}
+                                    {% if form.title.errors %}
+                                        <div class="text-red-500 text-xs mt-1">
+                                            {% for error in form.title.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-span-6">
+                                    <label for="content" class="block text-sm font-medium text-gray-700">Content</label>
+                                    {{ form.content(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md", rows=10) }}
+                                    {% if form.content.errors %}
+                                        <div class="text-red-500 text-xs mt-1">
+                                            {% for error in form.content.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <p class="mt-1 text-xs text-gray-500">You can use HTML formatting in the content.</p>
+                                </div>
+
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="order" class="block text-sm font-medium text-gray-700">Order</label>
+                                    {{ form.order(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md") }}
+                                    {% if form.order.errors %}
+                                        <div class="text-red-500 text-xs mt-1">
+                                            {% for error in form.order.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <p class="mt-1 text-xs text-gray-500">Position of this module in the course (1, 2, 3, etc.)</p>
+                                </div>
+
+                                <div class="col-span-6">
+                                    <label for="video_url" class="block text-sm font-medium text-gray-700">Video URL (optional)</label>
+                                    {{ form.video_url(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md") }}
+                                    {% if form.video_url.errors %}
+                                        <div class="text-red-500 text-xs mt-1">
+                                            {% for error in form.video_url.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <p class="mt-1 text-xs text-gray-500">Link to a video for this module (YouTube, Vimeo, etc.)</p>
+                                </div>
+
+                                <div class="col-span-6">
+                                    <label for="pdf_url" class="block text-sm font-medium text-gray-700">PDF URL (optional)</label>
+                                    {{ form.pdf_url(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md") }}
+                                    {% if form.pdf_url.errors %}
+                                        <div class="text-red-500 text-xs mt-1">
+                                            {% for error in form.pdf_url.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <p class="mt-1 text-xs text-gray-500">Link to a downloadable PDF for this module</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="px-4 py-3 bg-gray-50 text-right sm:px-6 flex justify-between">
+                            {% if edit_mode %}
+                            <form action="{{ url_for('admin_module_delete', module_id=module.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this module? This action cannot be undone.');">
+                                <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                    Delete Module
+                                </button>
+                            </form>
+                            {% endif %}
+                            <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                {{ 'Save Changes' if edit_mode else 'Create Module' }}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

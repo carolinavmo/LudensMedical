@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+
+{% block title %}My Dashboard - Ludens Medical Academy{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50">
+    <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        <div class="lg:text-center">
+            <h1 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+                Welcome, {{ current_user.get_full_name() }}
+            </h1>
+            <p class="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
+                Track your progress and continue your medical education journey
+            </p>
+        </div>
+
+        <!-- Dashboard Overview -->
+        <div class="mt-10 bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+                <div>
+                    <h2 class="text-lg leading-6 font-medium text-gray-900">Your Learning Dashboard</h2>
+                    <p class="mt-1 max-w-2xl text-sm text-gray-500">Personal details and learning progress.</p>
+                </div>
+                <a href="{{ url_for('courses') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
+                    Browse Courses
+                </a>
+            </div>
+            <div class="border-t border-gray-200">
+                <dl>
+                    <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-gray-500">Full name</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ current_user.get_full_name() }}</dd>
+                    </div>
+                    <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-gray-500">Email address</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ current_user.email }}</dd>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-gray-500">Enrolled courses</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ courses|length }}</dd>
+                    </div>
+                    <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-gray-500">Earned certificates</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ certificates|length }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Enrolled Courses -->
+        <div class="mt-10">
+            <h2 class="text-xl font-bold text-gray-900">Your Enrolled Courses</h2>
+            {% if courses %}
+                <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {% for course in courses %}
+                        <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                            <div class="h-40 bg-gray-200 relative">
+                                {% if course.image_url %}
+                                    <img class="h-full w-full object-cover" src="{{ course.image_url }}" alt="{{ course.title }}">
+                                {% else %}
+                                    <img class="h-full w-full object-cover" src="https://pixabay.com/get/gea002c703b68579dabc8033e6ba4abaf4a887ee91baa23c3057bab94ce5bd9f9304827cc5d53785a297cc69926f47ad4810613e7ac1d3b0d1afeaca033140e87_1280.jpg" alt="{{ course.title }}">
+                                {% endif %}
+                            </div>
+                            <div class="p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="px-2 py-1 text-xs rounded-full bg-primary-100 text-primary-800">
+                                        {{ course.category|replace('_', ' ')|title }}
+                                    </span>
+                                    <span class="text-xs text-gray-500">{{ course.level|title }}</span>
+                                </div>
+                                <h3 class="text-lg font-medium text-gray-900 truncate">{{ course.title }}</h3>
+                                
+                                <div class="mt-4" data-progress-course="{{ course.id }}">
+                                    <div class="flex justify-between items-center text-sm text-gray-500 mb-1">
+                                        <span>Progress</span>
+                                        <span class="progress-text">{{ progress[course.id] }}%</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-bar-fill" style="width: {{ progress[course.id] }}%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-4 flex justify-between">
+                                    <a href="{{ url_for('course_detail', course_id=course.id) }}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                        Continue
+                                    </a>
+                                    {% if progress[course.id] == 100 %}
+                                        <span class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-green-700 bg-green-100">
+                                            <svg class="mr-1.5 h-4 w-4 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                            </svg>
+                                            Completed
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="mt-6 text-center py-10 bg-white rounded-lg shadow-sm">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    <h3 class="mt-2 text-lg font-medium text-gray-900">No courses yet</h3>
+                    <p class="mt-1 text-sm text-gray-500">Start your learning journey by enrolling in a course.</p>
+                    <div class="mt-6">
+                        <a href="{{ url_for('courses') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
+                            Explore Courses
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Your Certificates -->
+        <div class="mt-10">
+            <h2 class="text-xl font-bold text-gray-900">Your Certificates</h2>
+            {% if certificates %}
+                <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {% for certificate in certificates %}
+                        {% set course = certificate_courses[loop.index0] if loop.index0 < certificate_courses|length else None %}
+                        {% if course %}
+                            <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                                <div class="p-4 certificate">
+                                    <div class="text-center">
+                                        <h3 class="text-lg font-bold text-primary-800">Certificate of Completion</h3>
+                                        <p class="mt-2 text-sm text-gray-600">This certifies that</p>
+                                        <p class="mt-1 text-lg font-medium text-gray-900">{{ current_user.get_full_name() }}</p>
+                                        <p class="mt-2 text-sm text-gray-600">has successfully completed the course</p>
+                                        <p class="mt-1 text-base font-medium text-primary-700">{{ course.title }}</p>
+                                        <p class="mt-2 text-xs text-gray-500">Issued on: {{ certificate.issue_date.strftime('%B %d, %Y') }}</p>
+                                    </div>
+                                    
+                                    <div class="mt-4 flex justify-center">
+                                        <a href="{{ url_for('view_certificate', certificate_id=certificate.id) }}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 mr-4">
+                                            View
+                                        </a>
+                                        <a href="{{ url_for('download_certificate', certificate_id=certificate.id) }}" class="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                                            Download
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="mt-6 text-center py-10 bg-white rounded-lg shadow-sm">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 class="mt-2 text-lg font-medium text-gray-900">No certificates yet</h3>
+                    <p class="mt-1 text-sm text-gray-500">Complete a course to earn your first certificate.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

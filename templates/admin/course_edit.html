@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ 'Edit' if edit_mode else 'New' }} Course - Ludens Medical Academy{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Admin Header -->
+    <header class="bg-white shadow">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center">
+                <h1 class="text-3xl font-bold text-gray-900">
+                    {{ 'Edit Course' if edit_mode else 'New Course' }}
+                </h1>
+                <div class="flex space-x-4">
+                    <a href="{{ url_for('admin_courses') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                        Back to Courses
+                    </a>
+                    {% if edit_mode %}
+                        <a href="{{ url_for('course_detail', course_id=course.id) }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                            View Course
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="md:grid md:grid-cols-3 md:gap-6">
+            <div class="md:col-span-1">
+                <div class="px-4 sm:px-0">
+                    <h3 class="text-lg font-medium leading-6 text-gray-900">Course Information</h3>
+                    <p class="mt-1 text-sm text-gray-600">
+                        Enter the details for this course. All fields are required.
+                    </p>
+                    {% if edit_mode %}
+                        <div class="mt-8">
+                            <h3 class="text-lg font-medium leading-6 text-gray-900">Course Modules</h3>
+                            <p class="mt-1 text-sm text-gray-600">
+                                Add or edit the modules for this course.
+                            </p>
+                            <div class="mt-4">
+                                <a href="{{ url_for('admin_module_new', course_id=course.id) }}" class="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                                    <svg class="-ml-0.5 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                                    </svg>
+                                    Add Module
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="mt-5 md:mt-0 md:col-span-2">
+                <form action="{{ url_for('admin_course_edit', course_id=course.id) if edit_mode else url_for('admin_course_new') }}" method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="shadow sm:rounded-md sm:overflow-hidden">
+                        <div class="px-4 py-5 bg-white space-y-6 sm:p-6">
+                            <div class="grid grid-cols-6 gap-6">
+                                <div class="col-span-6">
+                                    <label for="title" class="block text-sm font-medium text-gray-700">Course Title</label>
+                                    {{ form.title(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md") }}
+                                    {% if form.title.errors %}
+                                        <div class="text-red-500 text-xs mt-1">
+                                            {% for error in form.title.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-span-6">
+                                    <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                                    {{ form.description(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md", rows=5) }}
+                                    {% if form.description.errors %}
+                                        <div class="text-red-500 text-xs mt-1">
+                                            {% for error in form.description.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
+                                    {{ form.category(class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm") }}
+                                    {% if form.category.errors %}
+                                        <div class="text-red-500 text-xs mt-1">
+                                            {% for error in form.category.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="level" class="block text-sm font-medium text-gray-700">Level</label>
+                                    {{ form.level(class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm") }}
+                                    {% if form.level.errors %}
+                                        <div class="text-red-500 text-xs mt-1">
+                                            {% for error in form.level.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="price" class="block text-sm font-medium text-gray-700">Price ($)</label>
+                                    {{ form.price(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md") }}
+                                    {% if form.price.errors %}
+                                        <div class="text-red-500 text-xs mt-1">
+                                            {% for error in form.price.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="image_url" class="block text-sm font-medium text-gray-700">Image URL</label>
+                                    {{ form.image_url(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md") }}
+                                    {% if form.image_url.errors %}
+                                        <div class="text-red-500 text-xs mt-1">
+                                            {% for error in form.image_url.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <p class="mt-1 text-xs text-gray-500">Optional. Leave blank for default image.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="px-4 py-3 bg-gray-50 text-right sm:px-6">
+                            <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                {{ 'Save Changes' if edit_mode else 'Create Course' }}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if edit_mode and modules %}
+            <div class="hidden sm:block" aria-hidden="true">
+                <div class="py-5">
+                    <div class="border-t border-gray-200"></div>
+                </div>
+            </div>
+
+            <div class="mt-10 sm:mt-0">
+                <div class="md:grid md:grid-cols-3 md:gap-6">
+                    <div class="md:col-span-1">
+                        <div class="px-4 sm:px-0">
+                            <h3 class="text-lg font-medium leading-6 text-gray-900">Course Modules</h3>
+                            <p class="mt-1 text-sm text-gray-600">
+                                Manage the modules for this course.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="mt-5 md:mt-0 md:col-span-2">
+                        <div class="shadow sm:rounded-md sm:overflow-hidden">
+                            <div class="bg-white px-4 py-5 sm:p-6">
+                                <ul id="module-list" class="divide-y divide-gray-200">
+                                    {% for module in modules %}
+                                        <li class="py-4" data-module-id="{{ module.id }}">
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center">
+                                                    <div class="flex-shrink-0 h-10 w-10 bg-primary-100 rounded-full flex items-center justify-center text-primary-600">
+                                                        <span class="module-order">{{ module.order }}</span>
+                                                    </div>
+                                                    <div class="ml-4">
+                                                        <div class="text-sm font-medium text-gray-900">{{ module.title }}</div>
+                                                        <div class="text-sm text-gray-500">
+                                                            {% if module.get_quiz() %}
+                                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                                    Has Quiz
+                                                                </span>
+                                                            {% else %}
+                                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                                    No Quiz
+                                                                </span>
+                                                            {% endif %}
+                                                            {% if module.video_url %}
+                                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 ml-2">
+                                                                    Video
+                                                                </span>
+                                                            {% endif %}
+                                                            {% if module.pdf_url %}
+                                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 ml-2">
+                                                                    PDF
+                                                                </span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="flex space-x-2">
+                                                    <a href="{{ url_for('admin_module_edit', module_id=module.id) }}" class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                                        Edit
+                                                    </a>
+                                                    {% if module.get_quiz() %}
+                                                        <a href="{{ url_for('admin_quiz_edit', quiz_id=module.get_quiz().id) }}" class="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200">
+                                                            Edit Quiz
+                                                        </a>
+                                                    {% else %}
+                                                        <a href="{{ url_for('admin_quiz_new', module_id=module.id) }}" class="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200">
+                                                            Add Quiz
+                                                        </a>
+                                                    {% endif %}
+                                                    <form action="{{ url_for('admin_module_delete', module_id=module.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this module? This action cannot be undone.');">
+                                                        <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200">
+                                                            Delete
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                                
+                                {% if not modules %}
+                                    <div class="text-center py-6">
+                                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        <h3 class="mt-2 text-sm font-medium text-gray-900">No modules</h3>
+                                        <p class="mt-1 text-sm text-gray-500">Add modules to build your course content.</p>
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="mt-6">
+                                    <a href="{{ url_for('admin_module_new', course_id=course.id) }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                                        </svg>
+                                        Add Module
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const moduleList = document.getElementById('module-list');
+        if (moduleList) {
+            new Sortable(moduleList, {
+                animation: 150,
+                ghostClass: 'bg-blue-100',
+                onEnd: function(evt) {
+                    const modules = Array.from(moduleList.querySelectorAll('li'));
+                    
+                    // Update order in UI
+                    modules.forEach((module, index) => {
+                        module.querySelector('.module-order').textContent = index + 1;
+                    });
+                    
+                    // In a real implementation, this would send an AJAX request to update the order
+                    console.log('Module order updated');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
