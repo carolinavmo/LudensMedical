@@ -1578,7 +1578,8 @@ def admin_question_new(quiz_id):
             if module:
                 course = course_db.get(module.course_id)
                 if course:
-                    return redirect(url_for('admin_course_wizard_step3', course_id=course.id))
+                    # Add success query param to indicate the question was added successfully
+                    return redirect(url_for('admin_course_wizard_step3', course_id=course.id, question_added=True))
         
         return redirect(url_for('admin_quiz_edit', quiz_id=quiz_id))
     
@@ -1590,8 +1591,8 @@ def admin_question_new(quiz_id):
     module = module_db.get(quiz.module_id)
     course = course_db.get(module.course_id) if module else None
     
-    # Check if this is an AJAX request from the wizard
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' and 'course-wizard/step3' in request.headers.get('Referer', ''):
+    # Check if this is an AJAX request from the wizard or if the referer contains course-wizard/step3
+    if (request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'course-wizard/step3' in request.headers.get('Referer', '')):
         return render_template('admin/question_form_ajax.html',
                              form=form,
                              quiz=quiz,

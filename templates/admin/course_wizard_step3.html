@@ -166,7 +166,7 @@
                                     <div id="new-question-form-{{ module_quiz.id }}" class="hidden mb-4 p-3 bg-white rounded-md border border-gray-200">
                                         <h5 class="text-sm font-medium text-gray-900 mb-2">Add New Question</h5>
                                         <div id="question-form-container-{{ module_quiz.id }}">
-                                            <form action="{{ url_for('admin_question_new', quiz_id=module_quiz.id) }}" method="POST" id="question-form-{{ module_quiz.id }}">
+                                            <form action="{{ url_for('admin_question_new', quiz_id=module_quiz.id) }}" method="POST" id="question-form-{{ module_quiz.id }}" class="question-form">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                 
                                                 <div class="grid grid-cols-1 gap-4">
@@ -290,9 +290,9 @@
                                                         <a href="{{ url_for('admin_question_edit', question_id=question.id) }}" class="text-primary-600 hover:text-primary-900 text-xs">
                                                             Edit
                                                         </a>
-                                                        <form method="POST" action="{{ url_for('admin_question_delete', question_id=question.id) }}" class="inline">
+                                                        <form method="POST" action="{{ url_for('admin_question_delete', question_id=question.id) }}" class="inline delete-question-form">
                                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                                            <button type="submit" onclick="return confirm('Are you sure you want to delete this question?')" class="text-red-600 hover:text-red-900 text-xs">
+                                                            <button type="button" class="text-red-600 hover:text-red-900 text-xs delete-question-btn" data-question-id="{{ question.id }}">
                                                                 Delete
                                                             </button>
                                                         </form>
@@ -391,6 +391,46 @@
             });
         });
         
+        // Handle question form submission
+        const questionForms = document.querySelectorAll('.question-form');
+        questionForms.forEach(form => {
+            form.addEventListener('submit', function(event) {
+                // Log form submission for debugging
+                console.log('Question form is being submitted');
+                
+                // Make sure all required fields have values
+                const question = form.querySelector('[name="question"]').value;
+                const option1 = form.querySelector('[name="option1"]').value;
+                const option2 = form.querySelector('[name="option2"]').value;
+                
+                if (!question || !option1 || !option2) {
+                    event.preventDefault();
+                    alert('Please fill out all required fields (Question, Option 1, and Option 2 are required)');
+                    return false;
+                }
+                
+                // Allow form to submit normally
+                return true;
+            });
+        });
+        
+        // Handle delete question buttons
+        const deleteQuestionButtons = document.querySelectorAll('.delete-question-btn');
+        deleteQuestionButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const questionId = this.getAttribute('data-question-id');
+                
+                // Create a custom confirmation dialog
+                if (confirm('Are you sure you want to delete this question? This action cannot be undone.')) {
+                    // Find the parent form and submit it
+                    const form = this.closest('.delete-question-form');
+                    if (form) {
+                        form.submit();
+                    }
+                }
+            });
+        });
+        
         // Handle Add Question buttons
         const addQuestionButtons = document.querySelectorAll('[id^="add-question-btn-"]');
         addQuestionButtons.forEach(button => {
@@ -422,6 +462,13 @@
                 const addQuestionBtn = document.getElementById(`add-question-btn-${quizId}`);
                 
                 if (questionForm && addQuestionBtn) {
+                    // Reset the form
+                    const formElement = questionForm.querySelector('form');
+                    if (formElement) {
+                        formElement.reset();
+                    }
+                    
+                    // Hide the form
                     questionForm.classList.add('hidden');
                     
                     // Update button text on the add question button
