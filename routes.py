@@ -1225,7 +1225,7 @@ def admin_module_delete(module_id):
 @app.route('/admin/modules/<int:module_id>/quiz/new', methods=['GET', 'POST'])
 @login_required
 def admin_quiz_new(module_id):
-    if not current_user.is_admin():
+    if current_user.role != 'admin':
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
@@ -1269,7 +1269,7 @@ def admin_quiz_new(module_id):
 @app.route('/admin/quiz/<int:quiz_id>/edit', methods=['GET', 'POST'])
 @login_required
 def admin_quiz_edit(quiz_id):
-    if not current_user.is_admin():
+    if current_user.role != 'admin':
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
@@ -1310,7 +1310,7 @@ def admin_quiz_edit(quiz_id):
 @app.route('/admin/quiz/<int:quiz_id>/question/new', methods=['GET', 'POST'])
 @login_required
 def admin_question_new(quiz_id):
-    if not current_user.is_admin():
+    if current_user.role != 'admin':
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
@@ -1366,7 +1366,7 @@ def admin_question_new(quiz_id):
 @app.route('/admin/question/<int:question_id>/edit', methods=['GET', 'POST'])
 @login_required
 def admin_question_edit(question_id):
-    if not current_user.is_admin():
+    if current_user.role != 'admin':
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
@@ -1417,7 +1417,7 @@ def admin_question_edit(question_id):
 @app.route('/admin/question/<int:question_id>/delete', methods=['POST'])
 @login_required
 def admin_question_delete(question_id):
-    if not current_user.is_admin():
+    if current_user.role != 'admin':
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
@@ -1437,7 +1437,7 @@ def admin_question_delete(question_id):
 @app.route('/admin/users')
 @login_required
 def admin_users():
-    if not current_user.is_admin():
+    if current_user.role != 'admin':
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
@@ -1455,7 +1455,7 @@ def admin_users():
 @app.route('/admin/users/<int:user_id>/edit', methods=['GET', 'POST'])
 @login_required
 def admin_user_edit(user_id):
-    if not current_user.is_admin():
+    if current_user.role != 'admin':
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
@@ -1491,7 +1491,7 @@ def admin_user_edit(user_id):
 @app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
 @login_required
 def admin_user_delete(user_id):
-    if not current_user.is_admin():
+    if current_user.role != 'admin':
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
