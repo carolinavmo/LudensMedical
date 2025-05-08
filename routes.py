@@ -1540,38 +1540,74 @@ def admin_question_new(quiz_id):
     
     # Add debug logging
     app.logger.debug(f"Creating a new question for quiz {quiz_id}")
+    app.logger.debug(f"Question form data: {request.form}")
     
-    quiz = quiz_db.get(quiz_id)
+    quiz = quiz_db.get(int(quiz_id))
     if not quiz:
+        app.logger.error(f"Quiz not found with ID: {quiz_id}")
         flash('Quiz not found', 'error')
         return redirect(url_for('admin_courses'))
     
     form = QuestionForm()
-    if form.validate_on_submit():
+    if request.method == 'POST':
+        app.logger.debug("Processing POST request for question creation")
+        
+        # Get data directly from request.form to avoid validation issues
+        question_text = request.form.get('question')
+        option1 = request.form.get('option1')
+        option2 = request.form.get('option2')
+        option3 = request.form.get('option3', '')
+        option4 = request.form.get('option4', '')
+        correct_answer = request.form.get('correct_answer', '0')
+        order = request.form.get('order', '1')
+        
+        # Validate essential fields
+        if not question_text or not option1 or not option2:
+            app.logger.error("Missing required fields for question")
+            flash('Question text, Option 1, and Option 2 are required', 'error')
+            # Get the module to redirect properly
+            module = module_db.get(quiz.module_id)
+            return redirect(url_for('admin_course_wizard_step3', course_id=module.course_id))
+        
+        # Create new question ID
         question_id = get_next_id(question_db)
+        app.logger.debug(f"Generated new question ID: {question_id}")
         
         # Gather options
-        options = [
-            form.option1.data,
-            form.option2.data
-        ]
-        if form.option3.data:
-            options.append(form.option3.data)
-        if form.option4.data:
-            options.append(form.option4.data)
+        options = [option1, option2]
+        if option3:
+            options.append(option3)
+        if option4:
+            options.append(option4)
         
-        question = QuizQuestion(
-            id=question_id,
-            quiz_id=quiz_id,
-            question=form.question.data,
-            options=options,
-            correct_answer=int(form.correct_answer.data),
-            order=form.order.data,
-            created_at=datetime.now()
-        )
-        question_db[question_id] = question
-        
-        flash('Question added successfully', 'success')
+        # Create the question object
+        try:
+            question = QuizQuestion(
+                id=question_id,
+                quiz_id=int(quiz_id),
+                question=question_text,
+                options=options,
+                correct_answer=int(correct_answer),
+                order=int(order),
+                created_at=datetime.now()
+            )
+            
+            # Save to in-memory DB
+            question_db[question_id] = question
+            
+            # Also save to PostgreSQL
+            db.session.add(question)
+            db.session.commit()
+            
+            app.logger.debug(f"Question created with ID: {question_id} for quiz: {quiz_id}")
+            flash('Question added successfully', 'success')
+            
+            # Re-populate in-memory DB to ensure consistency
+            populate_in_memory_db()
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error creating question: {str(e)}")
+            flash(f'Error creating question: {str(e)}', 'error')
         
         # Check if the request came from the course wizard
         referer = request.headers.get('Referer', '')

@@ -398,7 +398,10 @@ def admin_quiz_wizard(module_id=None, quiz_id=None):
                 
                 # Re-populate the in-memory database to ensure consistency
                 populate_in_memory_db()
-                app.logger.debug(f"Refreshed in-memory database after quiz creation")
+                
+                # Re-fetch the quiz to ensure it's in the updated in-memory DB
+                created_quiz = next((q for q in quiz_db.values() if q.id == quiz_id), None)
+                app.logger.debug(f"Refreshed in-memory database after quiz creation, quiz found: {created_quiz is not None}")
                 
                 flash('Quiz created successfully', 'success')
             except Exception as e:
