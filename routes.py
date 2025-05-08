@@ -1414,32 +1414,46 @@ def admin_quiz_new(module_id):
     
     # Check if a quiz already exists for this module
     existing_quiz = next((q for q in quiz_db.values() if q.module_id == module_id), None)
-    if existing_quiz:
+    
+    # If we're in POST method, we're handling a form submission
+    if request.method == 'POST':
+        form = QuizForm()
+        if form.validate_on_submit():
+            if existing_quiz:
+                # Update existing quiz
+                existing_quiz.title = form.title.data
+                existing_quiz.description = form.description.data
+                existing_quiz.passing_score = form.passing_score.data
+                existing_quiz.updated_at = datetime.now()
+                flash('Quiz updated successfully.', 'success')
+                quiz_id = existing_quiz.id
+            else:
+                # Create new quiz
+                quiz_id = get_next_id(quiz_db)
+                quiz = Quiz(
+                    id=quiz_id,
+                    module_id=module_id,
+                    title=form.title.data,
+                    description=form.description.data,
+                    passing_score=form.passing_score.data,
+                    created_at=datetime.now()
+                )
+                quiz_db[quiz_id] = quiz
+                flash('Quiz created successfully.', 'success')
+            
+            # Check if the request came from the course wizard
+            referer = request.headers.get('Referer', '')
+            if 'course-wizard/step3' in referer:
+                return redirect(url_for('admin_course_wizard_step3', course_id=course.id))
+            else:
+                return redirect(url_for('admin_quiz_edit', quiz_id=quiz_id))
+    
+    # If we're in GET mode or the form submission failed, and this is not from the accordion
+    if existing_quiz and 'course-wizard/step3' not in request.headers.get('Referer', ''):
         flash('A quiz already exists for this module', 'info')
         return redirect(url_for('admin_quiz_edit', quiz_id=existing_quiz.id))
     
     form = QuizForm()
-    if form.validate_on_submit():
-        quiz_id = get_next_id(quiz_db)
-        quiz = Quiz(
-            id=quiz_id,
-            module_id=module_id,
-            title=form.title.data,
-            description=form.description.data,
-            passing_score=form.passing_score.data,
-            created_at=datetime.now()
-        )
-        quiz_db[quiz_id] = quiz
-        
-        flash('Quiz created successfully.', 'success')
-        
-        # Check if the request came from the course wizard
-        referer = request.headers.get('Referer', '')
-        if 'course-wizard/step3' in referer:
-            return redirect(url_for('admin_course_wizard_step3', course_id=course.id))
-        else:
-            return redirect(url_for('admin_quiz_edit', quiz_id=quiz_id))
-    
     return render_template('admin/quiz_edit.html',
                           form=form,
                           module=module,
@@ -1533,6 +1547,17 @@ def admin_question_new(quiz_id):
         question_db[question_id] = question
         
         flash('Question added successfully', 'success')
+        
+        # Check if the request came from the course wizard
+        referer = request.headers.get('Referer', '')
+        if 'course-wizard/step3' in referer:
+            # Get the course ID from the module
+            module = module_db.get(quiz.module_id)
+            if module:
+                course = course_db.get(module.course_id)
+                if course:
+                    return redirect(url_for('admin_course_wizard_step3', course_id=course.id))
+        
         return redirect(url_for('admin_quiz_edit', quiz_id=quiz_id))
     
     # Set default order as the next one
@@ -1542,6 +1567,14 @@ def admin_question_new(quiz_id):
     # Get module and course for breadcrumbs
     module = module_db.get(quiz.module_id)
     course = course_db.get(module.course_id) if module else None
+    
+    # Check if this is an AJAX request from the wizard
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' and 'course-wizard/step3' in request.headers.get('Referer', ''):
+        return render_template('admin/question_form_ajax.html',
+                             form=form,
+                             quiz=quiz,
+                             module=module,
+                             course=course)
     
     return render_template('admin/question_edit.html',
                           form=form,
