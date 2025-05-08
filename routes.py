@@ -48,7 +48,10 @@ def courses():
     categories = sorted(set(c.category for c in all_courses))
     levels = sorted(set(c.level for c in all_courses))
     
-    return render_template('courses.html', 
+    # Use different template based on authentication status
+    template = 'student/courses.html' if current_user.is_authenticated else 'courses.html'
+    
+    return render_template(template, 
                           courses=filtered_courses, 
                           categories=categories, 
                           levels=levels,
