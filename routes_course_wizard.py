@@ -510,4 +510,271 @@ def admin_course_wizard_step4_complete(course_id):
     }
     
     flash('Course setup completed successfully!', 'success')
-    return redirect(url_for('admin_course_edit', course_id=course_id))
+    
+# New Quiz Management Endpoints
+
+# Get questions for a quiz in JSON format
+@app.route('/admin/quiz/<int:quiz_id>/questions-json', methods=['GET'])
+@login_required
+def admin_quiz_questions_json(quiz_id):
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    quiz = quiz_db.get(quiz_id)
+    if not quiz:
+        return jsonify({'error': 'Quiz not found'}), 404
+    
+    # Get all questions for this quiz
+    questions = [q for q in question_db.values() if q.quiz_id == quiz_id]
+    questions.sort(key=lambda q: q.order)
+    
+    # Convert to JSON
+    questions_json = []
+    for q in questions:
+        questions_json.append({
+            'id': q.id,
+            'quiz_id': q.quiz_id,
+            'question': q.question,
+            'options': q.get_options(),
+            'correct_answer': q.correct_answer,
+            'order': q.order
+        })
+    
+    return jsonify({
+        'success': True,
+        'quiz_id': quiz_id,
+        'questions': questions_json
+    })
+
+# Create new quiz
+@app.route('/admin/quiz/new-json', methods=['POST'])
+@login_required
+def admin_quiz_new_json():
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    # Get form data
+    module_id = request.form.get('module_id')
+    course_id = request.form.get('course_id')
+    
+    if not module_id or not module_id.isdigit():
+        return jsonify({'error': 'Invalid module ID'}), 400
+    
+    module_id = int(module_id)
+    module = module_db.get(module_id)
+    
+    if not module:
+        return jsonify({'error': 'Module not found'}), 404
+    
+    # Check if this module already has a quiz
+    existing_quiz = None
+    for q in quiz_db.values():
+        if q.module_id == module_id:
+            existing_quiz = q
+            break
+    
+    if existing_quiz:
+        # If there's an existing quiz, we'll just update it
+        quiz_id = existing_quiz.id
+        quiz = existing_quiz
+        quiz.title = request.form.get('title')
+        quiz.description = request.form.get('description')
+        quiz.passing_score = int(request.form.get('passing_score', 70))
+        quiz.updated_at = datetime.now()
+    else:
+        # Create new quiz
+        quiz_id = get_next_id(quiz_db)
+        quiz = Quiz(
+            id=quiz_id,
+            module_id=module_id,
+            title=request.form.get('title'),
+            description=request.form.get('description'),
+            passing_score=int(request.form.get('passing_score', 70)),
+            created_at=datetime.now()
+        )
+        quiz_db[quiz_id] = quiz
+        
+        # Add to database
+        db.session.add(quiz)
+    
+    try:
+        db.session.commit()
+        
+        # Refresh quiz data
+        from models import refresh_quizzes
+        refresh_quizzes()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Quiz saved successfully',
+            'quiz_id': quiz_id,
+            'is_new': not existing_quiz,
+            'module_id': module_id,
+            'course_id': course_id
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'error': f'Error saving quiz: {str(e)}'
+        }), 500
+
+# Edit existing quiz
+@app.route('/admin/quiz/<int:quiz_id>/edit-json', methods=['POST'])
+@login_required
+def admin_quiz_edit_json(quiz_id):
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    quiz = quiz_db.get(quiz_id)
+    if not quiz:
+        return jsonify({'error': 'Quiz not found'}), 404
+    
+    # Get module and course
+    module = module_db.get(quiz.module_id)
+    if not module:
+        return jsonify({'error': 'Module not found'}), 404
+    
+    course = course_db.get(module.course_id)
+    if not course:
+        return jsonify({'error': 'Course not found'}), 404
+    
+    # Update quiz
+    quiz.title = request.form.get('title')
+    quiz.description = request.form.get('description')
+    quiz.passing_score = int(request.form.get('passing_score', 70))
+    quiz.updated_at = datetime.now()
+    
+    try:
+        db.session.commit()
+        
+        # Refresh quiz data
+        from models import refresh_quizzes
+        refresh_quizzes()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Quiz updated successfully',
+            'quiz_id': quiz_id,
+            'module_id': quiz.module_id,
+            'course_id': module.course_id
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'error': f'Error updating quiz: {str(e)}'
+        }), 500
+
+# Add new question to quiz
+@app.route('/admin/quiz/<int:quiz_id>/question/new-json', methods=['POST'])
+@login_required
+def admin_question_new_json(quiz_id):
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    quiz = quiz_db.get(quiz_id)
+    if not quiz:
+        return jsonify({'error': 'Quiz not found'}), 404
+    
+    # Get form data
+    form = QuestionForm(request.form)
+    
+    if form.validate():
+        # Create new question
+        question_id = get_next_id(question_db)
+        
+        # Extract options, only include non-empty ones
+        options = []
+        if form.option1.data:
+            options.append(form.option1.data)
+        if form.option2.data:
+            options.append(form.option2.data)
+        if form.option3.data and form.option3.data.strip():
+            options.append(form.option3.data)
+        if form.option4.data and form.option4.data.strip():
+            options.append(form.option4.data)
+        
+        # Create question instance
+        question = QuizQuestion(
+            id=question_id,
+            quiz_id=quiz_id,
+            question=form.question.data,
+            correct_answer=int(form.correct_answer.data),
+            order=form.order.data
+        )
+        
+        # Set options
+        question.set_options(options)
+        
+        # Add to in-memory dictionary
+        question_db[question_id] = question
+        
+        # Add to database
+        db.session.add(question)
+        
+        try:
+            db.session.commit()
+            
+            # Get the next order number for a new question
+            next_order = max([q.order for q in question_db.values() if q.quiz_id == quiz_id], default=0) + 1
+            
+            # Return success response with the created question
+            return jsonify({
+                'success': True,
+                'message': 'Question added successfully',
+                'question': {
+                    'id': question_id,
+                    'quiz_id': quiz_id,
+                    'question': question.question,
+                    'options': question.get_options(),
+                    'correct_answer': question.correct_answer,
+                    'order': question.order
+                },
+                'next_order': next_order
+            })
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({
+                'error': f'Error adding question: {str(e)}'
+            }), 500
+    else:
+        return jsonify({
+            'error': 'Invalid form data',
+            'form_errors': form.errors
+        }), 400
+
+# Delete a question
+@app.route('/admin/question/<int:question_id>/delete', methods=['POST'])
+@login_required
+def admin_question_delete_ajax(question_id):
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    question = question_db.get(question_id)
+    if not question:
+        return jsonify({'error': 'Question not found'}), 404
+    
+    # Remove from in-memory dictionary
+    quiz_id = question.quiz_id
+    del question_db[question_id]
+    
+    # Remove from database
+    db_question = QuizQuestion.query.get(question_id)
+    if db_question:
+        db.session.delete(db_question)
+        
+        try:
+            db.session.commit()
+            return jsonify({
+                'success': True,
+                'message': 'Question deleted successfully',
+                'quiz_id': quiz_id
+            })
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({
+                'error': f'Error deleting question: {str(e)}'
+            }), 500
+    else:
+        return jsonify({
+            'error': 'Question not found in database'
+        }), 404
