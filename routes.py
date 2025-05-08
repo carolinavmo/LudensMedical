@@ -32,8 +32,17 @@ def courses():
     level = request.args.get('level')
     search = request.args.get('search')
     
+    # Log information for debugging
+    logging.info(f"Courses route accessed. In-memory course_db has {len(course_db)} courses")
+    
+    # Force refresh in-memory DB to ensure we have the latest data
+    populate_in_memory_db()
+    logging.info(f"After refresh: course_db has {len(course_db)} courses")
+    
     all_courses = list(course_db.values())
     filtered_courses = filter_courses(all_courses, category, level, search)
+    
+    logging.info(f"Filtered courses: {len(filtered_courses)}")
     
     # Get categories and levels for filter dropdowns
     categories = sorted(set(c.category for c in all_courses))
