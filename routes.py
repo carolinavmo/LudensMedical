@@ -81,12 +81,35 @@ def login():
     
     form = LoginForm()
     if form.validate_on_submit():
+        # First try to find user in the database
+        try:
+            user = User.query.filter_by(email=form.email.data).first()
+            if user and check_password_hash(user.password_hash, form.password.data):
+                login_user(user, remember=form.remember_me.data)
+                logging.info(f"User logged in via SQLAlchemy: {user.username}")
+                
+                next_page = request.args.get('next')
+                if not next_page or urlparse(next_page).netloc != '':
+                    if user.role == 'admin':
+                        logging.info(f"User {user.username} has role: {user.role}, redirecting to admin dashboard")
+                        next_page = url_for('admin_dashboard')
+                    else:
+                        logging.info(f"User {user.username} has role: {user.role}, redirecting to student dashboard")
+                        next_page = url_for('dashboard')
+                return redirect(next_page)
+        except Exception as e:
+            logging.error(f"Database error during login: {str(e)}")
+            # Fall back to in-memory database
+        
+        # Fall back to in-memory database
         user = find_user_by_email(form.email.data, user_db)
         if user is None or not check_password_hash(user.password_hash, form.password.data):
             flash('Invalid email or password', 'error')
             return redirect(url_for('login'))
         
         login_user(user, remember=form.remember_me.data)
+        logging.info(f"User logged in via in-memory DB: {user.username}")
+        
         next_page = request.args.get('next')
         if not next_page or urlparse(next_page).netloc != '':
             if user.role == 'admin':
@@ -956,10 +979,21 @@ def admin_course_edit(course_id):
     
     modules = get_course_modules(course_id, module_db)
     
+    # Get all quizzes for checking if modules have quizzes
+    quizzes = []
+    try:
+        # Try to use SQLAlchemy first
+        quizzes = Quiz.query.all()
+    except Exception as e:
+        logging.error(f"Error fetching quizzes from database: {str(e)}")
+        # Fall back to in-memory
+        quizzes = list(quiz_db.values())
+    
     return render_template('admin/course_edit.html', 
                           form=form,
                           course=course,
                           modules=modules,
+                          quizzes=quizzes,
                           edit_mode=True)
 
 @app.route('/admin/courses/<int:course_id>/modules/reorder', methods=['POST'])

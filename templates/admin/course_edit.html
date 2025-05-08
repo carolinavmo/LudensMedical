@@ -177,7 +177,13 @@
                                                     <div class="ml-4">
                                                         <div class="text-sm font-medium text-gray-900">{{ module.title }}</div>
                                                         <div class="text-sm text-gray-500">
-                                                            {% if module.get_quiz() %}
+                                                            {% set has_quiz = False %}
+                                                            {% for quiz in quizzes %}
+                                                                {% if quiz.module_id == module.id %}
+                                                                    {% set has_quiz = True %}
+                                                                {% endif %}
+                                                            {% endfor %}
+                                                            {% if has_quiz %}
                                                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                                                     Has Quiz
                                                                 </span>
@@ -203,8 +209,15 @@
                                                     <a href="{{ url_for('admin_module_edit', module_id=module.id) }}" class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                                                         Edit
                                                     </a>
-                                                    {% if module.get_quiz() %}
-                                                        <a href="{{ url_for('admin_quiz_edit', quiz_id=module.get_quiz().id) }}" class="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200">
+                                                    {% set module_quiz = None %}
+                                                    {% for quiz in quizzes %}
+                                                        {% if quiz.module_id == module.id %}
+                                                            {% set module_quiz = quiz %}
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                    
+                                                    {% if module_quiz %}
+                                                        <a href="{{ url_for('admin_quiz_edit', quiz_id=module_quiz.id) }}" class="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200">
                                                             Edit Quiz
                                                         </a>
                                                     {% else %}
