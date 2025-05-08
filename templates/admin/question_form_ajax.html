@@ -1,11 +1,14 @@
 <!-- Question form for AJAX requests -->
-<form action="{{ url_for('admin_question_new', quiz_id=quiz.id) }}" method="POST" class="space-y-4" id="question-ajax-form">
+<form action="{{ url_for('admin_question_new', quiz_id=quiz.id) }}" method="POST" class="space-y-4" id="question-ajax-form" onsubmit="return validateQuestionForm()">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    
+    <!-- Debug info to help troubleshoot -->
+    <div class="text-xs text-gray-500 mb-3">Quiz ID: {{ quiz.id }}</div>
     
     <div class="grid grid-cols-1 gap-4">
         <div>
-            <label for="question" class="block text-sm font-medium text-gray-700">Question</label>
-            {{ form.question(class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500") }}
+            <label for="question" class="block text-sm font-medium text-gray-700">Question <span class="text-red-500">*</span></label>
+            {{ form.question(class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500", required=True) }}
             {% if form.question.errors %}
             <div class="text-red-500 text-xs mt-1">
                 {% for error in form.question.errors %}
@@ -13,11 +16,12 @@
                 {% endfor %}
             </div>
             {% endif %}
+            <div class="question-error text-red-500 text-xs mt-1 hidden">This field is required</div>
         </div>
         
         <div>
-            <label for="option1" class="block text-sm font-medium text-gray-700">Option 1</label>
-            {{ form.option1(class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500") }}
+            <label for="option1" class="block text-sm font-medium text-gray-700">Option 1 <span class="text-red-500">*</span></label>
+            {{ form.option1(class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500", required=True) }}
             {% if form.option1.errors %}
             <div class="text-red-500 text-xs mt-1">
                 {% for error in form.option1.errors %}
@@ -25,11 +29,12 @@
                 {% endfor %}
             </div>
             {% endif %}
+            <div class="option1-error text-red-500 text-xs mt-1 hidden">This field is required</div>
         </div>
         
         <div>
-            <label for="option2" class="block text-sm font-medium text-gray-700">Option 2</label>
-            {{ form.option2(class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500") }}
+            <label for="option2" class="block text-sm font-medium text-gray-700">Option 2 <span class="text-red-500">*</span></label>
+            {{ form.option2(class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500", required=True) }}
             {% if form.option2.errors %}
             <div class="text-red-500 text-xs mt-1">
                 {% for error in form.option2.errors %}
@@ -37,6 +42,7 @@
                 {% endfor %}
             </div>
             {% endif %}
+            <div class="option2-error text-red-500 text-xs mt-1 hidden">This field is required</div>
         </div>
         
         <div>
@@ -105,3 +111,82 @@
         </button>
     </div>
 </form>
+
+<script>
+function validateQuestionForm() {
+    let isValid = true;
+    const questionInput = document.getElementById('question');
+    const option1Input = document.getElementById('option1');
+    const option2Input = document.getElementById('option2');
+    
+    // Check question
+    if (!questionInput.value.trim()) {
+        document.querySelector('.question-error').classList.remove('hidden');
+        isValid = false;
+    } else {
+        document.querySelector('.question-error').classList.add('hidden');
+    }
+    
+    // Check option 1
+    if (!option1Input.value.trim()) {
+        document.querySelector('.option1-error').classList.remove('hidden');
+        isValid = false;
+    } else {
+        document.querySelector('.option1-error').classList.add('hidden');
+    }
+    
+    // Check option 2
+    if (!option2Input.value.trim()) {
+        document.querySelector('.option2-error').classList.remove('hidden');
+        isValid = false;
+    } else {
+        document.querySelector('.option2-error').classList.add('hidden');
+    }
+    
+    if (isValid) {
+        console.log('Question form is valid, submitting...');
+        // Add a loading spinner or disable the button to prevent double submission
+        const submitButton = document.querySelector('button[type="submit"]');
+        submitButton.innerHTML = '<span class="animate-spin mr-2">↻</span> Saving...';
+        submitButton.disabled = true;
+    } else {
+        console.log('Question form validation failed');
+    }
+    
+    return isValid;
+}
+
+// Add event listeners for real-time validation
+document.addEventListener('DOMContentLoaded', function() {
+    const questionInput = document.getElementById('question');
+    const option1Input = document.getElementById('option1');
+    const option2Input = document.getElementById('option2');
+    
+    if (questionInput) {
+        questionInput.addEventListener('input', function() {
+            if (this.value.trim()) {
+                document.querySelector('.question-error').classList.add('hidden');
+            }
+        });
+    }
+    
+    if (option1Input) {
+        option1Input.addEventListener('input', function() {
+            if (this.value.trim()) {
+                document.querySelector('.option1-error').classList.add('hidden');
+            }
+        });
+    }
+    
+    if (option2Input) {
+        option2Input.addEventListener('input', function() {
+            if (this.value.trim()) {
+                document.querySelector('.option2-error').classList.add('hidden');
+            }
+        });
+    }
+    
+    // Debug info
+    console.log('Quiz ID from form:', '{{ quiz.id }}');
+});
+</script>

@@ -403,9 +403,18 @@ def admin_quiz_wizard(module_id=None, quiz_id=None):
                 created_quiz = next((q for q in quiz_db.values() if q.id == quiz_id), None)
                 app.logger.debug(f"Refreshed in-memory database after quiz creation, quiz found: {created_quiz is not None}")
                 
+                if created_quiz is None:
+                    app.logger.warning(f"Quiz with ID {quiz_id} not found in refreshed in-memory DB, re-adding")
+                    quiz_db[quiz_id] = new_quiz
+                
                 flash('Quiz created successfully', 'success')
             except Exception as e:
                 db.session.rollback()
+                # Try to keep the in-memory DB consistent with what we intended
+                if quiz_id in quiz_db:
+                    app.logger.warning(f"Removing quiz with ID {quiz_id} from in-memory DB after database error")
+                    del quiz_db[quiz_id]
+                
                 app.logger.error(f"Error creating quiz: {str(e)}")
                 flash(f'Error creating quiz: {str(e)}', 'error')
         
