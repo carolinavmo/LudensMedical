@@ -70,9 +70,21 @@
                                     </p>
                                 </div>
                                 <div class="mt-5">
-                                    <a href="#module-content" class="w-full flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                                        Continue Learning
-                                    </a>
+                                    {% if modules %}
+                                        {% if next_module_id is defined %}
+                                            <a href="{{ url_for('module_detail', course_id=course.id, module_id=next_module_id) }}" class="w-full flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                                Continue Learning
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ url_for('module_detail', course_id=course.id, module_id=modules[0].id) }}" class="w-full flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                                Continue Learning
+                                            </a>
+                                        {% endif %}
+                                    {% else %}
+                                        <a href="#module-content" class="w-full flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                            Continue Learning
+                                        </a>
+                                    {% endif %}
                                 </div>
                             {% else %}
                                 <div class="mt-8">

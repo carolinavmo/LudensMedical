@@ -60,12 +60,39 @@ def course_detail(course_id):
     # Check if user is enrolled
     enrolled = False
     progress = 0
+    current_enrollment = None
     if current_user.is_authenticated:
         for enrollment in enrollment_db.values():
             if enrollment.user_id == current_user.id and enrollment.course_id == course_id:
                 enrolled = True
                 progress = enrollment.progress
+                current_enrollment = enrollment
                 break
+    
+    # If the user is enrolled and there's progress, find the most appropriate module to continue from
+    if enrolled and current_enrollment and progress > 0 and modules:
+        # Sort modules by order first to ensure they're in the correct sequence
+        modules = sorted(modules, key=lambda m: m.order)
+        
+        # If progress is less than 100%, find the appropriate module based on progress
+        if progress < 100:
+            # Calculate which module the user should continue from
+            total_modules = len(modules)
+            # This gives us the index of the module the user should be at based on their progress
+            current_module_index = min(int((progress / 100) * total_modules), total_modules - 1)
+            
+            # We'll keep the modules in their original order, but we know which one to link to
+            # from the "Continue Learning" button
+            next_module_id = modules[current_module_index].id
+            
+            # We'll pass this ID to the template to create the proper link
+            return render_template('course_detail.html', 
+                                  course=course, 
+                                  modules=modules, 
+                                  instructor=instructor,
+                                  enrolled=enrolled,
+                                  progress=progress,
+                                  next_module_id=next_module_id)
     
     return render_template('course_detail.html', 
                           course=course, 
