@@ -841,6 +841,23 @@ def download_certificate(certificate_id):
                      as_attachment=True,
                      download_name=f'certificate_{certificate.id}.png')
 
+# Utility routes
+@app.route('/refresh-data')
+@login_required
+def refresh_data():
+    """Refresh in-memory data from the database"""
+    if current_user.role != 'admin':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    try:
+        populate_in_memory_db()
+        flash('Data refreshed successfully', 'success')
+    except Exception as e:
+        flash(f'Error refreshing data: {str(e)}', 'error')
+    
+    return redirect(url_for('admin_dashboard'))
+
 # Admin routes
 @app.route('/admin/dashboard')
 @login_required
