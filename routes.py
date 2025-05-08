@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from io import BytesIO
 from flask import render_template, redirect, url_for, flash, request, jsonify, session, abort, send_file
+from werkzeug.utils import secure_filename
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from urllib.parse import urlparse
@@ -533,6 +534,29 @@ def admin_module_new(course_id):
     form = ModuleForm()
     if form.validate_on_submit():
         module_id = get_next_id(module_db)
+        
+        # Handle video file upload
+        video_file_path = None
+        if form.video_file.data:
+            video_filename = f'module_{module_id}_video_{secure_filename(form.video_file.data.filename)}'
+            video_file_path = os.path.join('uploads/videos', video_filename)
+            
+            # Ensure directory exists
+            os.makedirs(os.path.join('static', 'uploads/videos'), exist_ok=True)
+            form.video_file.data.save(os.path.join('static', video_file_path))
+            logging.info(f"Saved video file: {video_file_path}")
+        
+        # Handle PDF file upload
+        pdf_file_path = None
+        if form.pdf_file.data:
+            pdf_filename = f'module_{module_id}_pdf_{secure_filename(form.pdf_file.data.filename)}'
+            pdf_file_path = os.path.join('uploads/pdfs', pdf_filename)
+            
+            # Ensure directory exists
+            os.makedirs(os.path.join('static', 'uploads/pdfs'), exist_ok=True)
+            form.pdf_file.data.save(os.path.join('static', pdf_file_path))
+            logging.info(f"Saved PDF file: {pdf_file_path}")
+        
         module = Module(
             id=module_id,
             course_id=course_id,
@@ -541,6 +565,8 @@ def admin_module_new(course_id):
             order=form.order.data,
             video_url=form.video_url.data,
             pdf_url=form.pdf_url.data,
+            video_file=video_file_path,
+            pdf_file=pdf_file_path,
             created_at=datetime.now()
         )
         module_db[module_id] = module
@@ -584,6 +610,48 @@ def admin_module_edit(module_id):
         module.pdf_url = form.pdf_url.data
         module.updated_at = datetime.now()
         
+        # Handle video file upload
+        if form.video_file.data:
+            # Remove old file if exists
+            if module.video_file:
+                try:
+                    old_path = os.path.join('static', module.video_file)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                        logging.info(f"Removed old video file: {old_path}")
+                except Exception as e:
+                    logging.error(f"Error removing old video file: {str(e)}")
+            
+            video_filename = f'module_{module_id}_video_{secure_filename(form.video_file.data.filename)}'
+            video_file_path = os.path.join('uploads/videos', video_filename)
+            
+            # Ensure directory exists
+            os.makedirs(os.path.join('static', 'uploads/videos'), exist_ok=True)
+            form.video_file.data.save(os.path.join('static', video_file_path))
+            module.video_file = video_file_path
+            logging.info(f"Saved new video file: {video_file_path}")
+        
+        # Handle PDF file upload
+        if form.pdf_file.data:
+            # Remove old file if exists
+            if module.pdf_file:
+                try:
+                    old_path = os.path.join('static', module.pdf_file)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                        logging.info(f"Removed old PDF file: {old_path}")
+                except Exception as e:
+                    logging.error(f"Error removing old PDF file: {str(e)}")
+            
+            pdf_filename = f'module_{module_id}_pdf_{secure_filename(form.pdf_file.data.filename)}'
+            pdf_file_path = os.path.join('uploads/pdfs', pdf_filename)
+            
+            # Ensure directory exists
+            os.makedirs(os.path.join('static', 'uploads/pdfs'), exist_ok=True)
+            form.pdf_file.data.save(os.path.join('static', pdf_file_path))
+            module.pdf_file = pdf_file_path
+            logging.info(f"Saved new PDF file: {pdf_file_path}")
+        
         flash('Module updated successfully', 'success')
         return redirect(url_for('admin_course_edit', course_id=course.id))
     
@@ -610,6 +678,25 @@ def admin_module_delete(module_id):
         return redirect(url_for('admin_courses'))
     
     course_id = module.course_id
+    
+    # Delete uploaded files if they exist
+    if module.video_file:
+        try:
+            file_path = os.path.join('static', module.video_file)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                logging.info(f"Deleted video file: {file_path}")
+        except Exception as e:
+            logging.error(f"Error deleting video file: {str(e)}")
+    
+    if module.pdf_file:
+        try:
+            file_path = os.path.join('static', module.pdf_file)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                logging.info(f"Deleted PDF file: {file_path}")
+        except Exception as e:
+            logging.error(f"Error deleting PDF file: {str(e)}")
     
     # Delete quizzes and questions related to this module
     for quiz in list(quiz_db.values()):

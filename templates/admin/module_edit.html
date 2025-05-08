@@ -110,7 +110,28 @@
                                             {% endfor %}
                                         </div>
                                     {% endif %}
-                                    <p class="mt-1 text-xs text-gray-500">Link to a video for this module (YouTube, Vimeo, etc.)</p>
+                                    <p class="mt-1 text-xs text-gray-500">Link to an external video for this module (YouTube, Vimeo, etc.)</p>
+                                </div>
+
+                                <div class="col-span-6">
+                                    <label for="video_file" class="block text-sm font-medium text-gray-700">Upload Video (optional)</label>
+                                    {{ form.video_file(class="mt-1 block w-full shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500 border-gray-300 rounded-md") }}
+                                    {% if form.video_file.errors %}
+                                        <div class="text-red-500 text-xs mt-1">
+                                            {% for error in form.video_file.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <p class="mt-1 text-xs text-gray-500">Upload a video file (MP4, WebM, or OGG format)</p>
+                                    {% if module and module.video_file %}
+                                        <div class="mt-2">
+                                            <p class="text-sm font-medium text-gray-900">Current Video:</p>
+                                            <a href="{{ url_for('static', filename=module.video_file) }}" target="_blank" class="text-primary-600 hover:text-primary-500 text-sm">
+                                                View uploaded video
+                                            </a>
+                                        </div>
+                                    {% endif %}
                                 </div>
 
                                 <div class="col-span-6">
@@ -123,7 +144,28 @@
                                             {% endfor %}
                                         </div>
                                     {% endif %}
-                                    <p class="mt-1 text-xs text-gray-500">Link to a downloadable PDF for this module</p>
+                                    <p class="mt-1 text-xs text-gray-500">Link to an external downloadable PDF</p>
+                                </div>
+
+                                <div class="col-span-6">
+                                    <label for="pdf_file" class="block text-sm font-medium text-gray-700">Upload PDF (optional)</label>
+                                    {{ form.pdf_file(class="mt-1 block w-full shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500 border-gray-300 rounded-md") }}
+                                    {% if form.pdf_file.errors %}
+                                        <div class="text-red-500 text-xs mt-1">
+                                            {% for error in form.pdf_file.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <p class="mt-1 text-xs text-gray-500">Upload a PDF file</p>
+                                    {% if module and module.pdf_file %}
+                                        <div class="mt-2">
+                                            <p class="text-sm font-medium text-gray-900">Current PDF:</p>
+                                            <a href="{{ url_for('static', filename=module.pdf_file) }}" target="_blank" class="text-primary-600 hover:text-primary-500 text-sm">
+                                                View uploaded PDF
+                                            </a>
+                                        </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
