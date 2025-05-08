@@ -638,54 +638,80 @@
                 }, 3000);
                 
                 // Refresh the page component instead of navigating
-                // Make an AJAX call to get updated quiz info
-                fetch(`/admin/course-wizard/step3/${courseId}`)
-                .then(response => response.text())
-                .then(html => {
-                    // Create a temporary DOM element to parse the HTML
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = html;
+                try {
+                    // Parse JSON response if it's JSON
+                    const jsonData = JSON.parse(data);
+                    console.log('Quiz creation successful:', jsonData);
                     
-                    // Find the quiz container for this module
-                    const moduleContainer = document.querySelector(`.accordion-header#accordion-header-${moduleId}`);
-                    if (moduleContainer) {
-                        // Find the updated quiz info for this module in the new HTML
-                        const newModuleContainer = tempDiv.querySelector(`.accordion-header#accordion-header-${moduleId}`);
-                        if (newModuleContainer) {
-                            // Update just the quiz info part
-                            const quizInfo = moduleContainer.querySelector('div > div.mt-1');
-                            const newQuizInfo = newModuleContainer.querySelector('div > div.mt-1');
-                            if (quizInfo && newQuizInfo) {
-                                quizInfo.innerHTML = newQuizInfo.innerHTML;
+                    // Make an AJAX call to get updated quiz info
+                    fetch(`/admin/course-wizard/step3/${courseId}`)
+                    .then(response => response.text())
+                    .then(html => {
+                        console.log('Got updated HTML for refresh');
+                        
+                        // Create a temporary DOM element to parse the HTML
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = html;
+                        
+                        // Find the quiz container for this module
+                        const moduleContainer = document.querySelector(`.accordion-header#accordion-header-${moduleId}`);
+                        if (moduleContainer) {
+                            console.log(`Found module container for module ${moduleId}`);
+                            
+                            // Find the updated quiz info for this module in the new HTML
+                            const newModuleContainer = tempDiv.querySelector(`.accordion-header#accordion-header-${moduleId}`);
+                            if (newModuleContainer) {
+                                console.log('Found new module container with updated data');
                                 
-                                // Close the accordion
-                                const contentId = `accordion-content-${moduleId}`;
-                                const content = document.getElementById(contentId);
-                                if (content) {
-                                    content.classList.add('hidden');
-                                }
-                                
-                                // Update the button style for modules with quizzes
-                                const toggleButton = moduleContainer.querySelector('.accordion-toggle');
-                                if (toggleButton && toggleButton.classList.contains('bg-yellow-50')) {
-                                    toggleButton.classList.remove('border-yellow-300', 'text-yellow-800', 'bg-yellow-50', 'hover:bg-yellow-100');
-                                    toggleButton.classList.add('border-transparent', 'text-primary-700', 'bg-primary-100', 'hover:bg-primary-200');
+                                // Update just the quiz info part
+                                const quizInfo = moduleContainer.querySelector('div > div.mt-1');
+                                const newQuizInfo = newModuleContainer.querySelector('div > div.mt-1');
+                                if (quizInfo && newQuizInfo) {
+                                    console.log('Updating quiz info HTML');
+                                    quizInfo.innerHTML = newQuizInfo.innerHTML;
                                     
-                                    // Update button text
-                                    const editText = toggleButton.querySelector('.edit-text');
-                                    if (editText) {
-                                        editText.textContent = 'Edit Quiz';
+                                    // Close the accordion
+                                    const contentId = `accordion-content-${moduleId}`;
+                                    const content = document.getElementById(contentId);
+                                    if (content) {
+                                        content.classList.add('hidden');
                                     }
+                                    
+                                    // Update the button style for modules with quizzes
+                                    const toggleButton = moduleContainer.querySelector('.accordion-toggle');
+                                    if (toggleButton && toggleButton.classList.contains('bg-yellow-50')) {
+                                        toggleButton.classList.remove('border-yellow-300', 'text-yellow-800', 'bg-yellow-50', 'hover:bg-yellow-100');
+                                        toggleButton.classList.add('border-transparent', 'text-primary-700', 'bg-primary-100', 'hover:bg-primary-200');
+                                        
+                                        // Update button text
+                                        const editText = toggleButton.querySelector('.edit-text');
+                                        if (editText) {
+                                            editText.textContent = 'Edit Quiz';
+                                        }
+                                    }
+                                } else {
+                                    console.error('Could not find quiz info elements to update');
                                 }
+                            } else {
+                                console.error(`Could not find new module container for module ${moduleId} in refreshed HTML`);
                             }
+                        } else {
+                            console.error(`Could not find module container for module ${moduleId}`);
                         }
-                    }
-                })
-                .catch(error => {
-                    console.error('Error refreshing quiz info:', error);
-                    // Fall back to full page refresh if AJAX update fails
-                    window.location.reload();
-                });
+                    })
+                    .catch(error => {
+                        console.error('Error refreshing quiz info:', error);
+                        // Fall back to full page refresh if AJAX update fails
+                        window.location.reload();
+                    });
+                } catch (e) {
+                    console.log('Response was not JSON, handling as text response', e);
+                    
+                    // Just refresh the whole page
+                    setTimeout(() => {
+                        window.location.href = `/admin/course-wizard/step3/${courseId}`;
+                    }, 1000);
+                }
             })
             .catch(error => {
                 console.error('Error:', error);
