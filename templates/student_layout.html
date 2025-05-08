@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="bg-gray-50 min-h-screen">
+    <div class="flex flex-col md:flex-row">
+        <!-- Left Sidebar -->
+        <div class="w-full md:w-64 bg-white shadow-md">
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <span class="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-700">
+                        {{ current_user.username[0].upper() }}
+                    </span>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">{{ current_user.get_full_name() }}</p>
+                        <p class="text-xs text-gray-500">{{ current_user.role|title }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="py-4">
+                <nav>
+                    <a href="{{ url_for('dashboard') }}" class="flex items-center px-4 py-3 text-sm {% if request.path == url_for('dashboard') %}text-primary-700 bg-primary-50 border-l-4 border-primary-500{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+                        <svg class="mr-3 h-5 w-5 {% if request.path == url_for('dashboard') %}text-primary-500{% else %}text-gray-500{% endif %}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                        </svg>
+                        Dashboard
+                    </a>
+                    <a href="{{ url_for('courses') }}" class="flex items-center px-4 py-3 text-sm {% if request.path == url_for('courses') %}text-primary-700 bg-primary-50 border-l-4 border-primary-500{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+                        <svg class="mr-3 h-5 w-5 {% if request.path == url_for('courses') %}text-primary-500{% else %}text-gray-500{% endif %}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
+                        </svg>
+                        Explore Courses
+                    </a>
+                    
+                    <!-- Categories Dropdown -->
+                    <div x-data="{ open: false }">
+                        <button @click="open = !open" class="w-full flex items-center px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                            <svg class="mr-3 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
+                            </svg>
+                            Categories
+                            <svg class="ml-auto h-5 w-5 transform transition-transform duration-200" :class="{'rotate-180': open}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <div x-show="open" class="pl-8 pb-2 space-y-1">
+                            <a href="{{ url_for('courses') }}?category=cardiology" class="flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                                <svg class="mr-3 h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
+                                </svg>
+                                Cardiology
+                            </a>
+                            <a href="{{ url_for('courses') }}?category=neurology" class="flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                                <svg class="mr-3 h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z" />
+                                    <path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z" />
+                                    <path d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z" />
+                                </svg>
+                                Neurology
+                            </a>
+                            <a href="{{ url_for('courses') }}?category=emergency" class="flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                                <svg class="mr-3 h-4 w-4 text-yellow-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                                Emergency
+                            </a>
+                            <a href="{{ url_for('courses') }}?category=orthopedics" class="flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                                <svg class="mr-3 h-4 w-4 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v3a1 1 0 102 0V7z" clip-rule="evenodd" />
+                                </svg>
+                                Orthopedics
+                            </a>
+                            <a href="{{ url_for('courses') }}" class="flex items-center px-4 py-2 text-sm text-primary-600 hover:bg-gray-50">
+                                <svg class="mr-3 h-4 w-4 text-primary-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+                                </svg>
+                                All Categories
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <a href="{{ url_for('dashboard') }}" class="flex items-center px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                        <svg class="mr-3 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                        </svg>
+                        My Courses
+                    </a>
+                    <a href="{{ url_for('profile') }}" class="flex items-center px-4 py-3 text-sm {% if request.path == url_for('profile') %}text-primary-700 bg-primary-50 border-l-4 border-primary-500{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+                        <svg class="mr-3 h-5 w-5 {% if request.path == url_for('profile') %}text-primary-500{% else %}text-gray-500{% endif %}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                        </svg>
+                        Profile
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="flex items-center px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                        <svg class="mr-3 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V7.414l-5.707-5.707A1 1 0 009.586 1H3zm7 3.293V2l4 4h-3.293A1 1 0 0110 5.293zM3 15V3h7v.293l.707.707L11.414 4l.293.293V6a1 1 0 001 1h2v8H3z" clip-rule="evenodd" />
+                        </svg>
+                        My Certificates
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 p-4 md:p-8">
+            <div class="max-w-4xl mx-auto">
+                {% block student_content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
