@@ -2,7 +2,11 @@
 
 {% block title %}{{ course.title }} - Ludens Medical Academy{% endblock %}
 
-{% block student_content if current_user.is_authenticated else 'content' %}
+{% if current_user.is_authenticated %}
+  {% block student_content %}
+{% else %}
+  {% block content %}
+{% endif %}
 <div class="bg-white">
     <!-- Course Header -->
     <div class="bg-primary-700">
@@ -406,7 +410,11 @@
         </div>
     </div>
 </div>
-{% endblock %}
+{% if current_user.is_authenticated %}
+  {% endblock student_content %}
+{% else %}
+  {% endblock content %}
+{% endif %}
 
 {% block head %}
 <style>
