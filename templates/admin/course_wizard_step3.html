@@ -103,8 +103,9 @@
                             
                             <!-- Accordion Content (Initially Hidden) -->
                             <div class="hidden accordion-content px-4 py-4 sm:px-6 border-t border-gray-200 bg-gray-50" id="accordion-content-{{ module.id }}">
-                                <form action="{{ url_for('admin_quiz_wizard', module_id=module.id) }}" method="POST" class="quiz-form" id="quiz-form-{{ module.id }}">
+                                <form action="{{ url_for('admin_quiz_wizard', module_id=module.id) }}" method="POST" class="quiz-form" id="quiz-form-{{ module.id }}" onsubmit="submitQuizForm(event, {{ module.id }}, {{ course.id }})">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <input type="hidden" name="course_id" value="{{ course.id }}"/>
                                     <!-- Debug information for form -->
                                     <input type="hidden" name="debug_form_id" value="quiz-form-{{ module.id }}"/>
                                     
@@ -548,28 +549,77 @@
             setTimeout(findAndOpenModuleQuiz, 500);
         }
         
-        // Handle quiz form submission
-        const quizForms = document.querySelectorAll('.quiz-form');
-        quizForms.forEach(form => {
-            form.addEventListener('submit', function(event) {
-                // Log form submission for debugging
-                console.log('Quiz form is being submitted');
-                
-                // Make sure all form fields have values
-                const title = form.querySelector('[name="title"]').value;
-                const description = form.querySelector('[name="description"]').value;
-                const passingScore = form.querySelector('[name="passing_score"]').value;
-                
-                if (!title || !description || !passingScore) {
-                    event.preventDefault();
-                    alert('Please fill out all required fields');
-                    return false;
+        // Function to handle quiz form submission via AJAX
+        function submitQuizForm(event, moduleId, courseId) {
+            event.preventDefault();
+            
+            console.log(`Submitting quiz form for module ${moduleId}`);
+            const form = document.getElementById(`quiz-form-${moduleId}`);
+            const formData = new FormData(form);
+            
+            // Make sure all form fields have values
+            const title = form.querySelector('[name="title"]').value;
+            const description = form.querySelector('[name="description"]').value;
+            const passingScore = form.querySelector('[name="passing_score"]').value;
+            
+            if (!title || !description || !passingScore) {
+                alert('Please fill out all required fields');
+                return false;
+            }
+            
+            // Show a loading indicator
+            const submitButton = form.querySelector('button[type="submit"]');
+            const originalButtonText = submitButton.innerHTML;
+            submitButton.innerHTML = 'Saving...';
+            submitButton.disabled = true;
+            
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
+            })
+            .then(response => {
+                // If it's a redirect, follow it
+                if (response.redirected) {
+                    window.location.href = response.url;
+                    return null;
+                }
+                return response.text();
+            })
+            .then(data => {
+                if (data === null) return;
                 
-                // Allow form to submit normally
-                return true;
+                // Reset button state
+                submitButton.innerHTML = originalButtonText;
+                submitButton.disabled = false;
+                
+                // Show success message
+                const toastMessage = document.createElement('div');
+                toastMessage.className = 'fixed top-4 right-4 z-50 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-md';
+                toastMessage.innerHTML = `<div class="flex items-center">
+                    <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <p>Quiz saved successfully!</p>
+                </div>`;
+                document.body.appendChild(toastMessage);
+                
+                setTimeout(() => {
+                    toastMessage.remove();
+                }, 3000);
+                
+                // Refresh the page to show updated quiz info
+                window.location.href = `/admin/course-wizard/step3/${courseId}`;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                submitButton.innerHTML = originalButtonText;
+                submitButton.disabled = false;
+                alert('An error occurred while saving the quiz. Please try again.');
             });
-        });
+        }
         
         // Handle question form submission
         const questionForms = document.querySelectorAll('.question-form');

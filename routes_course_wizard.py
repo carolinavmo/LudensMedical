@@ -1,4 +1,4 @@
-from flask import render_template, redirect, url_for, flash, request, session
+from flask import render_template, redirect, url_for, flash, request, session, jsonify
 from flask_login import login_required, current_user
 from datetime import datetime
 import os
@@ -451,10 +451,21 @@ def admin_quiz_wizard(module_id=None, quiz_id=None):
                 app.logger.error(f"Error creating quiz: {str(e)}")
                 flash(f'Error creating quiz: {str(e)}', 'error')
         
-        # Add quiz_added parameter and module_id to indicate that a quiz was just created
-        # and which module it was created for
-        app.logger.debug(f"Redirecting after quiz creation with module_id={module_id} for course_id={course.id}")
-        return redirect(url_for('admin_course_wizard_step3', course_id=course.id, quiz_added=True, module_id=module_id))
+        # Check if this is an AJAX request
+        is_ajax_request = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
+        if is_ajax_request:
+            # Return JSON response for AJAX requests
+            return jsonify({
+                'success': True,
+                'message': 'Quiz created successfully',
+                'quiz_id': quiz_id,
+                'module_id': module_id
+            })
+        else:
+            # For regular form submissions, redirect to the same page
+            app.logger.debug(f"Redirecting after quiz creation with module_id={module_id} for course_id={course.id}")
+            return redirect(url_for('admin_course_wizard_step3', course_id=course.id, module_id=module_id))
     
     return render_template('admin/quiz_wizard.html',
                           form=form,
