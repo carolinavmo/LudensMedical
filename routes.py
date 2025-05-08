@@ -192,11 +192,41 @@ def dashboard():
     # Log user role for debugging
     logging.info(f"User {current_user.username} has role: {current_user.role}, is_admin: {current_user.is_admin()}")
     
-    if current_user.is_admin():
+    # Only redirect if the user is an admin AND is directly accessing the dashboard route
+    # This prevents an infinite redirect loop but still maintains proper access control
+    if current_user.is_admin() and request.path == '/dashboard':
         logging.info(f"Redirecting admin user to admin dashboard")
         return redirect(url_for('admin_dashboard'))
     
     logging.info(f"Loading student dashboard for user: {current_user.username}")
+    
+    # Try to use the SQLAlchemy model first
+    try:
+        user_enrollments = Enrollment.query.filter_by(user_id=current_user.id).all()
+        if user_enrollments:
+            courses = [Course.query.get(e.course_id) for e in user_enrollments]
+            
+            # Get progress for each course
+            progress = {}
+            for enrollment in user_enrollments:
+                progress[enrollment.course_id] = enrollment.progress
+            
+            # Get certificates
+            user_certificates = Certificate.query.filter_by(user_id=current_user.id).all()
+            certificate_courses = [Course.query.get(c.course_id) for c in user_certificates]
+            certificate_courses = [c for c in certificate_courses if c]  # Filter out None values
+            
+            return render_template('dashboard.html', 
+                                courses=courses, 
+                                progress=progress, 
+                                certificates=user_certificates,
+                                certificate_courses=certificate_courses)
+    except Exception as e:
+        logging.error(f"Error accessing database: {str(e)}")
+        # Fall back to in-memory data
+        pass
+    
+    # Fall back to in-memory data if database access fails
     enrollments = get_user_enrollments(current_user.id, enrollment_db)
     courses = [course_db.get(e.course_id) for e in enrollments]
     courses = [c for c in courses if c]  # Filter out None values
@@ -220,33 +250,70 @@ def dashboard():
 @app.route('/course/<int:course_id>/module/<int:module_id>')
 @login_required
 def module_detail(course_id, module_id):
-    # Check if course exists
-    course = course_db.get(course_id)
+    # Try to get the course from SQLAlchemy first
+    try:
+        course = Course.query.get(course_id)
+        if not course:
+            course = course_db.get(course_id)
+    except:
+        course = course_db.get(course_id)
+    
     if not course:
         flash('Course not found', 'error')
         return redirect(url_for('courses'))
     
-    # Check if module exists
-    module = module_db.get(module_id)
-    if not module or module.course_id != course_id:
+    # Try to get the module from SQLAlchemy
+    try:
+        module = Module.query.get(module_id)
+        if not module or module.course_id != course_id:
+            module = module_db.get(module_id)
+            if module and module.course_id != course_id:
+                module = None
+    except:
+        module = module_db.get(module_id)
+        if module and module.course_id != course_id:
+            module = None
+    
+    if not module:
         flash('Module not found', 'error')
         return redirect(url_for('course_detail', course_id=course_id))
     
-    # Check if user is enrolled
-    enrolled = False
-    progress = 0
-    for enrollment in enrollment_db.values():
-        if enrollment.user_id == current_user.id and enrollment.course_id == course_id:
+    # Check if user is enrolled using SQLAlchemy
+    try:
+        enrollment = Enrollment.query.filter_by(user_id=current_user.id, course_id=course_id).first()
+        if enrollment:
             enrolled = True
             progress = enrollment.progress
-            break
+        else:
+            # Fall back to in-memory database
+            enrolled = False
+            progress = 0
+            for e in enrollment_db.values():
+                if e.user_id == current_user.id and e.course_id == course_id:
+                    enrolled = True
+                    progress = e.progress
+                    break
+    except:
+        # Fall back to in-memory database
+        enrolled = False
+        progress = 0
+        for e in enrollment_db.values():
+            if e.user_id == current_user.id and e.course_id == course_id:
+                enrolled = True
+                progress = e.progress
+                break
     
     if not enrolled and not current_user.is_admin():
         flash('You must enroll in this course to view modules', 'error')
         return redirect(url_for('course_detail', course_id=course_id))
     
     # Get all modules for navigation
-    modules = get_course_modules(course_id, module_db)
+    try:
+        modules = Module.query.filter_by(course_id=course_id).order_by(Module.order).all()
+        if not modules:
+            modules = get_course_modules(course_id, module_db)
+    except:
+        modules = get_course_modules(course_id, module_db)
     
     # Find previous and next modules
     prev_module = None
@@ -260,22 +327,50 @@ def module_detail(course_id, module_id):
             break
     
     # Get quiz for this module if exists
-    quiz = None
-    quiz_completed = False
-    quiz_score = 0
-    for q in quiz_db.values():
-        if q.module_id == module_id:
-            quiz = q
-            # Check if user has completed this quiz
-            if hasattr(q, 'user_scores') and current_user.id in q.user_scores:
-                quiz_completed = True
-                quiz_score = q.user_scores[current_user.id]
-            break
+    try:
+        quiz = Quiz.query.filter_by(module_id=module_id).first()
+        quiz_completed = False
+        quiz_score = 0
+        
+        if not quiz:
+            # Fall back to in-memory
+            for q in quiz_db.values():
+                if q.module_id == module_id:
+                    quiz = q
+                    # Check if user has completed this quiz
+                    if hasattr(q, 'user_scores') and current_user.id in q.user_scores:
+                        quiz_completed = True
+                        quiz_score = q.user_scores[current_user.id]
+                    break
+    except:
+        quiz = None
+        quiz_completed = False
+        quiz_score = 0
+        for q in quiz_db.values():
+            if q.module_id == module_id:
+                quiz = q
+                # Check if user has completed this quiz
+                if hasattr(q, 'user_scores') and current_user.id in q.user_scores:
+                    quiz_completed = True
+                    quiz_score = q.user_scores[current_user.id]
+                break
     
     # Check if all modules are completed (for certificate link)
-    all_modules_completed = False
-    if enrolled and progress >= 100:
-        all_modules_completed = True
+    all_modules_completed = enrolled and progress >= 100
+    
+    # Update progress to track that this module was viewed
+    if enrolled and not current_user.is_admin():
+        try:
+            if enrollment:
+                # Increment progress slightly for viewing the module
+                module_count = len(modules)
+                if module_count > 0:
+                    view_increment = int(50 / module_count)  # 50% of progress is from viewing
+                    if progress < 100:  # Only update if not already completed
+                        enrollment.progress = min(100, progress + view_increment)
+                        db.session.commit()
+        except Exception as e:
+            logging.error(f"Error updating progress: {str(e)}")
     
     return render_template('module_detail.html',
                           course=course,
