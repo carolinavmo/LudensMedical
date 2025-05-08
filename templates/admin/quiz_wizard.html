@@ -1,0 +1,123 @@
+{% extends 'admin/course_wizard.html' %}
+
+{% block wizard_content %}
+<form action="{{ url_for('admin_quiz_wizard', quiz_id=quiz.id) if edit_mode else url_for('admin_quiz_wizard', module_id=module.id) }}" method="POST">
+    {{ form.hidden_tag() }}
+    <div class="px-4 py-5 sm:p-6">
+        <div class="grid grid-cols-6 gap-6">
+            <div class="col-span-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-5">Quiz Information</h2>
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-5">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-blue-700">
+                                This quiz will be added to <strong>{{ module.title }}</strong> in the course <strong>{{ course.title }}</strong>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-span-6">
+                <label for="title" class="block text-sm font-medium text-gray-700">Quiz Title</label>
+                {{ form.title(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md") }}
+                {% if form.title.errors %}
+                    <div class="text-red-500 text-xs mt-1">
+                        {% for error in form.title.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="col-span-6">
+                <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                {{ form.description(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md", rows=3) }}
+                {% if form.description.errors %}
+                    <div class="text-red-500 text-xs mt-1">
+                        {% for error in form.description.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <p class="mt-1 text-sm text-gray-500">Briefly describe what students should expect from this quiz.</p>
+            </div>
+
+            <div class="col-span-6 sm:col-span-3">
+                <label for="passing_score" class="block text-sm font-medium text-gray-700">Passing Score (%)</label>
+                {{ form.passing_score(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md") }}
+                {% if form.passing_score.errors %}
+                    <div class="text-red-500 text-xs mt-1">
+                        {% for error in form.passing_score.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <p class="mt-1 text-sm text-gray-500">Students must score at least this percentage to pass the quiz.</p>
+            </div>
+        </div>
+
+        {% if edit_mode and questions %}
+            <div class="mt-8">
+                <h3 class="text-lg font-medium text-gray-900 mb-3">Quiz Questions</h3>
+                
+                <ul class="mt-3 divide-y divide-gray-100 bg-white shadow-sm border rounded-md overflow-hidden">
+                    {% for question in questions %}
+                        <li class="p-4">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ question.order }}. {{ question.question }}</p>
+                                    <div class="mt-2">
+                                        {% set options = question.get_options() %}
+                                        {% for option in options %}
+                                            <div class="flex items-center {% if loop.index0 == question.correct_answer %}text-green-600 font-medium{% else %}text-gray-600{% endif %}">
+                                                <span class="inline-flex items-center justify-center h-5 w-5 rounded-full {% if loop.index0 == question.correct_answer %}bg-green-100 text-green-600{% else %}bg-gray-100 text-gray-500{% endif %} mr-2 text-xs font-medium">
+                                                    {{ loop.index }}
+                                                </span>
+                                                {{ option }}
+                                                {% if loop.index0 == question.correct_answer %}
+                                                    <svg class="ml-2 h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                {% endif %}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <a href="{{ url_for('admin_question_edit', question_id=question.id) }}" class="inline-flex items-center mt-1 text-sm text-primary-600 hover:text-primary-900">
+                                    <svg class="mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                    </svg>
+                                    Edit
+                                </a>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+                
+                <div class="mt-4">
+                    <a href="{{ url_for('admin_question_new', quiz_id=quiz.id) }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                        </svg>
+                        Add Question
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    <div class="px-4 py-3 bg-gray-50 text-right sm:px-6 flex justify-between">
+        <a href="{{ url_for('admin_course_wizard_step3', course_id=course.id) }}" class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+            Back to Quizzes
+        </a>
+        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+            {{ 'Save Changes' if edit_mode else 'Create Quiz' }}
+        </button>
+    </div>
+</form>
+{% endblock %}

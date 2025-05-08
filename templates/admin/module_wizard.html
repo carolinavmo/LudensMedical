@@ -1,0 +1,127 @@
+{% extends 'admin/course_wizard.html' %}
+
+{% block wizard_content %}
+<form action="{{ url_for('admin_module_wizard', course_id=course.id, module_id=module.id) if edit_mode else url_for('admin_module_wizard', course_id=course.id) }}" method="POST" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+    <div class="px-4 py-5 sm:p-6">
+        <div class="grid grid-cols-6 gap-6">
+            <div class="col-span-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-5">Module Information</h2>
+            </div>
+
+            <div class="col-span-6">
+                <label for="title" class="block text-sm font-medium text-gray-700">Module Title</label>
+                {{ form.title(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md") }}
+                {% if form.title.errors %}
+                    <div class="text-red-500 text-xs mt-1">
+                        {% for error in form.title.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="col-span-6">
+                <label for="content" class="block text-sm font-medium text-gray-700">Content</label>
+                {{ form.content(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md", rows=10) }}
+                {% if form.content.errors %}
+                    <div class="text-red-500 text-xs mt-1">
+                        {% for error in form.content.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <p class="mt-1 text-sm text-gray-500">HTML is supported for rich formatting.</p>
+            </div>
+
+            <div class="col-span-6 sm:col-span-3">
+                <label for="order" class="block text-sm font-medium text-gray-700">Module Order</label>
+                {{ form.order(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md") }}
+                {% if form.order.errors %}
+                    <div class="text-red-500 text-xs mt-1">
+                        {% for error in form.order.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <p class="mt-1 text-sm text-gray-500">Position of this module in the course (1 = first)</p>
+            </div>
+
+            <div class="col-span-3"></div>
+
+            <div class="col-span-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mt-6 mb-4">Module Materials</h3>
+            </div>
+
+            <div class="col-span-6 sm:col-span-3">
+                <label for="video_url" class="block text-sm font-medium text-gray-700">Video URL (External)</label>
+                {{ form.video_url(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md") }}
+                {% if form.video_url.errors %}
+                    <div class="text-red-500 text-xs mt-1">
+                        {% for error in form.video_url.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <p class="mt-1 text-sm text-gray-500">Link to an external video (YouTube, Vimeo, etc.)</p>
+            </div>
+
+            <div class="col-span-6 sm:col-span-3">
+                <label for="video_file" class="block text-sm font-medium text-gray-700">Video File</label>
+                {{ form.video_file(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100") }}
+                {% if form.video_file.errors %}
+                    <div class="text-red-500 text-xs mt-1">
+                        {% for error in form.video_file.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <p class="mt-1 text-sm text-gray-500">Upload a video file (MP4, WebM, or OGG)</p>
+                {% if module and module.video_file %}
+                    <p class="mt-2 text-xs text-primary-600">Current file: {{ module.video_file }}</p>
+                {% endif %}
+            </div>
+
+            <div class="col-span-6 sm:col-span-3">
+                <label for="pdf_url" class="block text-sm font-medium text-gray-700">PDF URL (External)</label>
+                {{ form.pdf_url(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md") }}
+                {% if form.pdf_url.errors %}
+                    <div class="text-red-500 text-xs mt-1">
+                        {% for error in form.pdf_url.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <p class="mt-1 text-sm text-gray-500">Link to an external PDF document</p>
+            </div>
+
+            <div class="col-span-6 sm:col-span-3">
+                <label for="pdf_file" class="block text-sm font-medium text-gray-700">PDF File</label>
+                {{ form.pdf_file(class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100") }}
+                {% if form.pdf_file.errors %}
+                    <div class="text-red-500 text-xs mt-1">
+                        {% for error in form.pdf_file.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <p class="mt-1 text-sm text-gray-500">Upload a PDF document</p>
+                {% if module and module.pdf_file %}
+                    <p class="mt-2 text-xs text-primary-600">Current file: {{ module.pdf_file }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Navigation Buttons -->
+    <div class="px-4 py-3 bg-gray-50 text-right sm:px-6 flex justify-between">
+        <a href="{{ url_for('admin_course_wizard_step2', course_id=course.id) }}" class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+            Back to Modules
+        </a>
+        
+        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+            {{ 'Save Changes' if edit_mode else 'Create Module' }}
+        </button>
+    </div>
+</form>
+{% endblock %}

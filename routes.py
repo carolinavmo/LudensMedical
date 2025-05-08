@@ -1319,7 +1319,13 @@ def admin_module_edit(module_id):
             logging.info(f"Saved new PDF file: {pdf_file_path}")
         
         flash('Module updated successfully', 'success')
-        return redirect(url_for('admin_course_edit', course_id=course.id))
+        
+        # Check if we are in wizard flow - if the referer has 'course-wizard' in the URL
+        referer = request.referrer or ""
+        if 'course-wizard' in referer:
+            return redirect(url_for('admin_course_wizard_step2', course_id=course.id))
+        else:
+            return redirect(url_for('admin_course_edit', course_id=course.id))
     
     # Get quiz if exists
     quiz = next((q for q in quiz_db.values() if q.module_id == module_id), None)
@@ -1378,7 +1384,13 @@ def admin_module_delete(module_id):
     del module_db[module_id]
     
     flash('Module and related data deleted successfully', 'success')
-    return redirect(url_for('admin_course_edit', course_id=course_id))
+    
+    # Check if we are in wizard flow - if the referer has 'course-wizard' in the URL
+    referer = request.referrer or ""
+    if 'course-wizard' in referer:
+        return redirect(url_for('admin_course_wizard_step2', course_id=course_id))
+    else:
+        return redirect(url_for('admin_course_edit', course_id=course_id))
 
 @app.route('/admin/modules/<int:module_id>/quiz/new', methods=['GET', 'POST'])
 @login_required
