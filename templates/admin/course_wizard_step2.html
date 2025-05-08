@@ -82,13 +82,12 @@
                                     </div>
                                 </div>
                                 <div class="flex space-x-2">
-                                    <button 
-                                        data-module-edit
-                                        data-module-id="{{ module.id }}"
+                                    <a 
+                                        href="{{ url_for('admin_module_edit', module_id=module.id) }}"
                                         class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                                     >
                                         Edit Content
-                                    </button>
+                                    </a>
                                     
                                     {% set module_quiz = None %}
                                     {% for quiz in quizzes %}
@@ -153,125 +152,8 @@
 </div>
 {% endblock %}
 
-<!-- Modal Templates -->
-{% for module in modules %}
-<!-- Module Edit Modal for {{ module.id }} -->
-<div id="modal-module-{{ module.id }}" class="fixed inset-0 z-50 overflow-y-auto hidden">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <!-- Backdrop -->
-        <div class="fixed inset-0 transition-opacity">
-            <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
-        </div>
-        
-        <!-- Modal -->
-        <div class="bg-white rounded-lg overflow-hidden shadow-xl transform transition-all sm:max-w-4xl sm:w-full">
-            <!-- Modal Header -->
-            <div class="bg-gray-100 px-4 py-5 border-b border-gray-200 sm:px-6 flex justify-between items-center">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">
-                    Edit Module: {{ module.title }}
-                </h3>
-                <button onclick="document.getElementById('modal-module-{{ module.id }}').classList.add('hidden')" class="text-gray-400 hover:text-gray-500">
-                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            
-            <!-- Tab Container -->
-            <div class="px-4 py-5 sm:p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
-                <form action="{{ url_for('admin_module_edit', module_id=module.id) }}" method="POST" enctype="multipart/form-data">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    
-                    <!-- Content -->
-                    <div>
-                        <div class="mb-4">
-                            <label for="title-{{ module.id }}" class="block text-sm font-medium text-gray-700">Module Title</label>
-                            <input 
-                                type="text" 
-                                id="title-{{ module.id }}" 
-                                name="title" 
-                                value="{{ module.title }}"
-                                class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                            >
-                        </div>
-                        
-                        <div class="mb-4">
-                            <label for="content-{{ module.id }}" class="block text-sm font-medium text-gray-700">Content</label>
-                            <textarea 
-                                id="content-{{ module.id }}" 
-                                name="content" 
-                                rows="10"
-                                class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                            >{{ module.content }}</textarea>
-                        </div>
-                    
-                        <div class="mb-4">
-                            <label for="video_url-{{ module.id }}" class="block text-sm font-medium text-gray-700">Video URL (External)</label>
-                            <input 
-                                type="text" 
-                                id="video_url-{{ module.id }}" 
-                                name="video_url" 
-                                value="{{ module.video_url or '' }}"
-                                class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                            >
-                            <p class="mt-1 text-sm text-gray-500">Enter a URL for an external video (YouTube, Vimeo, etc.)</p>
-                        </div>
-                        
-                        <div class="mb-4">
-                            <label for="order-{{ module.id }}" class="block text-sm font-medium text-gray-700">Module Order</label>
-                            <input 
-                                type="number" 
-                                id="order-{{ module.id }}" 
-                                name="order" 
-                                value="{{ module.order }}"
-                                min="1"
-                                class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                            >
-                            <p class="mt-1 text-sm text-gray-500">Order in which this module appears in the course</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Footer with save button -->
-                    <div class="flex justify-end mt-8 pt-5 border-t border-gray-200">
-                        <button 
-                            type="button" 
-                            onclick="document.getElementById('modal-module-{{ module.id }}').classList.add('hidden')" 
-                            class="mr-3 bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50"
-                        >
-                            Cancel
-                        </button>
-                        <button 
-                            type="submit" 
-                            class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                        >
-                            Save Changes
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-{% endfor %}
-
 {% block scripts %}
 {{ super() }}
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
 <script src="{{ url_for('static', filename='js/module-reorder.js') }}"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const editButtons = document.querySelectorAll('[data-module-edit]');
-        editButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                const moduleId = this.getAttribute('data-module-id');
-                // Show the modal using DOM manipulation
-                const modal = document.getElementById('modal-module-' + moduleId);
-                if (modal) {
-                    modal.classList.remove('hidden');
-                }
-            });
-        });
-    });
-</script>
 {% endblock %}
