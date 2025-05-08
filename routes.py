@@ -1238,7 +1238,13 @@ def admin_module_new(course_id):
         module_db[module_id] = module
         
         flash('Module created successfully', 'success')
-        return redirect(url_for('admin_course_edit', course_id=course_id))
+        
+        # Check if the request came from the course wizard
+        referer = request.headers.get('Referer', '')
+        if 'course-wizard/step2' in referer:
+            return redirect(url_for('admin_course_wizard_step2', course_id=course_id))
+        else:
+            return redirect(url_for('admin_course_edit', course_id=course_id))
     
     # Set default order as the next one
     existing_modules = get_course_modules(course_id, module_db)
