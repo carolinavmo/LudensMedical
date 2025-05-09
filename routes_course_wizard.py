@@ -1021,49 +1021,77 @@ def admin_add_question(quiz_id):
     
     course_id = module.course_id
     
+    # Determine the next order for this quiz
+    existing_questions = [q for q in question_db.values() if q.quiz_id == quiz_id]
+    next_order = 1
+    if existing_questions:
+        next_order = max([q.order for q in existing_questions]) + 1
+    
+    app.logger.debug(f"Next order number for quiz {quiz_id}: {next_order}")
+    
     if request.method == 'POST':
+        app.logger.debug(f"Processing POST request to add question to quiz {quiz_id}")
+        app.logger.debug(f"Form data: {request.form.to_dict()}")
+        
+        # Explicitly get form data
         question_text = request.form.get('question')
         option1 = request.form.get('option1')
         option2 = request.form.get('option2')
         option3 = request.form.get('option3')
         option4 = request.form.get('option4')
-        correct_answer = int(request.form.get('correct_answer'))
+        correct_answer = int(request.form.get('correct_answer', 0))
+        order = int(request.form.get('order', next_order))
         
-        # Determine the order (highest + 1)
-        existing_questions = [q for q in question_db.values() if q.quiz_id == quiz_id]
-        next_order = 1
-        if existing_questions:
-            next_order = max([q.order for q in existing_questions]) + 1
+        app.logger.debug(f"Extracted data - question: {question_text}, options: [{option1}, {option2}, {option3}, {option4}], correct: {correct_answer}, order: {order}")
         
         # Create the question
         options = [option1, option2]
-        if option3:
+        if option3 and option3.strip():
             options.append(option3)
-        if option4:
+        if option4 and option4.strip():
             options.append(option4)
         
-        # Create new question
-        new_question = QuizQuestion(
-            id=get_next_id(question_db),
-            quiz_id=quiz_id,
-            question=question_text,
-            options=json.dumps(options),
-            correct_answer=correct_answer,
-            order=next_order,
-            created_at=datetime.now()
-        )
+        # Generate new ID for question
+        question_id = get_next_id(question_db)
+        app.logger.debug(f"Generated new question ID: {question_id}")
         
-        # Add to DB
-        question_db[new_question.id] = new_question
-        
-        flash('Question added successfully', 'success')
-        return redirect(url_for('admin_manage_questions', quiz_id=quiz_id))
+        try:
+            # Create and add to database first
+            with app.app_context():
+                db_question = QuizQuestion(
+                    id=question_id,
+                    quiz_id=quiz_id,
+                    question=question_text,
+                    options=json.dumps(options),
+                    correct_answer=correct_answer,
+                    order=order,
+                    created_at=datetime.now()
+                )
+                db.session.add(db_question)
+                db.session.commit()
+                app.logger.debug(f"Question {question_id} added to database")
+            
+            # Then add to in-memory dictionary
+            question_db[question_id] = db_question
+            app.logger.debug(f"Question {question_id} added to in-memory dictionary")
+            
+            flash('Question added successfully', 'success')
+            
+            # Use absolute URL for redirection
+            redirect_url = f"/admin/quiz/{quiz_id}/questions"
+            app.logger.debug(f"Redirecting to: {redirect_url}")
+            return redirect(redirect_url)
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error adding question: {str(e)}")
+            flash(f'Error adding question: {str(e)}', 'error')
     
     return render_template(
         'admin/add_question.html',
         quiz=quiz,
         module=module,
-        course_id=course_id
+        course_id=course_id,
+        next_order=next_order
     )
 
 # Edit question
@@ -1348,8 +1376,10 @@ def admin_delete_question(question_id):
         app.logger.error(f"Error deleting question: {str(e)}")
         flash(f'Error deleting question: {str(e)}', 'error')
     
-    # Redirect to step 3 of the course wizard
-    return redirect(url_for('admin_course_wizard_step3', course_id=course_id))
+    # Use absolute URL for redirection
+    redirect_url = f"/admin/quiz/{quiz_id}/questions"
+    app.logger.debug(f"Redirecting to: {redirect_url}")
+    return redirect(redirect_url)
 
 # Add new question to quiz
 @app.route('/admin/quiz/<int:quiz_id>/question/new-json', methods=['POST'])
