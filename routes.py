@@ -1157,19 +1157,32 @@ def admin_modules_reorder(course_id):
                         app.logger.error(f"Module {update['id']} belongs to course {result[0]}, not {course_id}")
                         return jsonify({'success': False, 'message': f'Module {update["id"]} belongs to a different course'}), 403
                 
-                # Execute the updates using explicit SQL commands
+                # Use raw SQL to force updates to be committed properly
                 update_count = 0
                 for update in updates:
-                    result = connection.execute(
-                        "UPDATE modules SET \"order\" = :order WHERE id = :id AND course_id = :course_id",
-                        {"order": update['order'], "id": update['id'], "course_id": course_id}
-                    )
-                    
-                    if result.rowcount > 0:
-                        update_count += 1
-                        app.logger.info(f"Updated module {update['id']} order to {update['order']} in database")
-                    else:
-                        app.logger.warning(f"Failed to update module {update['id']} in database")
+                    # Force the update at the SQL level
+                    try:
+                        result = connection.execute(
+                            "UPDATE modules SET \"order\" = :order WHERE id = :id AND course_id = :course_id",
+                            {"order": update['order'], "id": update['id'], "course_id": course_id}
+                        )
+                        
+                        # Verify immediately with a follow-up query
+                        verify = connection.execute(
+                            "SELECT \"order\" FROM modules WHERE id = :id", 
+                            {"id": update['id']}
+                        ).first()
+                        
+                        if result.rowcount > 0 and verify and verify[0] == update['order']:
+                            update_count += 1
+                            app.logger.info(f"Updated and verified module {update['id']} order to {update['order']} in database")
+                        else:
+                            if result.rowcount == 0:
+                                app.logger.warning(f"Failed to update module {update['id']} in database - no rows affected")
+                            else:
+                                app.logger.warning(f"Updated module {update['id']} but verification failed: expected {update['order']}, got {verify[0] if verify else 'none'}")
+                    except Exception as e:
+                        app.logger.error(f"Error updating module {update['id']}: {str(e)}")
                 
                 # Transaction is automatically committed when the context manager exits
                 app.logger.info(f"Successfully updated {update_count} out of {len(updates)} modules in database")
@@ -1187,7 +1200,19 @@ def admin_modules_reorder(course_id):
             app.logger.debug(f"Refreshed data for course {course_id}: {len(course.get_modules())} modules, {Quiz.query.join(Module).filter(Module.course_id == course_id).count()} quizzes")
             
             # Also refresh in-memory data for consistency
-            populate_in_memory_db()
+            # Force a full reload from database to ensure all changes are reflected
+            try:
+                # Execute a direct query to verify
+                with db.engine.connect() as conn:
+                    results = conn.execute(f"SELECT id, \"order\" FROM modules WHERE course_id = {course_id} ORDER BY \"order\"").fetchall()
+                    for result in results:
+                        app.logger.info(f"Verified module {result[0]} has order {result[1]}")
+                
+                # Completely refresh in-memory database
+                db.session.expire_all()
+                populate_in_memory_db()
+            except Exception as e:
+                app.logger.error(f"Error during final verification: {str(e)}")
             
             return jsonify({
                 'success': True, 

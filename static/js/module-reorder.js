@@ -96,15 +96,19 @@ document.addEventListener('DOMContentLoaded', function() {
         modules.forEach((module, index) => {
             const newOrder = index + 1;
             
+            // Store the new order as a data attribute
+            module.dataset.newOrder = newOrder;
+            
             // Update the order number displayed in the UI
             const orderDisplay = module.querySelector('.module-order');
             if (orderDisplay) {
                 orderDisplay.textContent = newOrder;
             }
             
-            // Update the order in module edit form if it's expanded
+            // Force update the order in module edit form if it's expanded or not
             const orderInput = module.querySelector('input[name="order"]');
             if (orderInput) {
+                // This directly changes the form field value
                 orderInput.value = newOrder;
             }
             

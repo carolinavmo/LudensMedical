@@ -72,7 +72,7 @@
                     <ul class="divide-y divide-gray-200" id="module-list"
                         data-reorder-url="{{ url_for('admin_modules_reorder', course_id=course.id) }}">
                         {% for module in modules %}
-                        <li class="module-item" data-module-id="{{ module.id }}">
+                        <li class="module-item" data-module-id="{{ module.id }}" data-original-order="{{ module.order }}">
                             <!-- Module Header -->
                             <div class="px-4 py-4 sm:px-6 flex items-center justify-between">
                                 <div class="flex items-center space-x-3">
