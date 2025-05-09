@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize Sortable.js
     const sortable = new Sortable(moduleList, {
-        handle: '.cursor-move', // Handle for drag action
+        handle: '.drag-handle', // Updated to match the handle in HTML
         animation: 150,
         ghostClass: 'bg-gray-100',
         onStart: function(evt) {

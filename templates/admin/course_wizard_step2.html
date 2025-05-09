@@ -64,14 +64,14 @@
                             <!-- Module Header -->
                             <div class="px-4 py-4 sm:px-6 flex items-center justify-between">
                                 <div class="flex items-center space-x-3">
-                                    <div class="flex-shrink-0 cursor-move">
+                                    <div class="flex-shrink-0 cursor-move drag-handle">
                                         <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                             <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                                         </svg>
                                     </div>
                                     <div>
                                         <p class="text-sm font-medium text-primary-600 truncate">
-                                            {{ module.order }}. {{ module.title }}
+                                            <span class="module-order">{{ module.order }}</span>. {{ module.title }}
                                         </p>
                                         <div class="mt-1 flex items-center space-x-2">
                                             {% if module.video_url or module.video_file %}
