@@ -1460,8 +1460,8 @@ def admin_question_new_json(quiz_id):
             'form_errors': form.errors
         }), 400
 
-# Delete a question
-@app.route('/admin/question/<int:question_id>/delete', methods=['POST'])
+# Delete a question via AJAX
+@app.route('/admin/question/<int:question_id>/delete-ajax', methods=['POST'])
 @login_required
 def admin_question_delete_ajax(question_id):
     if current_user.role != 'admin':
