@@ -1075,6 +1075,8 @@ def admin_edit_question(question_id):
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
+    app.logger.debug(f"Editing question ID: {question_id}")
+    
     # Try to get fresh data from database first, then fall back to in-memory if needed
     try:
         with app.app_context():
@@ -1084,19 +1086,23 @@ def admin_edit_question(question_id):
                 # Update in-memory
                 question_db[question_id] = db_question
                 question = db_question
+                app.logger.debug(f"Retrieved question from database: {question.question}")
             else:
                 # Fall back to in-memory
                 question = question_db.get(question_id)
+                app.logger.debug(f"Using in-memory question: {question.question if question else 'Not found'}")
     except Exception as e:
         app.logger.error(f"Error getting fresh question data: {str(e)}")
         # Fall back to in-memory
         question = question_db.get(question_id)
+        app.logger.debug(f"Exception - Using in-memory question: {question.question if question else 'Not found'}")
     
     if not question:
         flash('Question not found', 'error')
         return redirect(url_for('admin_courses'))
     
     quiz_id = question.quiz_id
+    app.logger.debug(f"Question belongs to quiz ID: {quiz_id}")
     
     # Try to get fresh quiz data
     try:
@@ -1106,13 +1112,16 @@ def admin_edit_question(question_id):
                 # Update in-memory
                 quiz_db[quiz_id] = db_quiz
                 quiz = db_quiz
+                app.logger.debug(f"Retrieved quiz from database: {quiz.title}")
             else:
                 # Fall back to in-memory
                 quiz = quiz_db.get(quiz_id)
+                app.logger.debug(f"Using in-memory quiz: {quiz.title if quiz else 'Not found'}")
     except Exception as e:
         app.logger.error(f"Error getting fresh quiz data: {str(e)}")
         # Fall back to in-memory
         quiz = quiz_db.get(quiz_id)
+        app.logger.debug(f"Exception - Using in-memory quiz: {quiz.title if quiz else 'Not found'}")
     
     if not quiz:
         flash('Quiz not found', 'error')
@@ -1120,6 +1129,7 @@ def admin_edit_question(question_id):
     
     # Get module and course for navigation
     module_id = quiz.module_id
+    app.logger.debug(f"Quiz belongs to module ID: {module_id}")
     
     # Try to get fresh module data
     try:
@@ -1129,22 +1139,40 @@ def admin_edit_question(question_id):
                 # Update in-memory
                 module_db[module_id] = db_module
                 module = db_module
+                app.logger.debug(f"Retrieved module from database: {module.title}")
             else:
                 # Fall back to in-memory
                 module = module_db.get(module_id)
+                app.logger.debug(f"Using in-memory module: {module.title if module else 'Not found'}")
     except Exception as e:
         app.logger.error(f"Error getting fresh module data: {str(e)}")
         # Fall back to in-memory
         module = module_db.get(module_id)
+        app.logger.debug(f"Exception - Using in-memory module: {module.title if module else 'Not found'}")
     
     if not module:
         flash('Module not found', 'error')
         return redirect(url_for('admin_courses'))
     
     course_id = module.course_id
+    app.logger.debug(f"Module belongs to course ID: {course_id}")
     
-    # Get the options
-    options = question.get_options()
+    # Get the options directly from database to ensure we have the latest
+    try:
+        with app.app_context():
+            db_question = QuizQuestion.query.get(question_id)
+            if db_question and db_question.options:
+                options = json.loads(db_question.options)
+                app.logger.debug(f"Retrieved options from database: {options}")
+            else:
+                options = question.get_options()
+                app.logger.debug(f"Using in-memory options: {options}")
+    except Exception as e:
+        app.logger.error(f"Error getting options from database: {str(e)}")
+        options = question.get_options()
+        app.logger.debug(f"Exception - Using in-memory options: {options}")
+    
+    app.logger.debug(f"Options for question: {options}")
     
     if request.method == 'POST':
         question_text = request.form.get('question')
@@ -1154,12 +1182,16 @@ def admin_edit_question(question_id):
         option4 = request.form.get('option4')
         correct_answer = int(request.form.get('correct_answer'))
         
+        app.logger.debug(f"POST data - question: {question_text}, options: {option1}, {option2}, {option3}, {option4}, correct: {correct_answer}")
+        
         # Create new options list
         new_options = [option1, option2]
         if option3:
             new_options.append(option3)
         if option4:
             new_options.append(option4)
+        
+        app.logger.debug(f"New options list: {new_options}")
         
         try:
             # Update database first
@@ -1171,11 +1203,16 @@ def admin_edit_question(question_id):
                     db_question.options = json.dumps(new_options)
                     db.session.commit()
                     app.logger.debug(f"Question {question_id} updated in database")
+                else:
+                    app.logger.warning(f"Question {question_id} not found in database for update")
                 
                 # Update in-memory whether or not the database update succeeds
-                question.question = question_text
-                question.correct_answer = correct_answer
-                question.set_options(new_options)
+                if question_id in question_db:
+                    question = question_db[question_id]
+                    question.question = question_text
+                    question.correct_answer = correct_answer
+                    question.set_options(new_options)
+                    app.logger.debug(f"Question {question_id} updated in memory")
                 
                 flash('Question updated successfully', 'success')
         except Exception as e:
@@ -1183,8 +1220,11 @@ def admin_edit_question(question_id):
             app.logger.error(f"Error updating question: {str(e)}")
             flash(f'Error updating question: {str(e)}', 'error')
         
-        # Redirect to step 3 of the course wizard
-        return redirect(url_for('admin_course_wizard_step3', course_id=course_id))
+        # Redirect to the question management page for this quiz
+        app.logger.debug(f"Redirecting to question management for quiz {quiz_id}")
+        return redirect(url_for('admin_manage_questions', quiz_id=quiz_id))
+    
+    app.logger.debug(f"Rendering edit_question.html with question={question_id}, quiz={quiz_id}, options={options}")
     
     return render_template(
         'admin/edit_question.html',
