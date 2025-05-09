@@ -1,896 +1,270 @@
 {% extends 'admin/course_wizard.html' %}
 
 {% block wizard_content %}
-<!-- Add direct, simple accordion styles -->
 <style>
+.quiz-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    background-color: white;
+}
 .quiz-header {
+    padding: 16px;
+    background-color: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     cursor: pointer;
-    transition: background-color 0.2s;
 }
 .quiz-header:hover {
     background-color: #f3f4f6;
 }
-.quiz-details {
+.quiz-content {
+    padding: 16px;
     display: none;
 }
-.rotate-icon {
+.quiz-content.active {
+    display: block;
+}
+.chevron {
+    transition: transform 0.3s;
+}
+.rotate {
     transform: rotate(180deg);
 }
 </style>
-<div class="px-4 py-5 sm:p-6">
-    <div class="grid grid-cols-6 gap-6">
-        <div class="col-span-6">
-            <h2 class="text-xl font-semibold text-gray-900 mb-5">Quiz Management</h2>
-            
-            <!-- Debug Information Panel -->
-            <div class="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200 text-xs text-gray-600">
-                <div class="flex justify-between items-center">
-                    <p class="font-medium">Debug Information:</p>
-                    <button id="toggle-debug-btn" class="px-2 py-1 border border-gray-300 rounded text-xs font-medium text-gray-500 bg-white hover:bg-gray-50 focus:outline-none">
-                        Show Detailed Debug
-                    </button>
-                </div>
-                <ul class="list-disc ml-5 mt-1">
-                    <li>Course: {{ course.title }}</li>
-                    <li>Modules: {{ modules|length }} ({% for m in modules %}{{ m.id }}{% if not loop.last %}, {% endif %}{% endfor %})</li>
-                    <li>Quizzes: {{ quizzes|length }} ({% for q in quizzes %}{{ q.id }}:m{{ q.module_id }}{% if not loop.last %}, {% endif %}{% endfor %})</li>
-                    <li>Questions: {{ questions|length }}</li>
-                </ul>
-                <div class="hidden debug-info mt-3 pt-2 border-t border-gray-200">
-                    <h4 class="font-semibold mb-1">Detailed Module & Quiz Data:</h4>
-                    <table class="w-full text-xs border-collapse">
-                        <thead>
-                            <tr>
-                                <th class="py-1 px-2 bg-gray-100 text-left">Module ID</th>
-                                <th class="py-1 px-2 bg-gray-100 text-left">Module Title</th>
-                                <th class="py-1 px-2 bg-gray-100 text-left">Quiz ID</th>
-                                <th class="py-1 px-2 bg-gray-100 text-left">Quiz Title</th>
-                                <th class="py-1 px-2 bg-gray-100 text-left">Questions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for module in modules %}
-                                {% set has_quiz = false %}
-                                {% set quiz_info = {'id': 'None', 'title': 'No Quiz', 'question_count': 0} %}
-                                
-                                {% for quiz in quizzes %}
-                                    {% if quiz.module_id == module.id %}
-                                        {% set has_quiz = true %}
-                                        {% set quiz_question_count = 0 %}
-                                        {% for question in questions %}
-                                            {% if question.quiz_id == quiz.id %}
-                                                {% set quiz_question_count = quiz_question_count + 1 %}
-                                            {% endif %}
-                                        {% endfor %}
-                                        {% set _ = quiz_info.update({'id': quiz.id, 'title': quiz.title, 'question_count': quiz_question_count}) %}
-                                    {% endif %}
-                                {% endfor %}
-                                
-                                <tr class="hover:bg-gray-50">
-                                    <td class="py-1 px-2 border">{{ module.id }}</td>
-                                    <td class="py-1 px-2 border">{{ module.title }}</td>
-                                    <td class="py-1 px-2 border">{{ quiz_info.id }}</td>
-                                    <td class="py-1 px-2 border">{{ quiz_info.title }}</td>
-                                    <td class="py-1 px-2 border">{{ quiz_info.question_count }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <p class="text-sm text-gray-500 mb-6">
-                Create and manage quizzes for your course modules. Each module can have one quiz with multiple questions.
-            </p>
-            
-            <!-- List of quizzes with individual accordion-style expansion -->
-            <div class="space-y-4 mb-8">
-                <h3 class="text-lg font-medium leading-6 text-gray-900">Existing Quizzes</h3>
-                
-                <!-- Debug info -->
-                <div class="mb-4 p-3 bg-yellow-50 rounded-md border border-yellow-200 text-xs text-yellow-600">
-                    <p>Quiz Debug: There are {{ quizzes|length }} quizzes in data</p>
-                    <ul class="list-disc ml-5 mt-1">
-                    {% for quiz in quizzes %}
-                        <li>Quiz ID: {{ quiz.id }}, Title: {{ quiz.title }}, Module ID: {{ quiz.module_id }}</li>  
-                    {% endfor %}
-                    </ul>
-                </div>
-                
-                {% if quizzes %}
-                    {% for quiz in quizzes %}
-                        <!-- Find corresponding module -->
-                        {% set module = None %}
-                        {% for m in modules %}
-                            {% if m.id == quiz.module_id %}
-                                {% set module = m %}
-                            {% endif %}
-                        {% endfor %}
-                        
-                        {% if module %}
-                            <!-- Count questions for this quiz -->
-                            {% set question_count = 0 %}
-                            {% for question in questions %}
-                                {% if question.quiz_id == quiz.id %}
-                                    {% set question_count = question_count + 1 %}
-                                {% endif %}
-                            {% endfor %}
-                            
-                            <div class="bg-white shadow overflow-hidden sm:rounded-md quiz-item" data-quiz-id="{{ quiz.id }}">
-                                <!-- Quiz Header - Always visible -->
-                                <div class="cursor-pointer px-4 py-4 sm:px-6 flex items-center justify-between hover:bg-gray-50 transition duration-150 quiz-header" 
-                                     onclick="toggleQuizDetails({{ quiz.id }})">
-                                    <div class="flex items-center">
-                                        <span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary-100 text-primary-800 mr-3 text-xs">
-                                            {{ loop.index }}
-                                        </span>
-                                        <div>
-                                            <h4 class="text-sm font-medium text-primary-600">{{ quiz.title }}</h4>
-                                            <p class="text-xs text-gray-500">
-                                                Module: <span class="font-semibold">{{ module.title }}</span>
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <span class="mr-3 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                                            {{ question_count }} Question{% if question_count != 1 %}s{% endif %}
-                                        </span>
-                                        
-                                        <svg id="quiz-chevron-{{ quiz.id }}" class="h-5 w-5 text-gray-500 transform transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                
-                                <!-- Quiz Details - Initially hidden -->
-                                <div id="quiz-details-{{ quiz.id }}" class="quiz-details px-4 py-5 sm:p-6 border-t border-gray-100 bg-gray-50">
-                                    <!-- Edit Quiz Form (Similar to the new quiz form but pre-populated) -->
-                                    <form class="quiz-edit-form" action="/admin/quiz/{{ quiz.id }}/edit" method="POST">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                        <input type="hidden" name="quiz_id" value="{{ quiz.id }}"/>
-                                        <input type="hidden" name="course_id" value="{{ course.id }}"/>
-                                        
-                                        <div class="grid grid-cols-6 gap-6">
-                                            <div class="col-span-6 sm:col-span-3">
-                                                <label for="module_id_{{ quiz.id }}" class="block text-sm font-medium text-gray-700">Module</label>
-                                                <select 
-                                                    id="module_id_{{ quiz.id }}" 
-                                                    name="module_id" 
-                                                    class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                                                    required
-                                                >
-                                                    {% for m in modules %}
-                                                        {% set has_quiz = false %}
-                                                        {% for q in quizzes %}
-                                                            {% if q.module_id == m.id and q.id != quiz.id %}
-                                                                {% set has_quiz = true %}
-                                                            {% endif %}
-                                                        {% endfor %}
-                                                        <option value="{{ m.id }}" {% if m.id == quiz.module_id %}selected{% endif %} {% if has_quiz %}data-has-quiz="true"{% endif %}>
-                                                            Module {{ m.order }}: {{ m.title }}{% if has_quiz %} (Has Quiz){% endif %}
-                                                        </option>
-                                                    {% endfor %}
-                                                </select>
-                                                <p class="mt-1 text-xs text-gray-500 module-warning-{{ quiz.id }}"></p>
-                                            </div>
-                                            
-                                            <div class="col-span-6 sm:col-span-3">
-                                                <label for="passing_score_{{ quiz.id }}" class="block text-sm font-medium text-gray-700">Passing Score (%)</label>
-                                                <input 
-                                                    type="number" 
-                                                    id="passing_score_{{ quiz.id }}" 
-                                                    name="passing_score" 
-                                                    min="1" 
-                                                    max="100"
-                                                    value="{{ quiz.passing_score }}"
-                                                    class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                                    required
-                                                >
-                                            </div>
-                                            
-                                            <div class="col-span-6">
-                                                <label for="title_{{ quiz.id }}" class="block text-sm font-medium text-gray-700">Quiz Title</label>
-                                                <input 
-                                                    type="text" 
-                                                    id="title_{{ quiz.id }}" 
-                                                    name="title" 
-                                                    value="{{ quiz.title }}"
-                                                    class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                                    required
-                                                >
-                                            </div>
-                
-                                            <div class="col-span-6">
-                                                <label for="description_{{ quiz.id }}" class="block text-sm font-medium text-gray-700">Description</label>
-                                                <textarea 
-                                                    id="description_{{ quiz.id }}" 
-                                                    name="description" 
-                                                    rows="3"
-                                                    class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                                    required
-                                                >{{ quiz.description }}</textarea>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="mt-6 flex justify-between">
-                                            <button type="button" 
-                                                  class="manage-questions-btn inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                                                  data-quiz-id="{{ quiz.id }}">
-                                                <svg class="-ml-0.5 mr-1.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                                                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
-                                                </svg>
-                                                Manage Questions ({{ question_count }})
-                                            </button>
-                                            
-                                            <button type="submit" class="py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                                                Save Quiz
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                {% else %}
-                    <div class="bg-white p-4 text-center text-gray-500 shadow sm:rounded-md">
-                        <p>No quizzes have been created yet. Use the form below to create your first quiz.</p>
-                    </div>
-                {% endif %}
-            </div>
-            
-            <!-- New Quiz Form -->
-            <div class="bg-white shadow sm:rounded-md">
-                <div class="px-4 py-3 bg-gray-100 border-b border-gray-200">
-                    <h3 class="text-lg font-medium leading-6 text-gray-900" id="quiz-form-title">Create New Quiz</h3>
-                </div>
-                <div class="px-4 py-5 sm:p-6">
-                    <form id="quiz-form" method="POST">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                        <input type="hidden" name="quiz_id" id="quiz_id" value=""/>
-                        <input type="hidden" name="course_id" value="{{ course.id }}"/>
-                        
-                        <div class="grid grid-cols-6 gap-6">
-                            <div class="col-span-6 sm:col-span-3">
-                                <label for="module_id" class="block text-sm font-medium text-gray-700">Module</label>
-                                <select 
-                                    id="module_id" 
-                                    name="module_id" 
-                                    class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                                    required
-                                >
-                                    <option value="">Select a module...</option>
-                                    {% for module in modules %}
-                                        {% set has_quiz = false %}
-                                        {% for quiz in quizzes %}
-                                            {% if quiz.module_id == module.id %}
-                                                {% set has_quiz = true %}
-                                            {% endif %}
-                                        {% endfor %}
-                                        <option value="{{ module.id }}" {% if has_quiz %}data-has-quiz="true"{% endif %}>
-                                            Module {{ module.order }}: {{ module.title }}{% if has_quiz %} (Has Quiz){% endif %}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                                <p class="mt-1 text-xs text-gray-500" id="module-warning"></p>
-                            </div>
-                            
-                            <div class="col-span-6 sm:col-span-3">
-                                <label for="passing_score" class="block text-sm font-medium text-gray-700">Passing Score (%)</label>
-                                <input 
-                                    type="number" 
-                                    id="passing_score" 
-                                    name="passing_score" 
-                                    min="1" 
-                                    max="100"
-                                    value="70"
-                                    class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                    required
-                                >
-                                <p class="mt-1 text-xs text-gray-500">Percentage required to pass this quiz (1-100)</p>
-                            </div>
-                            
-                            <div class="col-span-6">
-                                <label for="title" class="block text-sm font-medium text-gray-700">Quiz Title</label>
-                                <input 
-                                    type="text" 
-                                    id="title" 
-                                    name="title" 
-                                    class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                    required
-                                >
-                            </div>
 
-                            <div class="col-span-6">
-                                <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
-                                <textarea 
-                                    id="description" 
-                                    name="description" 
-                                    rows="3"
-                                    class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                    required
-                                ></textarea>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-6 flex justify-end">
-                            <button id="reset-button" type="button" class="mr-3 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                                Cancel
-                            </button>
-                            <button type="submit" class="py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                                Save Quiz
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+<div class="bg-white shadow sm:rounded-lg p-6">
+    <h2 class="text-xl font-bold text-gray-900 mb-4">Quiz Management</h2>
+    
+    <div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+        <p class="text-sm font-medium text-yellow-800">Quiz Debug Info:</p>
+        <p class="text-xs text-yellow-700">Total quizzes: {{ quizzes|length }}</p>
+        <p class="text-xs text-yellow-700">Total modules: {{ modules|length }}</p>
+        <ul class="text-xs text-yellow-700 list-disc pl-5 mt-2">
+            {% for quiz in quizzes %}
+            <li>Quiz #{{ quiz.id }}: {{ quiz.title }} (Module: {{ quiz.module_id }})</li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    <p class="text-sm text-gray-500 mb-6">
+        Create and manage quizzes for your course modules. Click on a quiz to expand and edit it.
+    </p>
+    
+    <h3 class="text-lg font-medium text-gray-900 mb-4">Course Quizzes</h3>
+    
+    {% if quizzes %}
+        {% for quiz in quizzes %}
+            {% set course_module = None %}
+            {% for m in modules %}
+                {% if m.id == quiz.module_id %}
+                    {% set course_module = m %}
+                {% endif %}
+            {% endfor %}
             
-            <!-- Questions Panel (Initially Hidden) -->
-            <div id="questions-panel" class="hidden mt-8 bg-white shadow sm:rounded-md">
-                <div class="px-4 py-3 bg-gray-100 border-b border-gray-200 flex justify-between items-center">
-                    <h3 class="text-lg font-medium leading-6 text-gray-900">Questions for <span id="quiz-title-display"></span></h3>
-                    <button id="close-questions-btn" class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                        <svg class="-ml-0.5 mr-1.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                        </svg>
-                        Close
-                    </button>
-                </div>
+            {% if course_module %}
+                {% set question_count = 0 %}
+                {% for question in questions %}
+                    {% if question.quiz_id == quiz.id %}
+                        {% set question_count = question_count + 1 %}
+                    {% endif %}
+                {% endfor %}
                 
-                <div id="questions-container" class="px-4 py-5 sm:p-6">
-                    <div id="question-list" class="mb-6">
-                        <!-- Questions will be loaded here -->
-                        <div class="text-center text-gray-500 py-4">
-                            <p id="no-questions-message">Loading questions...</p>
+                <div class="quiz-card mb-4" id="quiz-{{ quiz.id }}" data-quiz-id="{{ quiz.id }}">
+                    <div class="quiz-header" onclick="toggleQuiz({{ quiz.id }})">
+                        <div>
+                            <h4 class="font-medium text-primary-600">{{ quiz.title }}</h4>
+                            <p class="text-sm text-gray-500">Module: {{ course_module.title }}</p>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="mr-3 px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                                {{ question_count }} Question{% if question_count != 1 %}s{% endif %}
+                            </span>
+                            <svg class="chevron h-5 w-5 text-gray-400" id="chevron-{{ quiz.id }}" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                            </svg>
                         </div>
                     </div>
                     
-                    <div id="new-question-form" class="border border-gray-200 rounded-md p-4 bg-gray-50">
-                        <h4 class="text-sm font-medium text-gray-900 mb-3">Add New Question</h4>
-                        <form id="question-form">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                            <input type="hidden" name="quiz_id" id="question_quiz_id" value=""/>
+                    <div class="quiz-content" id="quiz-content-{{ quiz.id }}">
+                        <form action="/admin/quiz/{{ quiz.id }}/edit" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="quiz_id" value="{{ quiz.id }}">
+                            <input type="hidden" name="course_id" value="{{ course.id }}">
                             
-                            <div class="grid grid-cols-6 gap-4">
-                                <div class="col-span-6">
-                                    <label for="question" class="block text-sm font-medium text-gray-700">Question</label>
-                                    <input 
-                                        type="text" 
-                                        id="question" 
-                                        name="question" 
-                                        class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                        required
-                                    >
-                                </div>
-                                
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label for="option1" class="block text-sm font-medium text-gray-700">Option 1</label>
-                                    <input 
-                                        type="text" 
-                                        id="option1" 
-                                        name="option1" 
-                                        class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                        required
-                                    >
-                                </div>
-                                
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label for="option2" class="block text-sm font-medium text-gray-700">Option 2</label>
-                                    <input 
-                                        type="text" 
-                                        id="option2" 
-                                        name="option2" 
-                                        class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                        required
-                                    >
-                                </div>
-                                
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label for="option3" class="block text-sm font-medium text-gray-700">Option 3 (Optional)</label>
-                                    <input 
-                                        type="text" 
-                                        id="option3" 
-                                        name="option3" 
-                                        class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                    >
-                                </div>
-                                
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label for="option4" class="block text-sm font-medium text-gray-700">Option 4 (Optional)</label>
-                                    <input 
-                                        type="text" 
-                                        id="option4" 
-                                        name="option4" 
-                                        class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                    >
-                                </div>
-                                
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label for="correct_answer" class="block text-sm font-medium text-gray-700">Correct Answer</label>
-                                    <select 
-                                        id="correct_answer" 
-                                        name="correct_answer" 
-                                        class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                                        required
-                                    >
-                                        <option value="0">Option 1</option>
-                                        <option value="1">Option 2</option>
-                                        <option value="2">Option 3</option>
-                                        <option value="3">Option 4</option>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1" for="module_id_{{ quiz.id }}">
+                                        Module
+                                    </label>
+                                    <select id="module_id_{{ quiz.id }}" name="module_id" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                                        {% for m in modules %}
+                                            {% set has_quiz = False %}
+                                            {% for q in quizzes %}
+                                                {% if q.module_id == m.id and q.id != quiz.id %}
+                                                    {% set has_quiz = True %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            <option value="{{ m.id }}" {% if m.id == quiz.module_id %}selected{% endif %}>
+                                                Module {{ m.order }}: {{ m.title }} {% if has_quiz %}(Has Quiz){% endif %}
+                                            </option>
+                                        {% endfor %}
                                     </select>
                                 </div>
                                 
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label for="order" class="block text-sm font-medium text-gray-700">Order</label>
-                                    <input 
-                                        type="number" 
-                                        id="order" 
-                                        name="order" 
-                                        min="1"
-                                        value="1"
-                                        class="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                        required
-                                    >
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1" for="passing_score_{{ quiz.id }}">
+                                        Passing Score (%)
+                                    </label>
+                                    <input type="number" id="passing_score_{{ quiz.id }}" name="passing_score" min="1" max="100" value="{{ quiz.passing_score }}" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
                                 </div>
                             </div>
                             
-                            <div class="mt-4 flex justify-end">
-                                <button type="submit" id="save-question-btn" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                                    <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                        <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                                    </svg>
-                                    Add Question
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1" for="title_{{ quiz.id }}">
+                                    Quiz Title
+                                </label>
+                                <input type="text" id="title_{{ quiz.id }}" name="title" value="{{ quiz.title }}" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1" for="description_{{ quiz.id }}">
+                                    Description
+                                </label>
+                                <textarea id="description_{{ quiz.id }}" name="description" rows="3" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm">{{ quiz.description }}</textarea>
+                            </div>
+                            
+                            <div class="flex justify-between">
+                                <button type="button" class="px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500" onclick="toggleQuiz({{ quiz.id }}); window.location.href='/admin/quiz-wizard/{{ quiz.id }}'">
+                                    Manage Questions ({{ question_count }})
+                                </button>
+                                
+                                <button type="submit" class="px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                    Save Quiz
                                 </button>
                             </div>
                         </form>
                     </div>
                 </div>
-            </div>
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        <div class="bg-gray-50 p-4 text-center text-gray-500 rounded-md">
+            <p>No quizzes have been created yet. Use the form below to create your first quiz.</p>
         </div>
+    {% endif %}
+    
+    <div class="mt-8 bg-white shadow sm:rounded-lg p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Create New Quiz</h3>
+        <form action="/admin/course-wizard/step3/{{ course.id }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="course_id" value="{{ course.id }}">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="module_id">
+                        Module
+                    </label>
+                    <select id="module_id" name="module_id" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" required>
+                        <option value="">Select a module...</option>
+                        {% for module in modules %}
+                            {% set has_quiz = False %}
+                            {% for quiz in quizzes %}
+                                {% if quiz.module_id == module.id %}
+                                    {% set has_quiz = True %}
+                                {% endif %}
+                            {% endfor %}
+                            <option value="{{ module.id }}" {% if has_quiz %}data-has-quiz="true"{% endif %}>
+                                Module {{ module.order }}: {{ module.title }} {% if has_quiz %}(Has Quiz){% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <p id="module-warning" class="mt-1 text-xs text-gray-500"></p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="passing_score">
+                        Passing Score (%)
+                    </label>
+                    <input type="number" id="passing_score" name="passing_score" min="1" max="100" value="70" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" required>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1" for="title">
+                    Quiz Title
+                </label>
+                <input type="text" id="title" name="title" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" required>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1" for="description">
+                    Description
+                </label>
+                <textarea id="description" name="description" rows="3" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" required></textarea>
+            </div>
+            
+            <div class="flex justify-end">
+                <button type="submit" class="px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    Create Quiz
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
 <script>
-    // Very simple toggle function with direct DOM manipulation
-function toggleQuizDetails(quizId) {
-    console.log('Toggle function called for quiz ID:', quizId);
+function toggleQuiz(quizId) {
+    const contentElement = document.getElementById(`quiz-content-${quizId}`);
+    const chevronElement = document.getElementById(`chevron-${quizId}`);
     
-    const detailsId = `quiz-details-${quizId}`;
-    const chevronId = `quiz-chevron-${quizId}`;
+    console.log(`Toggling quiz ${quizId}`, contentElement);
     
-    console.log('Looking for elements with IDs:', detailsId, chevronId);
-    
-    const details = document.getElementById(detailsId);
-    const chevron = document.getElementById(chevronId);
-    
-    if (!details || !chevron) {
-        console.error('Could not find quiz details or chevron elements');
-        return;
-    }
-    
-    console.log('Current display style:', details.style.display);
-    
-    // Toggle visibility with direct style manipulation
-    if (details.style.display === 'none' || details.style.display === '') {
-        details.style.display = 'block';
-        chevron.classList.add('rotate-icon');
-        console.log('Expanding quiz details');
+    if (contentElement.classList.contains('active')) {
+        contentElement.classList.remove('active');
+        contentElement.style.display = 'none';
+        chevronElement.classList.remove('rotate');
     } else {
-        details.style.display = 'none';
-        chevron.classList.remove('rotate-icon');
-        console.log('Collapsing quiz details');
+        contentElement.classList.add('active');
+        contentElement.style.display = 'block';
+        chevronElement.classList.add('rotate');
     }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-        // Initialize quiz detail panels to be hidden
-        document.querySelectorAll('.quiz-details').forEach(panel => {
-            panel.style.display = 'none';
-        });
-
-        // Ensure console logging is active for debugging
-        console.log('Quiz management page loaded');
-        const quizItems = document.querySelectorAll('.quiz-item');
-        console.log('Found ' + quizItems.length + ' quiz items');
-        
-        // Debug all quiz items found
-        if (quizItems.length > 0) {
-            console.log('Quiz items found:');
-            quizItems.forEach((item, index) => {
-                console.log(`Quiz ${index + 1} ID: ${item.getAttribute('data-quiz-id')}`);
-            });
+    // Make sure the quiz contents are initially hidden
+    document.querySelectorAll('.quiz-content').forEach(content => {
+        content.style.display = 'none';
+    });
+    
+    // Add warning for modules that already have a quiz
+    const moduleSelect = document.getElementById('module_id');
+    const moduleWarning = document.getElementById('module-warning');
+    
+    moduleSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption && selectedOption.getAttribute('data-has-quiz') === 'true') {
+            moduleWarning.textContent = 'This module already has a quiz. Creating a new quiz will replace the existing one.';
+            moduleWarning.classList.add('text-yellow-600');
         } else {
-            console.error('No quiz items found. This might be a data issue.');
-            console.log('Quizzes in the template data:', {{ quizzes|length }});
-            {% if quizzes %}
-                {% for quiz in quizzes %}
-                    console.log('Quiz {{ loop.index }}: ID={{ quiz.id }}, Title={{ quiz.title }}');
-                {% endfor %}
-            {% endif %}
-        }
-        
-        // Debug toggle button functionality
-        const toggleDebugBtn = document.getElementById('toggle-debug-btn');
-        if (toggleDebugBtn) {
-            toggleDebugBtn.addEventListener('click', function() {
-                const debugInfoElements = document.querySelectorAll('.debug-info');
-                const isHidden = debugInfoElements[0]?.classList.contains('hidden');
-                
-                // Update button text
-                toggleDebugBtn.textContent = isHidden ? 'Hide Detailed Debug' : 'Show Detailed Debug';
-                
-                // Toggle visibility of all debug elements
-                debugInfoElements.forEach(el => {
-                    el.classList.toggle('hidden');
-                });
-                
-                // Log debug info to console as well for easier troubleshooting
-                if (isHidden) {
-                    console.log('Debug information:');
-                    console.log(`Modules: ${document.querySelectorAll('.accordion-item').length}`);
-                    console.log(`Quizzes: ${document.querySelectorAll('.quiz-item').length}`);
-                }
-            });
-        }
-
-        // Module selection warning
-        const moduleSelect = document.getElementById('module_id');
-        const moduleWarning = document.getElementById('module-warning');
-        
-        moduleSelect.addEventListener('change', function() {
-            const option = this.options[this.selectedIndex];
-            if (option && option.getAttribute('data-has-quiz') === 'true') {
-                moduleWarning.innerHTML = 'Warning: This module already has a quiz. Creating a new quiz will replace the existing one.';
-                moduleWarning.classList.add('text-yellow-600');
-            } else {
-                moduleWarning.innerHTML = '';
-                moduleWarning.classList.remove('text-yellow-600');
-            }
-        });
-        
-        // Edit quiz functionality
-        const editQuizButtons = document.querySelectorAll('.edit-quiz-btn');
-        const quizForm = document.getElementById('quiz-form');
-        const quizFormTitle = document.getElementById('quiz-form-title');
-        const resetButton = document.getElementById('reset-button');
-        
-        editQuizButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const quizId = this.getAttribute('data-quiz-id');
-                const moduleId = this.getAttribute('data-module-id');
-                const title = this.getAttribute('data-title');
-                const description = this.getAttribute('data-description');
-                const passingScore = this.getAttribute('data-passing-score');
-                
-                // Set form values
-                document.getElementById('quiz_id').value = quizId;
-                document.getElementById('module_id').value = moduleId;
-                document.getElementById('title').value = title;
-                document.getElementById('description').value = description;
-                document.getElementById('passing_score').value = passingScore;
-                
-                // Update form title
-                quizFormTitle.textContent = 'Edit Quiz';
-                
-                // Scroll to form
-                quizForm.scrollIntoView({ behavior: 'smooth' });
-            });
-        });
-        
-        // Reset form button
-        resetButton.addEventListener('click', function() {
-            quizForm.reset();
-            document.getElementById('quiz_id').value = '';
-            quizFormTitle.textContent = 'Create New Quiz';
-            moduleWarning.innerHTML = '';
+            moduleWarning.textContent = '';
             moduleWarning.classList.remove('text-yellow-600');
-        });
-        
-        // Manage questions functionality
-        const manageQuestionsButtons = document.querySelectorAll('.manage-questions-btn');
-        const questionsPanel = document.getElementById('questions-panel');
-        const quizTitleDisplay = document.getElementById('quiz-title-display');
-        const closeQuestionsBtn = document.getElementById('close-questions-btn');
-        const questionList = document.getElementById('question-list');
-        const noQuestionsMessage = document.getElementById('no-questions-message');
-        const questionQuizId = document.getElementById('question_quiz_id');
-        
-        manageQuestionsButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const quizId = this.getAttribute('data-quiz-id');
-                const quizItem = this.closest('.quiz-item');
-                const quizTitle = quizItem.querySelector('h4').textContent.trim();
-                
-                // Set quiz title in questions panel
-                quizTitleDisplay.textContent = quizTitle;
-                
-                // Set quiz ID for the question form
-                questionQuizId.value = quizId;
-                
-                // Load questions for this quiz
-                fetchQuestions(quizId);
-                
-                // Show questions panel
-                questionsPanel.classList.remove('hidden');
-                
-                // Scroll to questions panel
-                questionsPanel.scrollIntoView({ behavior: 'smooth' });
-            });
-        });
-        
-        // Close questions panel
-        closeQuestionsBtn.addEventListener('click', function() {
-            questionsPanel.classList.add('hidden');
-        });
-        
-        // Function to fetch questions for a quiz
-        function fetchQuestions(quizId) {
-            // Clear current questions
-            questionList.innerHTML = '';
-            noQuestionsMessage.textContent = 'Loading questions...';
-            
-            // Fetch questions for this quiz using our new endpoint
-            fetch(`/admin/quiz/${quizId}/questions-json`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.questions && data.questions.length > 0) {
-                        // We have questions
-                        noQuestionsMessage.textContent = '';
-                        
-                        // Create question elements
-                        data.questions.forEach((question, index) => {
-                            const questionElement = createQuestionElement(question, index);
-                            questionList.appendChild(questionElement);
-                        });
-                    } else {
-                        // No questions
-                        noQuestionsMessage.textContent = 'No questions have been added yet. Use the form below to add your first question.';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching questions:', error);
-                    noQuestionsMessage.textContent = 'Error loading questions. Please try again.';
-                });
-        }
-        
-        // Function to create a question element
-        function createQuestionElement(question, index) {
-            const questionDiv = document.createElement('div');
-            questionDiv.className = 'bg-white p-4 rounded-md border border-gray-200 mb-4 question-item';
-            questionDiv.setAttribute('data-question-id', question.id);
-            
-            const options = question.options || [];
-            
-            // Create the HTML for the question
-            questionDiv.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <div>
-                        <div class="flex items-center">
-                            <span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary-100 text-primary-800 mr-2 text-xs">
-                                ${index + 1}
-                            </span>
-                            <h4 class="text-sm font-medium text-gray-900">${question.question}</h4>
-                        </div>
-                        <div class="mt-2 ml-8 grid grid-cols-2 gap-2">
-                            ${options.map((option, i) => `
-                                <div class="flex items-center">
-                                    <span class="inline-flex items-center justify-center h-5 w-5 rounded-full ${i === question.correct_answer ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'} mr-1 text-xs">
-                                        ${String.fromCharCode(65 + i)}
-                                    </span>
-                                    <span class="text-xs ${i === question.correct_answer ? 'font-medium text-green-800' : 'text-gray-600'}">${option}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    <div>
-                        <button type="button" class="delete-question-btn inline-flex items-center p-1.5 border border-transparent rounded-md text-xs text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500" data-question-id="${question.id}">
-                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            // Add event listener to delete button
-            const deleteButton = questionDiv.querySelector('.delete-question-btn');
-            deleteButton.addEventListener('click', function() {
-                const questionId = this.getAttribute('data-question-id');
-                if (confirm('Are you sure you want to delete this question? This action cannot be undone.')) {
-                    deleteQuestion(questionId, questionDiv);
-                }
-            });
-            
-            return questionDiv;
-        }
-        
-        // Function to delete a question
-        function deleteQuestion(questionId, questionElement) {
-            fetch(`/admin/question/${questionId}/delete`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Remove the question element
-                    questionElement.remove();
-                    
-                    // Update the question numbers
-                    updateQuestionNumbers();
-                    
-                    // Check if we have any questions left
-                    if (questionList.querySelectorAll('.question-item').length === 0) {
-                        noQuestionsMessage.textContent = 'No questions have been added yet. Use the form below to add your first question.';
-                    }
-                    
-                    // Show success message
-                    showToast('Question deleted successfully');
-                } else {
-                    alert('Error deleting question: ' + (data.message || 'Unknown error'));
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred while deleting the question. Please try again.');
-            });
-        }
-        
-        // Function to update question numbers
-        function updateQuestionNumbers() {
-            const questionItems = questionList.querySelectorAll('.question-item');
-            questionItems.forEach((item, index) => {
-                const numberSpan = item.querySelector('.rounded-full');
-                numberSpan.textContent = index + 1;
-            });
-        }
-        
-        // Handle question form submission
-        const questionForm = document.getElementById('question-form');
-        const saveQuestionBtn = document.getElementById('save-question-btn');
-        
-        questionForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            
-            // Validate form
-            const question = document.getElementById('question').value;
-            const option1 = document.getElementById('option1').value;
-            const option2 = document.getElementById('option2').value;
-            
-            if (!question || !option1 || !option2) {
-                alert('Please fill out all required fields (Question, Option 1, and Option 2 are required)');
-                return false;
-            }
-            
-            // Show loading state
-            saveQuestionBtn.disabled = true;
-            saveQuestionBtn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Saving...';
-            
-            // Prepare form data
-            const formData = new FormData(questionForm);
-            const quizId = formData.get('quiz_id');
-            
-            // Send the data
-            fetch(`/admin/quiz/${quizId}/question/new-json`, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Reset the form
-                    questionForm.reset();
-                    document.getElementById('order').value = data.next_order || 1;
-                    
-                    // Add the new question to the list
-                    const question = data.question;
-                    const questionElement = createQuestionElement(question, questionList.querySelectorAll('.question-item').length);
-                    
-                    // If there are no questions, clear the "no questions" message
-                    if (questionList.querySelectorAll('.question-item').length === 0) {
-                        noQuestionsMessage.textContent = '';
-                    }
-                    
-                    questionList.appendChild(questionElement);
-                    
-                    // Show success message
-                    showToast('Question added successfully');
-                } else {
-                    alert('Error adding question: ' + (data.message || 'Unknown error'));
-                }
-                
-                // Reset button state
-                saveQuestionBtn.disabled = false;
-                saveQuestionBtn.innerHTML = '<svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" /></svg> Add Question';
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred while adding the question. Please try again.');
-                
-                // Reset button state
-                saveQuestionBtn.disabled = false;
-                saveQuestionBtn.innerHTML = '<svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" /></svg> Add Question';
-            });
-        });
-        
-        // Handle quiz form submission
-        quizForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            
-            // Validate form
-            const moduleId = document.getElementById('module_id').value;
-            const title = document.getElementById('title').value;
-            const description = document.getElementById('description').value;
-            const passingScore = document.getElementById('passing_score').value;
-            
-            if (!moduleId || !title || !description || !passingScore) {
-                alert('Please fill out all required fields');
-                return false;
-            }
-            
-            // Show loading state
-            const submitButton = quizForm.querySelector('button[type="submit"]');
-            const originalButtonText = submitButton.innerHTML;
-            submitButton.innerHTML = 'Saving...';
-            submitButton.disabled = true;
-            
-            // Prepare form data
-            const formData = new FormData(quizForm);
-            const quizId = formData.get('quiz_id');
-            const endpoint = quizId ? `/admin/quiz/${quizId}/edit-json` : `/admin/quiz/new-json`;
-            
-            // Send the data
-            fetch(endpoint, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Show success message
-                    showToast('Quiz saved successfully');
-                    
-                    // Reload the page to show the updated quiz list
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1500);
-                } else {
-                    alert('Error saving quiz: ' + (data.message || 'Unknown error'));
-                    // Reset button state
-                    submitButton.innerHTML = originalButtonText;
-                    submitButton.disabled = false;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred while saving the quiz. Please try again.');
-                
-                // Reset button state
-                submitButton.innerHTML = originalButtonText;
-                submitButton.disabled = false;
-            });
-        });
-        
-        // Function to show a toast message
-        function showToast(message) {
-            const toast = document.createElement('div');
-            toast.className = 'fixed top-4 right-4 z-50 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-md';
-            toast.innerHTML = `<div class="flex items-center">
-                <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                </svg>
-                <p>${message}</p>
-            </div>`;
-            
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
         }
     });
+    
+    // Log debugging info
+    console.log('Quiz management page loaded');
+    const quizCards = document.querySelectorAll('.quiz-card');
+    console.log(`Found ${quizCards.length} quiz cards`);
+    
+    if (quizCards.length > 0) {
+        quizCards.forEach((card, index) => {
+            console.log(`Quiz ${index + 1}: ID=${card.getAttribute('data-quiz-id')}`);
+        });
+    }
+});
 </script>
 {% endblock %}
