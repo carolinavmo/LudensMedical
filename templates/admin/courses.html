@@ -1,150 +1,132 @@
-{% extends 'base.html' %}
+{% extends 'admin/admin_layout.html' %}
 
 {% block title %}Manage Courses - Ludens Medical Academy{% endblock %}
 
-{% block head %}
-<script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.8.2/dist/alpine.min.js" defer></script>
-{% endblock %}
-
-{% block content %}
-<div class="min-h-screen bg-gray-50">
-    <!-- Admin Header -->
-    <header class="bg-white shadow">
-        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <div class="md:flex md:items-center md:justify-between">
-                <div class="flex-1 min-w-0">
-                    <h1 class="text-3xl font-bold text-gray-900">
-                        Manage Courses
-                    </h1>
-                </div>
-                <div class="mt-4 flex md:mt-0 md:ml-4">
-                    <a href="{{ url_for('admin_dashboard') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 mr-3">
-                        Dashboard
-                    </a>
-                    <a href="{{ url_for('admin_course_wizard_step1') }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none">
-                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                        </svg>
-                        Add Course
-                    </a>
-                </div>
-            </div>
+{% block admin_content %}
+    <!-- Page Header -->
+    <div class="pb-5 border-b border-gray-200 mb-5 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Manage Courses</h1>
+            <p class="mt-1 text-sm text-gray-500">Create, edit, and organize course content</p>
         </div>
-    </header>
+        <div class="flex">
+            <a href="{{ url_for('admin_course_wizard_step1') }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none">
+                <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                </svg>
+                Add Course
+            </a>
+        </div>
+    </div>
 
-    <main>
-        <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-            <!-- Course List By Category -->
-            <div class="bg-white shadow overflow-hidden sm:rounded-md">
-                <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
-                    <h2 class="text-lg leading-6 font-medium text-gray-900">Courses By Category</h2>
-                    <p class="text-sm text-gray-500">Total: {{ courses|length }} courses</p>
-                </div>
-                
-                {% if all_categories %}
-                    <!-- Category accordion -->
-                    <div class="border-t border-gray-200">
-                        {% for category in all_categories %}
-                            <div x-data="{ open: true }">
-                                <!-- Category header -->
-                                <button @click="open = !open" class="w-full px-4 py-3 flex items-center justify-between text-left bg-gray-50 hover:bg-gray-100 focus:outline-none">
-                                    <div class="flex items-center">
-                                        <span class="font-medium text-gray-900">{{ category|replace('_', ' ')|title }}</span>
-                                        <span class="ml-2 text-sm text-gray-500">({{ courses_by_category[category]|length }} courses)</span>
-                                    </div>
-                                    <svg class="h-5 w-5 text-gray-500 transform transition-transform duration-200" :class="{'rotate-180': open}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                    </svg>
-                                </button>
-                                
-                                <!-- Category content -->
-                                <div x-show="open" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-                                    <ul role="list" class="divide-y divide-gray-200">
-                                        {% for course in courses_by_category[category] %}
-                                            <li>
-                                                <div class="px-4 py-4 sm:px-6 hover:bg-gray-50">
-                                                    <div class="flex items-center justify-between">
-                                                        <div class="flex items-center">
-                                                            <div class="flex-shrink-0 h-12 w-12 rounded-md bg-primary-100 overflow-hidden">
-                                                                {% if course.image_url %}
-                                                                    <img class="h-full w-full object-cover" src="{{ course.image_url }}" alt="{{ course.title }}">
-                                                                {% else %}
-                                                                    <div class="h-full w-full flex items-center justify-center text-primary-600">
-                                                                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                                                        </svg>
-                                                                    </div>
-                                                                {% endif %}
+    <!-- Course List -->
+    <div class="bg-white shadow overflow-hidden sm:rounded-md">
+        <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+            <h2 class="text-lg leading-6 font-medium text-gray-900">Courses By Category</h2>
+            <p class="text-sm text-gray-500">Total: {{ courses|length }} courses</p>
+        </div>
+        
+        {% if all_categories %}
+            <!-- Category accordion -->
+            <div class="border-t border-gray-200">
+                {% for category in all_categories %}
+                    <div x-data="{ open: true }">
+                        <!-- Category header -->
+                        <button @click="open = !open" class="w-full px-4 py-3 flex items-center justify-between text-left bg-gray-50 hover:bg-gray-100 focus:outline-none">
+                            <div class="flex items-center">
+                                <span class="font-medium text-gray-900">{{ category|replace('_', ' ')|title }}</span>
+                                <span class="ml-2 text-sm text-gray-500">({{ courses_by_category[category]|length }} courses)</span>
+                            </div>
+                            <svg class="h-5 w-5 text-gray-500 transform transition-transform duration-200" :class="{'rotate-180': open}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        
+                        <!-- Category content -->
+                        <div x-show="open" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+                            <ul role="list" class="divide-y divide-gray-200">
+                                {% for course in courses_by_category[category] %}
+                                    <li>
+                                        <div class="px-4 py-4 sm:px-6 hover:bg-gray-50">
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center">
+                                                    <div class="flex-shrink-0 h-12 w-12 rounded-md bg-primary-100 overflow-hidden">
+                                                        {% if course.image_url %}
+                                                            <img class="h-full w-full object-cover" src="{{ course.image_url }}" alt="{{ course.title }}">
+                                                        {% else %}
+                                                            <div class="h-full w-full flex items-center justify-center text-primary-600">
+                                                                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                                                </svg>
                                                             </div>
-                                                            <div class="ml-4">
-                                                                <div class="text-base font-medium text-gray-900">
-                                                                    {{ course.title }}
-                                                                </div>
-                                                                <div class="text-sm text-gray-500">
-                                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                                                                        {{ course.level|title }}
-                                                                    </span>
-                                                                    <span class="ml-2 font-medium">${{ course.price }}</span>
-                                                                </div>
-                                                            </div>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="ml-4">
+                                                        <div class="text-base font-medium text-gray-900">
+                                                            {{ course.title }}
                                                         </div>
-                                                        <div class="flex items-center">
-                                                            <div class="text-sm text-gray-500 mr-8">
-                                                                <div class="flex items-center">
-                                                                    <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                                                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                                                                    </svg>
-                                                                    {{ enrollments[course.id] }} enrollments
-                                                                </div>
-                                                                <div class="text-sm text-gray-500 mt-1">
-                                                                    Created: {{ course.created_at.strftime('%b %d, %Y') }}
-                                                                </div>
-                                                            </div>
-                                                            <div class="flex space-x-2">
-                                                                <!-- Edit button -->
-                                                                <a href="{{ url_for('admin_course_wizard_step1', course_id=course.id) }}" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200">
-                                                                    Edit
-                                                                </a>
-                                                                <a href="{{ url_for('course_detail', course_id=course.id) }}" class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                                                    View
-                                                                </a>
-                                                                <form action="{{ url_for('admin_course_delete', course_id=course.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this course? This action cannot be undone.');">
-                                                                    <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200">
-                                                                        Delete
-                                                                    </button>
-                                                                </form>
-                                                            </div>
+                                                        <div class="text-sm text-gray-500">
+                                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                                                {{ course.level|title }}
+                                                            </span>
+                                                            <span class="ml-2 font-medium">${{ course.price }}</span>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </li>
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="px-4 py-10">
-                        <div class="text-center">
-                            <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                            </svg>
-                            <h3 class="mt-2 text-sm font-medium text-gray-900">No courses</h3>
-                            <p class="mt-1 text-sm text-gray-500">Get started by creating a new course.</p>
-                            <div class="mt-6">
-                                <a href="{{ url_for('admin_course_wizard_step1') }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
-                                    <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                                    </svg>
-                                    New Course
-                                </a>
-                            </div>
+                                                <div class="flex items-center">
+                                                    <div class="text-sm text-gray-500 mr-8">
+                                                        <div class="flex items-center">
+                                                            <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                                <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                                                            </svg>
+                                                            {{ enrollments[course.id] }} enrollments
+                                                        </div>
+                                                        <div class="text-sm text-gray-500 mt-1">
+                                                            Created: {{ course.created_at.strftime('%b %d, %Y') }}
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex space-x-2">
+                                                        <!-- Edit button -->
+                                                        <a href="{{ url_for('admin_course_wizard_step1', course_id=course.id) }}" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200">
+                                                            Edit
+                                                        </a>
+                                                        <a href="{{ url_for('course_detail', course_id=course.id) }}" class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                                            View
+                                                        </a>
+                                                        <form action="{{ url_for('admin_course_delete', course_id=course.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this course? This action cannot be undone.');">
+                                                            <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200">
+                                                                Delete
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                            </ul>
                         </div>
                     </div>
-                {% endif %}
+                {% endfor %}
             </div>
-        </div>
-    </main>
-</div>
+        {% else %}
+            <div class="px-4 py-10">
+                <div class="text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No courses</h3>
+                    <p class="mt-1 text-sm text-gray-500">Get started by creating a new course.</p>
+                    <div class="mt-6">
+                        <a href="{{ url_for('admin_course_wizard_step1') }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                            </svg>
+                            New Course
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
 {% endblock %}

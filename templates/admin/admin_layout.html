@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.8.2/dist/alpine.min.js" defer></script>
+<style>
+  /* Sidebar transition */
+  .sidebar-transition {
+    transition: width 0.3s, transform 0.3s, margin-left 0.3s;
+  }
+  .content-transition {
+    transition: margin-left 0.3s;
+  }
+  
+  @media (max-width: 640px) {
+    .sidebar-collapsed {
+      transform: translateX(-100%);
+    }
+    .sidebar-expanded {
+      transform: translateX(0);
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50" x-data="{ sidebarOpen: true }">
+  <!-- Admin Sidebar -->
+  <div
+    class="fixed inset-y-0 left-0 z-10 bg-white shadow-lg sidebar-transition"
+    :class="sidebarOpen ? 'w-64' : 'w-20'"
+    :class="{ 'sidebar-expanded': sidebarOpen, 'sidebar-collapsed': !sidebarOpen }"
+  >
+    <!-- Sidebar Header -->
+    <div class="flex items-center justify-between h-16 px-4 bg-primary-600 text-white">
+      <div class="flex items-center">
+        <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+        </svg>
+        <span class="ml-2 font-semibold text-lg" x-show="sidebarOpen">Admin Panel</span>
+      </div>
+      <button 
+        @click="sidebarOpen = !sidebarOpen" 
+        class="p-1 rounded-md hover:bg-primary-700 focus:outline-none"
+        aria-label="Toggle sidebar"
+      >
+        <svg 
+          x-show="sidebarOpen" 
+          class="h-6 w-6" 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24" 
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
+        </svg>
+        <svg 
+          x-show="!sidebarOpen" 
+          class="h-6 w-6" 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24" 
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
+        </svg>
+      </button>
+    </div>
+    
+    <!-- Sidebar Menu -->
+    <nav class="mt-2 flex flex-col h-[calc(100%-4rem)] justify-between">
+      <div class="space-y-1 px-2">
+        <!-- Dashboard -->
+        <a 
+          href="{{ url_for('admin_dashboard') }}" 
+          class="flex items-center px-2 py-3 rounded-md {% if request.path == url_for('admin_dashboard') %}bg-primary-100 text-primary-800{% else %}text-gray-700 hover:bg-gray-100{% endif %}"
+        >
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+          </svg>
+          <span class="ml-3" x-show="sidebarOpen">Dashboard</span>
+        </a>
+        
+        <!-- Courses -->
+        <a 
+          href="{{ url_for('admin_courses') }}" 
+          class="flex items-center px-2 py-3 rounded-md {% if '/admin/courses' in request.path %}bg-primary-100 text-primary-800{% else %}text-gray-700 hover:bg-gray-100{% endif %}"
+        >
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+          </svg>
+          <span class="ml-3" x-show="sidebarOpen">Manage Courses</span>
+        </a>
+        
+        <!-- Users -->
+        <a 
+          href="{{ url_for('admin_users') }}" 
+          class="flex items-center px-2 py-3 rounded-md {% if '/admin/users' in request.path %}bg-primary-100 text-primary-800{% else %}text-gray-700 hover:bg-gray-100{% endif %}"
+        >
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+          </svg>
+          <span class="ml-3" x-show="sidebarOpen">Manage Users</span>
+        </a>
+        
+        <!-- Statistics -->
+        <a 
+          href="#" 
+          class="flex items-center px-2 py-3 rounded-md text-gray-700 hover:bg-gray-100"
+        >
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+          </svg>
+          <span class="ml-3" x-show="sidebarOpen">Statistics</span>
+        </a>
+      </div>
+      
+      <!-- Bottom section -->
+      <div class="border-t border-gray-200 pt-2 pb-4 px-2 space-y-1">
+        <!-- Profile -->
+        <a 
+          href="{{ url_for('profile') }}" 
+          class="flex items-center px-2 py-3 rounded-md {% if request.path == url_for('profile') %}bg-primary-100 text-primary-800{% else %}text-gray-700 hover:bg-gray-100{% endif %}"
+        >
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+          </svg>
+          <span class="ml-3" x-show="sidebarOpen">Profile</span>
+        </a>
+        
+        <!-- Logout -->
+        <a 
+          href="{{ url_for('logout') }}" 
+          class="flex items-center px-2 py-3 rounded-md text-gray-700 hover:bg-gray-100"
+        >
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+          </svg>
+          <span class="ml-3" x-show="sidebarOpen">Logout</span>
+        </a>
+      </div>
+    </nav>
+  </div>
+  
+  <!-- Main Content -->
+  <div 
+    class="content-transition min-h-screen" 
+    :class="sidebarOpen ? 'sm:ml-64 ml-0' : 'sm:ml-20 ml-0'"
+  >
+    <!-- Mobile Toggle Button (visible on small screens) -->
+    <div class="sm:hidden p-4 bg-white shadow flex justify-between items-center">
+      <h1 class="text-xl font-semibold">Admin Panel</h1>
+      <button 
+        @click="sidebarOpen = !sidebarOpen" 
+        class="p-2 rounded-md text-gray-600 hover:bg-gray-100 focus:outline-none"
+        aria-label="Toggle menu"
+      >
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </button>
+    </div>
+    
+    <!-- Page Title and Content -->
+    <div class="py-6 px-4 sm:px-6 lg:px-8">
+      {% block admin_content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}
