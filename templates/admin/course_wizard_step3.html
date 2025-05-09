@@ -26,18 +26,7 @@
 <div class="bg-white px-4 py-5 sm:p-6">
     <h2 class="text-xl font-semibold text-gray-900 mb-5">Quiz Management</h2>
     
-    <!-- Debug Information -->
-    <div class="mb-6 p-4 bg-yellow-50 rounded-md border border-yellow-100">
-        <h3 class="text-sm font-medium text-yellow-800">Debug Information:</h3>
-        <p class="text-xs text-yellow-700">Course: {{ course.title }} (ID: {{ course.id }})</p>
-        <p class="text-xs text-yellow-700">Total Modules: {{ modules|length }}</p>
-        <p class="text-xs text-yellow-700">Total Quizzes: {{ quizzes|length }}</p>
-        <ul class="text-xs text-yellow-700 list-disc ml-5 mt-1">
-            {% for quiz in quizzes %}
-            <li>Quiz #{{ quiz.id }}: {{ quiz.title }} (Module: {{ quiz.module_id }})</li>
-            {% endfor %}
-        </ul>
-    </div>
+
     
     <p class="text-sm text-gray-500 mb-6">
         Create and manage quizzes for your course modules. Each module can have one quiz with multiple questions.
