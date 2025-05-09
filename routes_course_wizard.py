@@ -1196,8 +1196,13 @@ def admin_edit_question(question_id):
         with app.app_context():
             db_question = QuizQuestion.query.get(question_id)
             if db_question and db_question.options:
-                options = json.loads(db_question.options)
-                app.logger.debug(f"Retrieved options from database: {options}")
+                try:
+                    options = json.loads(db_question.options)
+                    app.logger.debug(f"Retrieved options from database: {options}")
+                except Exception as json_error:
+                    app.logger.error(f"Error parsing options JSON: {str(json_error)}")
+                    options = question.get_options()
+                    app.logger.debug(f"Fallback to in-memory options after JSON error: {options}")
             else:
                 options = question.get_options()
                 app.logger.debug(f"Using in-memory options: {options}")
