@@ -730,6 +730,69 @@ def admin_course_wizard_step4_complete(course_id):
     
 # New Quiz Management Endpoints
 
+# Delete a quiz and its associated questions
+@app.route('/admin/quiz/<int:quiz_id>/delete', methods=['POST'])
+@login_required
+def admin_quiz_delete(quiz_id):
+    """Delete a quiz and all its associated questions"""
+    if current_user.role != 'admin':
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    quiz = quiz_db.get(quiz_id)
+    if not quiz:
+        flash('Quiz not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    # Get module and course info for redirecting back to step 3
+    module = module_db.get(quiz.module_id)
+    if not module:
+        flash('Module not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    course_id = module.course_id
+    
+    # First, delete all questions associated with this quiz
+    questions_to_delete = [q_id for q_id, q in question_db.items() if q.quiz_id == quiz_id]
+    
+    try:
+        # Delete from database first
+        with app.app_context():
+            # Delete associated questions
+            for question_id in questions_to_delete:
+                db_question = QuizQuestion.query.get(question_id)
+                if db_question:
+                    app.logger.debug(f"Deleting question ID: {question_id} from database")
+                    db.session.delete(db_question)
+            
+            # Delete the quiz
+            db_quiz = Quiz.query.get(quiz_id)
+            if db_quiz:
+                app.logger.debug(f"Deleting quiz ID: {quiz_id} from database")
+                db.session.delete(db_quiz)
+                
+            # Commit all changes
+            db.session.commit()
+            
+            # Delete from in-memory databases
+            for question_id in questions_to_delete:
+                if question_id in question_db:
+                    app.logger.debug(f"Deleting question ID: {question_id} from memory")
+                    del question_db[question_id]
+            
+            if quiz_id in quiz_db:
+                app.logger.debug(f"Deleting quiz ID: {quiz_id} from memory")
+                del quiz_db[quiz_id]
+                
+            flash('Quiz and associated questions deleted successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error deleting quiz: {str(e)}")
+        flash(f'Error deleting quiz: {str(e)}', 'error')
+    
+    # Redirect back to the course wizard step 3
+    return redirect(url_for('admin_course_wizard_step3', course_id=course_id))
+
 # Get questions for a quiz in JSON format
 # Direct edit quiz route from accordion
 @app.route('/admin/quiz/<int:quiz_id>/edit', methods=['POST'])
