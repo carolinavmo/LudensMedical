@@ -1032,23 +1032,109 @@ def admin_manage_questions(quiz_id):
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
-    quiz = quiz_db.get(quiz_id)
+    # Get fresh quiz data from the database
+    try:
+        with app.app_context():
+            db_quiz = Quiz.query.get(quiz_id)
+            if db_quiz:
+                # Update in-memory
+                quiz_db[quiz_id] = db_quiz
+                quiz = db_quiz
+                app.logger.debug(f"Retrieved quiz {quiz_id} from database")
+            else:
+                quiz = None
+                app.logger.debug(f"Quiz {quiz_id} not found in database")
+    except Exception as e:
+        app.logger.error(f"Error getting quiz from database: {str(e)}")
+        quiz = quiz_db.get(quiz_id)
+        app.logger.debug(f"Using in-memory quiz after DB error: {quiz_id}")
+    
     if not quiz:
         flash('Quiz not found', 'error')
         return redirect(url_for('admin_courses'))
     
     # Get module and course for navigation
-    module = module_db.get(quiz.module_id)
+    module_id = quiz.module_id
+    try:
+        with app.app_context():
+            db_module = Module.query.get(module_id)
+            if db_module:
+                # Update in-memory
+                module_db[module_id] = db_module
+                module = db_module
+                app.logger.debug(f"Retrieved module {module_id} from database")
+            else:
+                module = None
+                app.logger.debug(f"Module {module_id} not found in database")
+    except Exception as e:
+        app.logger.error(f"Error getting module from database: {str(e)}")
+        module = module_db.get(module_id)
+        app.logger.debug(f"Using in-memory module after DB error: {module_id}")
+    
     if not module:
         flash('Module not found', 'error')
         return redirect(url_for('admin_courses'))
     
     course_id = module.course_id
-    course = course_db.get(course_id)
+    try:
+        with app.app_context():
+            db_course = Course.query.get(course_id)
+            if db_course:
+                # Update in-memory
+                course_db[course_id] = db_course
+                course = db_course
+                app.logger.debug(f"Retrieved course {course_id} from database")
+            else:
+                course = None
+                app.logger.debug(f"Course {course_id} not found in database")
+    except Exception as e:
+        app.logger.error(f"Error getting course from database: {str(e)}")
+        course = course_db.get(course_id)
+        app.logger.debug(f"Using in-memory course after DB error: {course_id}")
     
-    # Get questions for this quiz, sorted by order
-    questions = [q for q in question_db.values() if q.quiz_id == quiz_id]
-    questions.sort(key=lambda x: x.order)
+    if not course:
+        flash('Course not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    # Get questions directly from database to avoid detached instances
+    try:
+        with app.app_context():
+            # Query fresh questions from database
+            db_questions = QuizQuestion.query.filter_by(quiz_id=quiz_id).all()
+            
+            # Sort by order
+            db_questions.sort(key=lambda x: x.order)
+            
+            # Update in-memory cache
+            for q in db_questions:
+                question_db[q.id] = q
+            
+            questions = db_questions
+            app.logger.debug(f"Retrieved {len(questions)} questions from database for quiz {quiz_id}")
+    except Exception as e:
+        app.logger.error(f"Error getting questions from database: {str(e)}")
+        
+        # Fallback to in-memory with safeguards
+        questions = []
+        try:
+            for q_id, q in question_db.items():
+                try:
+                    if hasattr(q, 'quiz_id') and q.quiz_id == quiz_id:
+                        questions.append(q)
+                except Exception:
+                    # Skip any entries that cause errors
+                    continue
+            
+            # Sort by order if possible
+            try:
+                questions.sort(key=lambda x: x.order)
+            except Exception as sort_error:
+                app.logger.error(f"Error sorting questions: {str(sort_error)}")
+            
+            app.logger.debug(f"Using {len(questions)} in-memory questions after DB error")
+        except Exception as fallback_error:
+            app.logger.error(f"Error using fallback questions: {str(fallback_error)}")
+            questions = []
     
     # Add a debug panel to verify data
     app.logger.debug(f"Quiz ID: {quiz_id}, Title: {quiz.title}")
