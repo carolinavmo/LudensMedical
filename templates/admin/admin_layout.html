@@ -1,55 +1,56 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50">
-    <div class="flex">
+<!-- Admin layout with collapsible sidebar -->
+<div x-data="{ sidebarOpen: true }" class="min-h-screen bg-gray-50">
+    <div class="flex h-screen overflow-hidden">
         <!-- Sidebar for desktop -->
-        <div class="hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 bg-primary-800">
-            <div class="flex items-center h-16 px-4 bg-primary-900">
-                <span class="text-white font-bold text-lg">Admin Panel</span>
+        <div :class="{'md:w-64': sidebarOpen, 'md:w-20': !sidebarOpen}" class="hidden md:flex md:flex-col md:fixed md:inset-y-0 bg-primary-800 transition-all duration-300">
+            <div class="flex items-center justify-between h-16 px-4 bg-primary-900">
+                <span :class="{'hidden': !sidebarOpen}" class="text-white font-bold text-lg transition-opacity duration-200">Admin Panel</span>
+                <button @click="sidebarOpen = !sidebarOpen" class="p-1 rounded-md text-primary-200 hover:text-white focus:outline-none">
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path x-show="sidebarOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                        <path x-show="!sidebarOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                    </svg>
+                </button>
             </div>
             <div class="flex-1 flex flex-col overflow-y-auto">
                 <nav class="flex-1 px-2 py-4 space-y-1">
                     <a href="{{ url_for('admin_dashboard') }}" class="{% if request.path == url_for('admin_dashboard') %}bg-primary-900 text-white{% else %}text-primary-100 hover:bg-primary-700 hover:text-white{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md">
-                        <svg class="mr-3 h-6 w-6 {% if request.path == url_for('admin_dashboard') %}text-primary-300{% else %}text-primary-400 group-hover:text-primary-300{% endif %}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="h-6 w-6 {% if request.path == url_for('admin_dashboard') %}text-primary-300{% else %}text-primary-400 group-hover:text-primary-300{% endif %}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                         </svg>
-                        Dashboard
+                        <span :class="{'opacity-0 ml-0': !sidebarOpen, 'ml-3': sidebarOpen}" class="transition-opacity duration-200">Dashboard</span>
                     </a>
 
                     <a href="{{ url_for('admin_courses') }}" class="{% if '/admin/course' in request.path and not '/wizard' in request.path %}bg-primary-900 text-white{% else %}text-primary-100 hover:bg-primary-700 hover:text-white{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md">
-                        <svg class="mr-3 h-6 w-6 {% if '/admin/course' in request.path and not '/wizard' in request.path %}text-primary-300{% else %}text-primary-400 group-hover:text-primary-300{% endif %}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="h-6 w-6 {% if '/admin/course' in request.path and not '/wizard' in request.path %}text-primary-300{% else %}text-primary-400 group-hover:text-primary-300{% endif %}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                         </svg>
-                        Manage Courses
-                    </a>
-
-                    <a href="{{ url_for('admin_course_wizard_step1') }}" class="{% if '/wizard' in request.path %}bg-primary-900 text-white{% else %}text-primary-100 hover:bg-primary-700 hover:text-white{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md">
-                        <svg class="mr-3 h-6 w-6 {% if '/wizard' in request.path %}text-primary-300{% else %}text-primary-400 group-hover:text-primary-300{% endif %}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Create Course
+                        <span :class="{'opacity-0 ml-0': !sidebarOpen, 'ml-3': sidebarOpen}" class="transition-opacity duration-200">Manage Courses</span>
                     </a>
 
                     <a href="{{ url_for('admin_users') }}" class="{% if '/admin/user' in request.path %}bg-primary-900 text-white{% else %}text-primary-100 hover:bg-primary-700 hover:text-white{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md">
-                        <svg class="mr-3 h-6 w-6 {% if '/admin/user' in request.path %}text-primary-300{% else %}text-primary-400 group-hover:text-primary-300{% endif %}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="h-6 w-6 {% if '/admin/user' in request.path %}text-primary-300{% else %}text-primary-400 group-hover:text-primary-300{% endif %}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
-                        Manage Users
+                        <span :class="{'opacity-0 ml-0': !sidebarOpen, 'ml-3': sidebarOpen}" class="transition-opacity duration-200">Manage Users</span>
+                    </a>
+
+                    <a href="{{ url_for('admin_dashboard') }}" class="text-primary-100 hover:bg-primary-700 hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+                        <svg class="h-6 w-6 text-primary-400 group-hover:text-primary-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <span :class="{'opacity-0 ml-0': !sidebarOpen, 'ml-3': sidebarOpen}" class="transition-opacity duration-200">Analytics</span>
                     </a>
 
                     <div class="pt-4 mt-4 border-t border-primary-700">
-                        <a href="{{ url_for('dashboard') }}" class="text-primary-100 hover:bg-primary-700 hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md">
-                            <svg class="mr-3 h-6 w-6 text-primary-400 group-hover:text-primary-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                            </svg>
-                            Student Dashboard
-                        </a>
                         <a href="{{ url_for('logout') }}" class="text-primary-100 hover:bg-primary-700 hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md">
-                            <svg class="mr-3 h-6 w-6 text-primary-400 group-hover:text-primary-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg class="h-6 w-6 text-primary-400 group-hover:text-primary-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                             </svg>
-                            Sign Out
+                            <span :class="{'opacity-0 ml-0': !sidebarOpen, 'ml-3': sidebarOpen}" class="transition-opacity duration-200">Sign Out</span>
                         </a>
                     </div>
                 </nav>
@@ -57,24 +58,24 @@
         </div>
 
         <!-- Mobile sidebar menu toggle -->
-        <div class="md:hidden bg-white shadow-sm sticky top-0 z-10">
+        <div class="md:hidden bg-white shadow-sm sticky top-0 z-50">
             <div class="px-4 py-3 flex items-center justify-between">
                 <div>
                     <span class="text-primary-700 font-bold text-lg">Admin Panel</span>
                 </div>
-                <div x-data="{ sidebarOpen: false }">
-                    <button @click="sidebarOpen = true" class="text-gray-500 focus:outline-none">
+                <div x-data="{ mobileSidebarOpen: false }">
+                    <button @click="mobileSidebarOpen = true" class="text-gray-500 focus:outline-none">
                         <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
 
                     <!-- Mobile sidebar -->
-                    <div x-show="sidebarOpen" @click.away="sidebarOpen = false" class="fixed inset-0 z-40">
+                    <div x-show="mobileSidebarOpen" @click.away="mobileSidebarOpen = false" class="fixed inset-0 z-50">
                         <div class="fixed inset-0 bg-gray-600 bg-opacity-75"></div>
                         <div class="relative flex-1 flex flex-col max-w-xs w-full bg-primary-800">
                             <div class="absolute top-0 right-0 -mr-12 pt-2">
-                                <button @click="sidebarOpen = false" class="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
+                                <button @click="mobileSidebarOpen = false" class="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
                                     <span class="sr-only">Close sidebar</span>
                                     <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -101,13 +102,6 @@
                                         Manage Courses
                                     </a>
 
-                                    <a href="{{ url_for('admin_course_wizard_step1') }}" class="{% if '/wizard' in request.path %}bg-primary-900 text-white{% else %}text-primary-100 hover:bg-primary-700 hover:text-white{% endif %} group flex items-center px-2 py-2 text-base font-medium rounded-md">
-                                        <svg class="mr-4 h-6 w-6 {% if '/wizard' in request.path %}text-primary-300{% else %}text-primary-400 group-hover:text-primary-300{% endif %}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        Create Course
-                                    </a>
-
                                     <a href="{{ url_for('admin_users') }}" class="{% if '/admin/user' in request.path %}bg-primary-900 text-white{% else %}text-primary-100 hover:bg-primary-700 hover:text-white{% endif %} group flex items-center px-2 py-2 text-base font-medium rounded-md">
                                         <svg class="mr-4 h-6 w-6 {% if '/admin/user' in request.path %}text-primary-300{% else %}text-primary-400 group-hover:text-primary-300{% endif %}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -115,13 +109,14 @@
                                         Manage Users
                                     </a>
 
+                                    <a href="{{ url_for('admin_dashboard') }}" class="text-primary-100 hover:bg-primary-700 hover:text-white group flex items-center px-2 py-2 text-base font-medium rounded-md">
+                                        <svg class="mr-4 h-6 w-6 text-primary-400 group-hover:text-primary-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                        </svg>
+                                        Analytics
+                                    </a>
+
                                     <div class="pt-4 mt-4 border-t border-primary-700">
-                                        <a href="{{ url_for('dashboard') }}" class="text-primary-100 hover:bg-primary-700 hover:text-white group flex items-center px-2 py-2 text-base font-medium rounded-md">
-                                            <svg class="mr-4 h-6 w-6 text-primary-400 group-hover:text-primary-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                                            </svg>
-                                            Student Dashboard
-                                        </a>
                                         <a href="{{ url_for('logout') }}" class="text-primary-100 hover:bg-primary-700 hover:text-white group flex items-center px-2 py-2 text-base font-medium rounded-md">
                                             <svg class="mr-4 h-6 w-6 text-primary-400 group-hover:text-primary-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -138,7 +133,10 @@
         </div>
 
         <!-- Main content area -->
-        <div class="md:pl-64 flex flex-col flex-1">
+        <div :class="{'md:pl-64': sidebarOpen, 'md:pl-20': !sidebarOpen}" class="flex flex-col flex-1 w-full transition-all duration-300">
+            <!-- Top navigation bar to avoid sidebar overlap -->
+            <div class="bg-white shadow z-10 h-16"></div>
+            
             <!-- Main content -->
             <main class="flex-1">
                 <div class="py-6">
