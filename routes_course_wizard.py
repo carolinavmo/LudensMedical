@@ -1207,6 +1207,8 @@ def admin_edit_question(question_id):
         app.logger.debug(f"Exception - Using in-memory options: {options}")
     
     app.logger.debug(f"Options for question: {options}")
+    app.logger.debug(f"🟢 OPTIONS DATA TYPE: {type(options)}")
+    app.logger.debug(f"🟢 OPTIONS CONTENT: {options}")
     
     if request.method == 'POST':
         app.logger.debug(f"Received POST data: {request.form.to_dict()}")
