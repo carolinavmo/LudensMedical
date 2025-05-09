@@ -83,6 +83,21 @@ document.addEventListener('DOMContentLoaded', function() {
             ${message}
         `;
         indicator.style.opacity = '1';
+        
+        // Add pending visual feedback to all modules
+        const modules = moduleList.querySelectorAll('.module-item');
+        modules.forEach(module => {
+            // Add a blue border and pulse effect
+            module.classList.add('border');
+            module.classList.add('border-blue-500');
+            module.classList.add('animate-pulse');
+            
+            // Remove any previous state styles
+            module.classList.remove('border-green-500');
+            module.classList.remove('border-red-500');
+            module.classList.remove('bg-green-50');
+            module.classList.remove('bg-red-50');
+        });
     }
     
     // Create error toast notification
@@ -97,7 +112,34 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         indicator.style.opacity = '1';
         
+        // Add error visual feedback to all modules
+        const modules = moduleList.querySelectorAll('.module-item');
+        modules.forEach(module => {
+            // Add a red border and background
+            module.classList.add('border');
+            module.classList.add('border-red-500');
+            module.classList.add('bg-red-50');
+            
+            // Remove any pending state classes
+            module.classList.remove('border-blue-500');
+            module.classList.remove('animate-pulse');
+            module.classList.remove('border-green-500');
+            module.classList.remove('bg-green-50');
+            
+            // Shake effect for visual feedback
+            module.classList.add('shake-animation');
+            setTimeout(() => {
+                module.classList.remove('shake-animation');
+            }, 1000);
+        });
+        
         setTimeout(() => {
+            // Reset module styling and hide toast
+            modules.forEach(module => {
+                module.classList.remove('border');
+                module.classList.remove('border-red-500');
+                module.classList.remove('bg-red-50');
+            });
             indicator.style.opacity = '0';
         }, 3000);
     }
