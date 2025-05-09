@@ -1075,25 +1075,75 @@ def admin_edit_question(question_id):
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
-    question = question_db.get(question_id)
+    # Try to get fresh data from database first, then fall back to in-memory if needed
+    try:
+        with app.app_context():
+            # Get the question from the database
+            db_question = QuizQuestion.query.get(question_id)
+            if db_question:
+                # Update in-memory
+                question_db[question_id] = db_question
+                question = db_question
+            else:
+                # Fall back to in-memory
+                question = question_db.get(question_id)
+    except Exception as e:
+        app.logger.error(f"Error getting fresh question data: {str(e)}")
+        # Fall back to in-memory
+        question = question_db.get(question_id)
+    
     if not question:
         flash('Question not found', 'error')
         return redirect(url_for('admin_courses'))
     
     quiz_id = question.quiz_id
-    quiz = quiz_db.get(quiz_id)
+    
+    # Try to get fresh quiz data
+    try:
+        with app.app_context():
+            db_quiz = Quiz.query.get(quiz_id)
+            if db_quiz:
+                # Update in-memory
+                quiz_db[quiz_id] = db_quiz
+                quiz = db_quiz
+            else:
+                # Fall back to in-memory
+                quiz = quiz_db.get(quiz_id)
+    except Exception as e:
+        app.logger.error(f"Error getting fresh quiz data: {str(e)}")
+        # Fall back to in-memory
+        quiz = quiz_db.get(quiz_id)
+    
     if not quiz:
         flash('Quiz not found', 'error')
         return redirect(url_for('admin_courses'))
     
     # Get module and course for navigation
-    module = module_db.get(quiz.module_id)
+    module_id = quiz.module_id
+    
+    # Try to get fresh module data
+    try:
+        with app.app_context():
+            db_module = Module.query.get(module_id)
+            if db_module:
+                # Update in-memory
+                module_db[module_id] = db_module
+                module = db_module
+            else:
+                # Fall back to in-memory
+                module = module_db.get(module_id)
+    except Exception as e:
+        app.logger.error(f"Error getting fresh module data: {str(e)}")
+        # Fall back to in-memory
+        module = module_db.get(module_id)
+    
     if not module:
         flash('Module not found', 'error')
         return redirect(url_for('admin_courses'))
     
     course_id = module.course_id
     
+    # Get the options
     options = question.get_options()
     
     if request.method == 'POST':
@@ -1104,21 +1154,37 @@ def admin_edit_question(question_id):
         option4 = request.form.get('option4')
         correct_answer = int(request.form.get('correct_answer'))
         
-        # Update the question
-        question.question = question_text
-        question.correct_answer = correct_answer
-        
-        # Update options
+        # Create new options list
         new_options = [option1, option2]
         if option3:
             new_options.append(option3)
         if option4:
             new_options.append(option4)
         
-        question.set_options(new_options)
+        try:
+            # Update database first
+            with app.app_context():
+                db_question = QuizQuestion.query.get(question_id)
+                if db_question:
+                    db_question.question = question_text
+                    db_question.correct_answer = correct_answer
+                    db_question.options = json.dumps(new_options)
+                    db.session.commit()
+                    app.logger.debug(f"Question {question_id} updated in database")
+                
+                # Update in-memory whether or not the database update succeeds
+                question.question = question_text
+                question.correct_answer = correct_answer
+                question.set_options(new_options)
+                
+                flash('Question updated successfully', 'success')
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error updating question: {str(e)}")
+            flash(f'Error updating question: {str(e)}', 'error')
         
-        flash('Question updated successfully', 'success')
-        return redirect(url_for('admin_manage_questions', quiz_id=quiz_id))
+        # Redirect to step 3 of the course wizard
+        return redirect(url_for('admin_course_wizard_step3', course_id=course_id))
     
     return render_template(
         'admin/edit_question.html',
@@ -1145,11 +1211,41 @@ def admin_delete_question(question_id):
     
     quiz_id = question.quiz_id
     
-    # Delete the question
-    del question_db[question_id]
+    # Get module and course info for redirecting back to step 3
+    quiz = quiz_db.get(quiz_id)
+    if not quiz:
+        flash('Quiz not found', 'error')
+        return redirect(url_for('admin_courses'))
     
-    flash('Question deleted successfully', 'success')
-    return redirect(url_for('admin_manage_questions', quiz_id=quiz_id))
+    module = module_db.get(quiz.module_id)
+    if not module:
+        flash('Module not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    course_id = module.course_id
+    
+    try:
+        # Delete from database first
+        with app.app_context():
+            db_question = QuizQuestion.query.get(question_id)
+            if db_question:
+                app.logger.debug(f"Deleting question ID: {question_id} from database")
+                db.session.delete(db_question)
+                db.session.commit()
+            
+            # Delete the question from in-memory
+            app.logger.debug(f"Deleting question ID: {question_id} from memory")
+            if question_id in question_db:
+                del question_db[question_id]
+                
+            flash('Question deleted successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error deleting question: {str(e)}")
+        flash(f'Error deleting question: {str(e)}', 'error')
+    
+    # Redirect to step 3 of the course wizard
+    return redirect(url_for('admin_course_wizard_step3', course_id=course_id))
 
 # Add new question to quiz
 @app.route('/admin/quiz/<int:quiz_id>/question/new-json', methods=['POST'])

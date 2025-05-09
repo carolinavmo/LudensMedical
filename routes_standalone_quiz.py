@@ -180,16 +180,42 @@ def admin_quiz_delete(quiz_id):
     # Get all questions for this quiz
     questions_to_delete = [q for q in question_db.values() if q.quiz_id == quiz_id]
     
-    # Delete all questions first
-    for question in questions_to_delete:
-        app.logger.debug(f"Deleting question ID: {question.id}")
-        del question_db[question.id]
-    
-    # Delete the quiz
-    app.logger.debug(f"Deleting quiz ID: {quiz_id}, Title: {quiz.title}")
-    del quiz_db[quiz_id]
-    
-    flash('Quiz and its questions were deleted successfully', 'success')
+    try:
+        # Delete from database first
+        with app.app_context():
+            # Delete questions from database
+            for question in questions_to_delete:
+                app.logger.debug(f"Deleting question ID: {question.id} from database")
+                db_question = QuizQuestion.query.get(question.id)
+                if db_question:
+                    db.session.delete(db_question)
+            
+            # Delete quiz from database
+            db_quiz = Quiz.query.get(quiz_id)
+            if db_quiz:
+                app.logger.debug(f"Deleting quiz ID: {quiz_id}, Title: {quiz.title} from database")
+                db.session.delete(db_quiz)
+                
+            # Commit all changes
+            db.session.commit()
+            
+            # If database operations succeed, update in-memory data
+            # Delete all questions first from in-memory
+            for question in questions_to_delete:
+                app.logger.debug(f"Deleting question ID: {question.id} from memory")
+                if question.id in question_db:
+                    del question_db[question.id]
+            
+            # Delete the quiz from in-memory
+            app.logger.debug(f"Deleting quiz ID: {quiz_id}, Title: {quiz.title} from memory")
+            if quiz_id in quiz_db:
+                del quiz_db[quiz_id]
+                
+            flash('Quiz and its questions were deleted successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error deleting quiz: {str(e)}")
+        flash(f'Error deleting quiz: {str(e)}', 'error')
     
     # Return to Step 3 of course wizard
     return redirect(url_for('admin_course_wizard_step3', course_id=course_id))
