@@ -1071,6 +1071,9 @@ def admin_add_question(quiz_id):
 @login_required
 def admin_edit_question(question_id):
     """Edit a question with redirect back to question management page."""
+    app.logger.debug(f"admin_edit_question CALLED with question_id={question_id}, method={request.method}")
+    app.logger.debug(f"Form data received: {request.form.to_dict() if request.method == 'POST' else 'GET request'}")
+    
     if current_user.role != 'admin':
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
@@ -1279,8 +1282,12 @@ def admin_edit_question(question_id):
     
     app.logger.debug(f"Rendering edit_question.html with question={question_id}, quiz={quiz_id}, options={options}")
     
+    # Create a form instance for CSRF token
+    form = QuestionForm()
+    
     return render_template(
         'admin/edit_question.html',
+        form=form,
         question=question,
         quiz=quiz,
         module=module,
