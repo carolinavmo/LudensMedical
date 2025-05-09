@@ -1206,10 +1206,9 @@ def admin_add_question(quiz_id):
             
             flash('Question added successfully', 'success')
             
-            # Use absolute URL for redirection
-            redirect_url = f"/admin/quiz/{quiz_id}/questions"
-            app.logger.debug(f"Redirecting to: {redirect_url}")
-            return redirect(redirect_url)
+            # Properly use url_for to create the redirect URL
+            app.logger.debug(f"Redirecting to question management page for quiz {quiz_id}")
+            return redirect(url_for('admin_manage_questions', quiz_id=quiz_id))
         except Exception as e:
             db.session.rollback()
             app.logger.error(f"Error adding question: {str(e)}")
@@ -1443,11 +1442,9 @@ def admin_edit_question(question_id):
             app.logger.error(f"Error updating question: {str(e)}")
             flash(f'Error updating question: {str(e)}', 'error')
         
-        # Redirect to the question management page for this quiz
-        # Use absolute URL to avoid issues with relative redirection
-        redirect_url = f"/admin/quiz/{quiz_id}/questions"
-        app.logger.debug(f"Redirecting to: {redirect_url}")
-        return redirect(redirect_url)
+        # Redirect to the question management page for this quiz using url_for
+        app.logger.debug(f"Redirecting to question management page for quiz {quiz_id}")
+        return redirect(url_for('admin_manage_questions', quiz_id=quiz_id))
     
     app.logger.debug(f"Rendering edit_question.html with question={question_id}, quiz={quiz_id}, options={options}")
     
@@ -1513,10 +1510,9 @@ def admin_delete_question(question_id):
         app.logger.error(f"Error deleting question: {str(e)}")
         flash(f'Error deleting question: {str(e)}', 'error')
     
-    # Use absolute URL for redirection
-    redirect_url = f"/admin/quiz/{quiz_id}/questions"
-    app.logger.debug(f"Redirecting to: {redirect_url}")
-    return redirect(redirect_url)
+    # Use url_for for redirection to ensure correct URL formation
+    app.logger.debug(f"Redirecting to question management page for quiz {quiz_id}")
+    return redirect(url_for('admin_manage_questions', quiz_id=quiz_id))
 
 # Add new question to quiz
 @app.route('/admin/quiz/<int:quiz_id>/question/new-json', methods=['POST'])
@@ -1748,8 +1744,9 @@ def admin_question_edit_wizard(question_id):
                             app.logger.debug(f"Question {question_id} updated in memory directly")
                 
                 flash('Question updated successfully', 'success')
-                # Redirect to the question management page for this quiz
-                return redirect(f"/admin/quiz/{quiz_id}/questions")
+                # Redirect to the question management page for this quiz using url_for
+                app.logger.debug(f"Redirecting to question management page for quiz {quiz_id}")
+                return redirect(url_for('admin_manage_questions', quiz_id=quiz_id))
             else:
                 flash('Warning: Question not updated in database. Please retry.', 'warning')
                 
