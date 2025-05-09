@@ -1111,123 +1111,95 @@ def admin_modules_reorder(course_id):
         app.logger.warning(f"Access denied for user {current_user.id} trying to reorder modules")
         return jsonify({'success': False, 'message': 'Access denied'}), 403
     
-    # Log all request headers for debugging
-    app.logger.debug(f"Headers: {dict(request.headers)}")
-    
-    # Check in-memory database first
-    course = course_db.get(course_id)
-    if not course:
-        # Try SQL database as fallback
-        try:
-            course = Course.query.get(course_id)
-            app.logger.info(f"Found course {course_id} in SQL database")
-        except Exception as e:
-            app.logger.error(f"Database error when fetching course: {str(e)}")
-            return jsonify({'success': False, 'message': 'Database error'}), 500
-            
-    if not course:
-        app.logger.error(f"Course {course_id} not found in any database")
-        return jsonify({'success': False, 'message': 'Course not found'}), 404
-    
     try:
-        # Get the raw request data for debugging
-        raw_data = request.get_data(as_text=True)
-        app.logger.debug(f"Raw request data: {raw_data}")
+        # Verify the course exists
+        course = Course.query.get(course_id)
+        if not course:
+            app.logger.error(f"Course {course_id} not found for module reordering")
+            return jsonify({'success': False, 'message': 'Course not found'}), 404
         
-        # Get the new module order data from the request
+        # Process the request data
         data = request.get_json()
-        app.logger.debug(f"Parsed JSON data: {data}")
+        app.logger.debug(f"Received reorder data: {data}")
         
         if not data or 'modules' not in data:
             app.logger.error(f"Invalid reorder data format: {data}")
             return jsonify({'success': False, 'message': 'Invalid data format'}), 400
         
-        modules_data = data['modules']
-        app.logger.info(f"Received module reorder data: {modules_data}")
-        
-        # Collect all the module data first
-        modules_by_id = {}
-        for module_data in modules_data:
-            module_id = int(module_data['module_id'])
-            new_order = int(module_data['order'])
-            modules_by_id[module_id] = new_order
-            app.logger.info(f"Planning to update module {module_id} to order {new_order}")
-        
-        if not modules_by_id:
-            app.logger.error("No valid module data received for reordering")
-            return jsonify({'success': False, 'message': 'No valid module data received'}), 400
-        
-        # First, update all modules in the SQL database in a single transaction
         try:
-            # Fetch all affected modules at once
-            module_ids = list(modules_by_id.keys())
-            db_modules = Module.query.filter(Module.id.in_(module_ids)).all()
+            # Parse and validate module data
+            updates = []
+            for item in data['modules']:
+                module_id = int(item['module_id'])
+                new_order = int(item['order'])
+                updates.append({'id': module_id, 'order': new_order})
             
-            if not db_modules:
-                app.logger.error(f"No modules found in database with IDs: {module_ids}")
-                return jsonify({'success': False, 'message': 'Modules not found in database'}), 404
+            if not updates:
+                app.logger.error("No valid module data to process")
+                return jsonify({'success': False, 'message': 'No modules to update'}), 400
             
-            app.logger.info(f"Found {len(db_modules)} modules in database to update")
+            app.logger.info(f"Processing {len(updates)} module order updates")
             
-            # Update all modules in the database
-            for db_module in db_modules:
-                if db_module.id in modules_by_id and db_module.course_id == course_id:
-                    new_order = modules_by_id[db_module.id]
-                    db_module.order = new_order
-                    app.logger.info(f"Setting database module {db_module.id} order to {new_order}")
-                else:
-                    app.logger.warning(f"Module {db_module.id} not in update list or belongs to different course")
-            
-            # Commit all changes at once
-            try:
-                db.session.flush()  # Flush first to catch any database errors before commit
-                app.logger.info("Successfully flushed all module order changes to database")
-                
-                # Verify the changes before commit
-                for db_module in db_modules:
-                    if db_module.id in modules_by_id:
-                        expected_order = modules_by_id[db_module.id]
-                        app.logger.info(f"Verifying module {db_module.id}: expected order {expected_order}, actual order {db_module.order}")
-                        if db_module.order != expected_order:
-                            app.logger.error(f"Order mismatch for module {db_module.id}: expected {expected_order}, actual {db_module.order}")
-                
-                # Now commit the changes
-                db.session.commit()
-                app.logger.info("Successfully committed all module order changes to database")
-                
-                # Double check that the changes were actually saved by querying the database again
-                verification_modules = Module.query.filter(Module.id.in_(module_ids)).all()
-                for verification_module in verification_modules:
-                    if verification_module.id in modules_by_id:
-                        expected_order = modules_by_id[verification_module.id]
-                        app.logger.info(f"Post-commit verification for module {verification_module.id}: expected order {expected_order}, actual order {verification_module.order}")
-                        if verification_module.order != expected_order:
-                            app.logger.error(f"Post-commit order mismatch for module {verification_module.id}!")
-                        else:
-                            app.logger.info(f"Updated module {verification_module.id} in database")
-            except Exception as e:
-                app.logger.error(f"Error during commit: {str(e)}")
-                db.session.rollback()
-                raise
-            
-            # Now update the in-memory modules
-            for module_id, new_order in modules_by_id.items():
-                module = module_db.get(module_id)
-                if module and module.course_id == course_id:
-                    module.order = new_order
-                    app.logger.info(f"Updated in-memory module {module_id} to order {new_order}")
-                else:
-                    app.logger.warning(f"Module {module_id} not found in memory or belongs to different course")
+            # Create a fresh session to ensure isolation
+            with db.engine.begin() as connection:
+                # First verify all modules belong to this course
+                for update in updates:
+                    result = connection.execute(
+                        "SELECT course_id FROM modules WHERE id = :id",
+                        {"id": update['id']}
+                    ).first()
                     
+                    if not result:
+                        app.logger.error(f"Module {update['id']} not found in database")
+                        return jsonify({'success': False, 'message': f'Module {update["id"]} not found'}), 404
+                    
+                    if result[0] != course_id:
+                        app.logger.error(f"Module {update['id']} belongs to course {result[0]}, not {course_id}")
+                        return jsonify({'success': False, 'message': f'Module {update["id"]} belongs to a different course'}), 403
+                
+                # Execute the updates using explicit SQL commands
+                update_count = 0
+                for update in updates:
+                    result = connection.execute(
+                        "UPDATE modules SET \"order\" = :order WHERE id = :id AND course_id = :course_id",
+                        {"order": update['order'], "id": update['id'], "course_id": course_id}
+                    )
+                    
+                    if result.rowcount > 0:
+                        update_count += 1
+                        app.logger.info(f"Updated module {update['id']} order to {update['order']} in database")
+                    else:
+                        app.logger.warning(f"Failed to update module {update['id']} in database")
+                
+                # Transaction is automatically committed when the context manager exits
+                app.logger.info(f"Successfully updated {update_count} out of {len(updates)} modules in database")
+            
+            # Reload modules from database to memory to ensure consistency
+            # First, reload the specific modules we just updated
+            updated_ids = [update['id'] for update in updates]
+            updated_modules = Module.query.filter(Module.id.in_(updated_ids)).all()
+            
+            for module in updated_modules:
+                module_db[module.id] = module
+                app.logger.info(f"Refreshed module {module.id} in memory, order is now {module.order}")
+            
+            # Now refresh all course data for consistency
+            app.logger.debug(f"Refreshed data for course {course_id}: {len(course.get_modules())} modules, {Quiz.query.join(Module).filter(Module.course_id == course_id).count()} quizzes")
+            
+            # Also refresh in-memory data for consistency
+            populate_in_memory_db()
+            
+            return jsonify({
+                'success': True, 
+                'message': f'Module orders updated successfully. {update_count} modules updated.'
+            })
+            
         except Exception as e:
-            app.logger.error(f"Error updating module orders in database: {str(e)}")
-            db.session.rollback()
+            app.logger.error(f"Database error during module reordering: {str(e)}")
             return jsonify({'success': False, 'message': f'Database error: {str(e)}'}), 500
-        
-        return jsonify({'success': True, 'message': 'Module order updated successfully'})
-    
+            
     except Exception as e:
-        logging.error(f"Error reordering modules: {str(e)}")
+        app.logger.error(f"Error in module reordering: {str(e)}")
         return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
 
 @app.route('/admin/courses/<int:course_id>/delete', methods=['POST'])
