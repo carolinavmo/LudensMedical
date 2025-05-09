@@ -1099,10 +1099,11 @@ def admin_add_question(quiz_id):
 @login_required
 def admin_edit_question(question_id):
     """Edit a question with redirect back to question management page."""
-    app.logger.debug(f"▶️ EDIT QUESTION HANDLER CALLED with question_id={question_id}, method={request.method}")
+    app.logger.debug(f"🔴 EDIT QUESTION HANDLER CALLED with question_id={question_id}, method={request.method}, referrer={request.referrer}")
+    app.logger.debug(f"🔴 Request headers: {dict(request.headers)}")
     
     if request.method == 'POST':
-        app.logger.debug(f"▶️ POST request received with data: {request.form.to_dict()}")
+        app.logger.debug(f"🔴 POST request received with data: {request.form.to_dict()}")
     
     if current_user.role != 'admin':
         flash('Access denied', 'error')

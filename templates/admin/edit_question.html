@@ -84,7 +84,7 @@
             </p>
         </div>
         <div class="px-4 py-5 sm:p-6">
-            <form action="/admin/question/{{ question.id }}/edit" method="POST">
+            <form method="POST" action="/admin/question/{{ question.id }}/edit" id="edit-question-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <input type="hidden" name="quiz_id" value="{{ quiz.id }}"/>
                 
@@ -145,10 +145,10 @@
                 </div>
                 
                 <div class="mt-6 flex justify-end space-x-3">
-                    <a href="{{ url_for('admin_manage_questions', quiz_id=quiz.id) }}" class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    <a href="/admin/quiz/{{ quiz.id }}/questions" class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
                         Cancel
                     </a>
-                    <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    <button type="submit" id="submit-btn" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
                         Save Changes
                     </button>
                 </div>
@@ -156,4 +156,45 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('edit-question-form');
+    const submitBtn = document.getElementById('submit-btn');
+    
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+        
+        // Create FormData from the form
+        const formData = new FormData(form);
+        
+        // Use fetch to submit the form
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Accept': 'text/html'
+            },
+            redirect: 'follow'
+        })
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Changes';
+                return response.text();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Save Changes';
+            alert('Error saving question. Please try again.');
+        });
+    });
+});
+</script>
 {% endblock %}
