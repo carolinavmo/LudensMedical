@@ -1071,24 +1071,90 @@ def admin_add_question(quiz_id):
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
-    quiz = quiz_db.get(quiz_id)
+    app.logger.debug(f"Add question to quiz {quiz_id}")
+    
+    # Get fresh data from the database to avoid detached instances
+    try:
+        with app.app_context():
+            db_quiz = Quiz.query.get(quiz_id)
+            if db_quiz:
+                # Update in-memory
+                quiz_db[quiz_id] = db_quiz
+                quiz = db_quiz
+                app.logger.debug(f"Retrieved quiz {quiz_id} from database")
+            else:
+                quiz = None
+                app.logger.debug(f"Quiz {quiz_id} not found in database")
+    except Exception as e:
+        app.logger.error(f"Error getting quiz from database: {str(e)}")
+        quiz = quiz_db.get(quiz_id)
+        app.logger.debug(f"Using in-memory quiz: {quiz_id}")
+    
     if not quiz:
         flash('Quiz not found', 'error')
         return redirect(url_for('admin_courses'))
     
     # Get module and course for navigation
-    module = module_db.get(quiz.module_id)
+    module_id = quiz.module_id
+    try:
+        with app.app_context():
+            db_module = Module.query.get(module_id)
+            if db_module:
+                # Update in-memory
+                module_db[module_id] = db_module
+                module = db_module
+                app.logger.debug(f"Retrieved module {module_id} from database")
+            else:
+                module = None
+                app.logger.debug(f"Module {module_id} not found in database")
+    except Exception as e:
+        app.logger.error(f"Error getting module from database: {str(e)}")
+        module = module_db.get(module_id)
+        app.logger.debug(f"Using in-memory module: {module_id}")
     if not module:
         flash('Module not found', 'error')
         return redirect(url_for('admin_courses'))
     
     course_id = module.course_id
     
-    # Determine the next order for this quiz
-    existing_questions = [q for q in question_db.values() if q.quiz_id == quiz_id]
-    next_order = 1
-    if existing_questions:
-        next_order = max([q.order for q in existing_questions]) + 1
+    # Determine the next order for this quiz safely, handling detached instances
+    try:
+        # First, try to get fresh data from the database
+        with app.app_context():
+            # Get questions for this quiz from database
+            db_questions = QuizQuestion.query.filter_by(quiz_id=quiz_id).all()
+            
+            # Use database questions if available
+            if db_questions:
+                next_order = max([q.order for q in db_questions]) + 1
+                app.logger.debug(f"Calculated next_order from database: {next_order}")
+            else:
+                next_order = 1
+                app.logger.debug("No questions found in database, starting with order 1")
+    except Exception as e:
+        app.logger.error(f"Error retrieving questions from database: {str(e)}")
+        
+        # Fallback: calculate from in-memory dict using a safer approach
+        try:
+            # Instead of accessing quiz_id attribute directly, which may cause detached instance errors,
+            # filter by checking quiz_id attribute only for instances that don't raise an error
+            existing_questions = []
+            for q_id, q in question_db.items():
+                try:
+                    if hasattr(q, 'quiz_id') and q.quiz_id == quiz_id:
+                        existing_questions.append(q)
+                except Exception:
+                    # Skip any entries that cause errors
+                    pass
+                    
+            next_order = 1
+            if existing_questions:
+                next_order = max([q.order for q in existing_questions]) + 1
+            
+            app.logger.debug(f"Calculated next_order from memory (fallback): {next_order}")
+        except Exception as e:
+            app.logger.error(f"Error calculating next order from memory: {str(e)}")
+            next_order = 1  # Default fallback
     
     app.logger.debug(f"Next order number for quiz {quiz_id}: {next_order}")
     
