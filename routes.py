@@ -1105,8 +1105,14 @@ def admin_course_edit(course_id):
 @app.route('/admin/courses/<int:course_id>/modules/reorder', methods=['POST'])
 @login_required
 def admin_modules_reorder(course_id):
+    app.logger.info(f"Module reorder request received for course {course_id}")
+    
     if current_user.role != 'admin':
+        app.logger.warning(f"Access denied for user {current_user.id} trying to reorder modules")
         return jsonify({'success': False, 'message': 'Access denied'}), 403
+    
+    # Log all request headers for debugging
+    app.logger.debug(f"Headers: {dict(request.headers)}")
     
     # Check in-memory database first
     course = course_db.get(course_id)
@@ -1114,16 +1120,24 @@ def admin_modules_reorder(course_id):
         # Try SQL database as fallback
         try:
             course = Course.query.get(course_id)
+            app.logger.info(f"Found course {course_id} in SQL database")
         except Exception as e:
             app.logger.error(f"Database error when fetching course: {str(e)}")
             return jsonify({'success': False, 'message': 'Database error'}), 500
             
     if not course:
+        app.logger.error(f"Course {course_id} not found in any database")
         return jsonify({'success': False, 'message': 'Course not found'}), 404
     
     try:
+        # Get the raw request data for debugging
+        raw_data = request.get_data(as_text=True)
+        app.logger.debug(f"Raw request data: {raw_data}")
+        
         # Get the new module order data from the request
         data = request.get_json()
+        app.logger.debug(f"Parsed JSON data: {data}")
+        
         if not data or 'modules' not in data:
             app.logger.error(f"Invalid reorder data format: {data}")
             return jsonify({'success': False, 'message': 'Invalid data format'}), 400
@@ -1214,18 +1228,34 @@ def admin_course_delete(course_id):
 @app.route('/admin/courses/<int:course_id>/modules/new', methods=['GET', 'POST'])
 @login_required
 def admin_module_new(course_id):
+    app.logger.info(f"Creating new module for course {course_id}")
+    
     if current_user.role != 'admin':
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
+    # Get course from in-memory database first
     course = course_db.get(course_id)
+    if not course:
+        try:
+            # Get from SQL database as fallback
+            course = Course.query.get(course_id)
+            if course:
+                # Update in-memory course
+                course_db[course_id] = course
+                app.logger.info(f"Found course {course_id} in database and updated in-memory copy")
+        except Exception as e:
+            app.logger.error(f"Database error when fetching course: {str(e)}")
+    
     if not course:
         flash('Course not found', 'error')
         return redirect(url_for('admin_courses'))
     
     form = ModuleForm()
     if form.validate_on_submit():
+        now = datetime.now()
         module_id = get_next_id(module_db)
+        app.logger.info(f"Generated new module ID: {module_id}")
         
         # Handle video file upload
         video_file_path = None
@@ -1236,7 +1266,7 @@ def admin_module_new(course_id):
             # Ensure directory exists
             os.makedirs(os.path.join('static', 'uploads/videos'), exist_ok=True)
             form.video_file.data.save(os.path.join('static', video_file_path))
-            logging.info(f"Saved video file: {video_file_path}")
+            app.logger.info(f"Saved video file: {video_file_path}")
         
         # Handle PDF file upload
         pdf_file_path = None
@@ -1247,8 +1277,9 @@ def admin_module_new(course_id):
             # Ensure directory exists
             os.makedirs(os.path.join('static', 'uploads/pdfs'), exist_ok=True)
             form.pdf_file.data.save(os.path.join('static', pdf_file_path))
-            logging.info(f"Saved PDF file: {pdf_file_path}")
+            app.logger.info(f"Saved PDF file: {pdf_file_path}")
         
+        # Create module in memory
         module = Module(
             id=module_id,
             course_id=course_id,
@@ -1259,14 +1290,39 @@ def admin_module_new(course_id):
             pdf_url=form.pdf_url.data,
             video_file=video_file_path,
             pdf_file=pdf_file_path,
-            created_at=datetime.now()
+            created_at=now,
+            updated_at=now
         )
         module_db[module_id] = module
+        app.logger.info(f"Added module {module_id} to in-memory database")
         
-        flash('Module created successfully', 'success')
+        # Also add to SQL database
+        try:
+            db_module = Module(
+                id=module_id,
+                course_id=course_id,
+                title=form.title.data,
+                content=form.content.data,
+                order=form.order.data,
+                video_url=form.video_url.data,
+                pdf_url=form.pdf_url.data,
+                video_file=video_file_path,
+                pdf_file=pdf_file_path,
+                created_at=now,
+                updated_at=now
+            )
+            db.session.add(db_module)
+            db.session.commit()
+            app.logger.info(f"Successfully added module {module_id} to SQL database")
+            flash('Module created successfully', 'success')
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error saving module to database: {str(e)}")
+            flash(f'Module created in memory but failed to save to database: {str(e)}', 'warning')
         
         # Check if the request came from the course wizard
         referer = request.headers.get('Referer', '')
+        app.logger.info(f"Referer: {referer}")
         if 'course-wizard/step2' in referer:
             return redirect(url_for('admin_course_wizard_step2', course_id=course_id))
         else:
