@@ -743,6 +743,197 @@ def admin_quiz_edit_json(quiz_id):
             'error': f'Error updating quiz: {str(e)}'
         }), 500
 
+# Question Management Page with Return to Step 3
+@app.route('/admin/quiz/<int:quiz_id>/questions', methods=['GET'])
+@login_required
+def admin_manage_questions(quiz_id):
+    """Dedicated page for managing quiz questions with return to step 3."""
+    if current_user.role != 'admin':
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    quiz = quiz_db.get(quiz_id)
+    if not quiz:
+        flash('Quiz not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    # Get module and course for navigation
+    module = module_db.get(quiz.module_id)
+    if not module:
+        flash('Module not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    course_id = module.course_id
+    course = course_db.get(course_id)
+    
+    # Get questions for this quiz, sorted by order
+    questions = [q for q in question_db.values() if q.quiz_id == quiz_id]
+    questions.sort(key=lambda x: x.order)
+    
+    # Add a debug panel to verify data
+    app.logger.debug(f"Quiz ID: {quiz_id}, Title: {quiz.title}")
+    app.logger.debug(f"Found {len(questions)} questions")
+    
+    return render_template(
+        'admin/question_management.html',
+        quiz=quiz,
+        module=module,
+        course=course,
+        questions=questions
+    )
+
+# Add question to quiz
+@app.route('/admin/quiz/<int:quiz_id>/question/add', methods=['GET', 'POST'])
+@login_required
+def admin_add_question(quiz_id):
+    """Add a question to a quiz with redirect back to question management page."""
+    if current_user.role != 'admin':
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    quiz = quiz_db.get(quiz_id)
+    if not quiz:
+        flash('Quiz not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    # Get module and course for navigation
+    module = module_db.get(quiz.module_id)
+    if not module:
+        flash('Module not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    course_id = module.course_id
+    
+    if request.method == 'POST':
+        question_text = request.form.get('question')
+        option1 = request.form.get('option1')
+        option2 = request.form.get('option2')
+        option3 = request.form.get('option3')
+        option4 = request.form.get('option4')
+        correct_answer = int(request.form.get('correct_answer'))
+        
+        # Determine the order (highest + 1)
+        existing_questions = [q for q in question_db.values() if q.quiz_id == quiz_id]
+        next_order = 1
+        if existing_questions:
+            next_order = max([q.order for q in existing_questions]) + 1
+        
+        # Create the question
+        options = [option1, option2]
+        if option3:
+            options.append(option3)
+        if option4:
+            options.append(option4)
+        
+        # Create new question
+        new_question = QuizQuestion(
+            id=get_next_id(question_db),
+            quiz_id=quiz_id,
+            question=question_text,
+            options=json.dumps(options),
+            correct_answer=correct_answer,
+            order=next_order,
+            created_at=datetime.now()
+        )
+        
+        # Add to DB
+        question_db[new_question.id] = new_question
+        
+        flash('Question added successfully', 'success')
+        return redirect(url_for('admin_manage_questions', quiz_id=quiz_id))
+    
+    return render_template(
+        'admin/add_question.html',
+        quiz=quiz,
+        module=module,
+        course_id=course_id
+    )
+
+# Edit question
+@app.route('/admin/question/<int:question_id>/edit', methods=['GET', 'POST'])
+@login_required
+def admin_edit_question(question_id):
+    """Edit a question with redirect back to question management page."""
+    if current_user.role != 'admin':
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    question = question_db.get(question_id)
+    if not question:
+        flash('Question not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    quiz_id = question.quiz_id
+    quiz = quiz_db.get(quiz_id)
+    if not quiz:
+        flash('Quiz not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    # Get module and course for navigation
+    module = module_db.get(quiz.module_id)
+    if not module:
+        flash('Module not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    course_id = module.course_id
+    
+    options = question.get_options()
+    
+    if request.method == 'POST':
+        question_text = request.form.get('question')
+        option1 = request.form.get('option1')
+        option2 = request.form.get('option2')
+        option3 = request.form.get('option3')
+        option4 = request.form.get('option4')
+        correct_answer = int(request.form.get('correct_answer'))
+        
+        # Update the question
+        question.question = question_text
+        question.correct_answer = correct_answer
+        
+        # Update options
+        new_options = [option1, option2]
+        if option3:
+            new_options.append(option3)
+        if option4:
+            new_options.append(option4)
+        
+        question.set_options(new_options)
+        
+        flash('Question updated successfully', 'success')
+        return redirect(url_for('admin_manage_questions', quiz_id=quiz_id))
+    
+    return render_template(
+        'admin/edit_question.html',
+        question=question,
+        quiz=quiz,
+        module=module,
+        course_id=course_id,
+        options=options
+    )
+
+# Delete question with redirect
+@app.route('/admin/question/<int:question_id>/delete', methods=['POST'])
+@login_required
+def admin_delete_question(question_id):
+    """Delete a question with redirect back to question management page."""
+    if current_user.role != 'admin':
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    question = question_db.get(question_id)
+    if not question:
+        flash('Question not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    quiz_id = question.quiz_id
+    
+    # Delete the question
+    del question_db[question_id]
+    
+    flash('Question deleted successfully', 'success')
+    return redirect(url_for('admin_manage_questions', quiz_id=quiz_id))
+
 # Add new question to quiz
 @app.route('/admin/quiz/<int:quiz_id>/question/new-json', methods=['POST'])
 @login_required

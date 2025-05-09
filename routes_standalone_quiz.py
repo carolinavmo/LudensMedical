@@ -154,3 +154,42 @@ def admin_standalone_quiz_edit(quiz_id):
     
     flash('Quiz updated successfully', 'success')
     return redirect(url_for('admin_standalone_quiz_management', course_id=course_id))
+    
+@app.route('/admin/quiz/<int:quiz_id>/delete', methods=['POST'])
+@login_required
+def admin_quiz_delete(quiz_id):
+    """Delete a quiz and its associated questions."""
+    
+    if current_user.role != 'admin':
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    quiz = quiz_db.get(quiz_id)
+    if not quiz:
+        flash('Quiz not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    # Find the module and course for this quiz
+    module = module_db.get(quiz.module_id)
+    if not module:
+        flash('Module not found', 'error')
+        return redirect(url_for('admin_courses'))
+        
+    course_id = module.course_id
+    
+    # Get all questions for this quiz
+    questions_to_delete = [q for q in question_db.values() if q.quiz_id == quiz_id]
+    
+    # Delete all questions first
+    for question in questions_to_delete:
+        app.logger.debug(f"Deleting question ID: {question.id}")
+        del question_db[question.id]
+    
+    # Delete the quiz
+    app.logger.debug(f"Deleting quiz ID: {quiz_id}, Title: {quiz.title}")
+    del quiz_db[quiz_id]
+    
+    flash('Quiz and its questions were deleted successfully', 'success')
+    
+    # Return to Step 3 of course wizard
+    return redirect(url_for('admin_course_wizard_step3', course_id=course_id))
