@@ -1666,6 +1666,7 @@ def admin_question_edit(question_id):
 @app.route('/admin/question/<int:question_id>/delete', methods=['POST'])
 @login_required
 def admin_question_delete(question_id):
+    """Delete a question from the quiz and redirect back to the question management page"""
     if current_user.role != 'admin':
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
@@ -1677,11 +1678,28 @@ def admin_question_delete(question_id):
     
     quiz_id = question.quiz_id
     
-    # Delete the question
-    del question_db[question_id]
+    try:
+        # Delete from database first
+        with app.app_context():
+            db_question = QuizQuestion.query.get(question_id)
+            if db_question:
+                app.logger.debug(f"Deleting question ID: {question_id} from database")
+                db.session.delete(db_question)
+                db.session.commit()
+            
+            # Delete the question from in-memory
+            app.logger.debug(f"Deleting question ID: {question_id} from memory")
+            if question_id in question_db:
+                del question_db[question_id]
+                
+            flash('Question deleted successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error deleting question: {str(e)}")
+        flash(f'Error deleting question: {str(e)}', 'error')
     
-    flash('Question deleted successfully', 'success')
-    return redirect(url_for('admin_quiz_edit', quiz_id=quiz_id))
+    # Redirect back to the question management page
+    return redirect(f'/admin/quiz/{quiz_id}/questions')
 
 @app.route('/admin/users')
 @login_required
