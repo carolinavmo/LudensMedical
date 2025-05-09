@@ -819,6 +819,7 @@ def admin_quiz_delete(quiz_id):
 @app.route('/admin/quiz/<int:quiz_id>/edit', methods=['POST'])
 @login_required
 def admin_quiz_edit_direct(quiz_id):
+    """Handle edit requests from the accordion form in step 3."""
     app.logger.debug(f"🟢 EDIT QUIZ DIRECT HANDLER: quiz_id={quiz_id}, referrer={request.referrer}")
     app.logger.debug(f"🟢 Form data: {request.form.to_dict()}")
     
