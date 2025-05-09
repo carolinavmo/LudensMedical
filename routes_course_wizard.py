@@ -771,6 +771,9 @@ def admin_course_wizard_step4_complete(course_id):
     
     flash('Course setup completed successfully!', 'success')
     
+    # Redirect to admin courses page after completion
+    return redirect(url_for('admin_courses'))
+    
 # New Quiz Management Endpoints
 
 # Delete a quiz and its associated questions
