@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Quiz Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .quiz-item {
+            border: 1px solid #e5e7eb;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .quiz-header {
+            padding: 10px;
+            background-color: #f3f4f6;
+            cursor: pointer;
+        }
+        .quiz-content {
+            padding: 10px;
+            display: none;
+            background-color: #ffffff;
+        }
+        .quiz-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4">Simple Quiz Management</h1>
+        
+        <div class="bg-yellow-50 p-4 mb-6 rounded-md">
+            <h2 class="font-bold text-yellow-800">Debug Info:</h2>
+            <p>Course ID: {{ course.id }}</p>
+            <p>Course Title: {{ course.title }}</p>
+            <p>Modules: {{ modules|length }}</p>
+            <p>Quizzes: {{ quizzes|length }}</p>
+            <ul>
+                {% for quiz in quizzes %}
+                <li>Quiz {{ quiz.id }}: {{ quiz.title }} (Module: {{ quiz.module_id }})</li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <div class="mb-8">
+            <h2 class="text-xl font-bold mb-4">Quiz List</h2>
+            
+            {% if quizzes %}
+                {% for quiz in quizzes %}
+                <div class="quiz-item">
+                    <div class="quiz-header" onclick="toggleQuiz({{ quiz.id }})">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <span class="font-bold">{{ quiz.title }}</span>
+                                <span class="text-sm text-gray-500">
+                                    (Module ID: {{ quiz.module_id }})
+                                </span>
+                            </div>
+                            <svg class="w-5 h-5 transform transition-transform" id="arrow-{{ quiz.id }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="quiz-content" id="quiz-content-{{ quiz.id }}">
+                        <form action="/admin/simple-quiz-edit/{{ quiz.id }}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="quiz_id" value="{{ quiz.id }}">
+                            <input type="hidden" name="course_id" value="{{ course.id }}">
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block mb-1">Module</label>
+                                    <select name="module_id" class="w-full p-2 border rounded">
+                                        {% for module in modules %}
+                                        <option value="{{ module.id }}" {% if module.id == quiz.module_id %}selected{% endif %}>
+                                            {{ module.title }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block mb-1">Passing Score (%)</label>
+                                    <input type="number" name="passing_score" value="{{ quiz.passing_score }}" class="w-full p-2 border rounded">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="block mb-1">Title</label>
+                                <input type="text" name="title" value="{{ quiz.title }}" class="w-full p-2 border rounded">
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="block mb-1">Description</label>
+                                <textarea name="description" rows="3" class="w-full p-2 border rounded">{{ quiz.description }}</textarea>
+                            </div>
+                            
+                            <div class="flex justify-between">
+                                <button type="button" class="bg-blue-500 text-white px-4 py-2 rounded" 
+                                        onclick="window.location.href='/admin/quiz-wizard/{{ quiz.id }}'">
+                                    Manage Questions
+                                </button>
+                                <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded">
+                                    Save Quiz
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-gray-500">No quizzes found.</p>
+            {% endif %}
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-bold mb-4">Create New Quiz</h2>
+            <form action="/admin/standalone-quiz-management/{{ course.id }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="course_id" value="{{ course.id }}">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block mb-1">Module</label>
+                        <select name="module_id" class="w-full p-2 border rounded" required>
+                            <option value="">Select a module...</option>
+                            {% for module in modules %}
+                            <option value="{{ module.id }}">{{ module.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block mb-1">Passing Score (%)</label>
+                        <input type="number" name="passing_score" value="70" class="w-full p-2 border rounded" required>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block mb-1">Title</label>
+                    <input type="text" name="title" class="w-full p-2 border rounded" required>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block mb-1">Description</label>
+                    <textarea name="description" rows="3" class="w-full p-2 border rounded" required></textarea>
+                </div>
+                
+                <div class="text-right">
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                        Create Quiz
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="mt-6">
+            <a href="/admin/course-wizard/step3/{{ course.id }}" class="text-blue-600 hover:underline">
+                Back to Course Wizard
+            </a>
+        </div>
+    </div>
+    
+    <script>
+        function toggleQuiz(quizId) {
+            const content = document.getElementById(`quiz-content-${quizId}`);
+            const arrow = document.getElementById(`arrow-${quizId}`);
+            
+            if (content.classList.contains('active')) {
+                content.classList.remove('active');
+                content.style.display = 'none';
+                arrow.style.transform = '';
+            } else {
+                content.classList.add('active');
+                content.style.display = 'block';
+                arrow.style.transform = 'rotate(180deg)';
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Simple Quiz Management page loaded');
+            const quizItems = document.querySelectorAll('.quiz-item');
+            console.log(`Found ${quizItems.length} quiz items`);
+        });
+    </script>
+</body>
+</html>

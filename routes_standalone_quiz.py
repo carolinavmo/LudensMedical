@@ -31,7 +31,7 @@ def admin_standalone_quiz_management(course_id):
     app.logger.debug(f"Found {len(modules)} modules, {len(quizzes)} quizzes, {len(questions)} questions")
     
     return render_template(
-        'admin/standalone_quiz_management.html', 
+        'admin/simple_quiz_management.html', 
         course=course, 
         modules=modules,
         quizzes=quizzes,
@@ -95,7 +95,7 @@ def admin_standalone_quiz_create(course_id):
     flash('Quiz created successfully', 'success')
     return redirect(url_for('admin_standalone_quiz_management', course_id=course_id))
 
-@app.route('/admin/standalone-quiz-edit/<int:quiz_id>', methods=['POST'])
+@app.route('/admin/simple-quiz-edit/<int:quiz_id>', methods=['POST'])
 @login_required
 def admin_standalone_quiz_edit(quiz_id):
     """Edit a quiz from the standalone management page."""
