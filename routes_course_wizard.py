@@ -174,44 +174,49 @@ def admin_course_wizard_step3(course_id):
             flash('Invalid module selected', 'error')
             return redirect(url_for('admin_course_wizard_step3', course_id=course_id))
         
-        # Check if module already has a quiz
-        existing_quiz = None
-        for q in quiz_db.values():
-            if q.module_id == module_id:
-                existing_quiz = q
-                break
-                
-        if existing_quiz:
-            flash(f'This module already has a quiz. The existing quiz will be updated.', 'warning')
-            quiz_id = existing_quiz.id
-            existing_quiz.title = title
-            existing_quiz.description = description
-            existing_quiz.passing_score = passing_score
-            existing_quiz.updated_at = datetime.now()
-        else:
-            # Create new quiz
-            quiz_id = get_next_id(quiz_db)
-            
-            # Create quiz object
-            new_quiz = Quiz(
-                id=quiz_id,
-                module_id=module_id,
-                title=title,
-                description=description,
-                passing_score=passing_score,
-                created_at=datetime.now()
-            )
-            
-            # Add to in-memory database
-            quiz_db[quiz_id] = new_quiz
-            
-            # Add to database
-            db.session.add(new_quiz)
-            
         try:
-            db.session.commit()
-            flash('Quiz created successfully', 'success')
+            # Work within a session context to avoid detached instance errors
+            with app.app_context():
+                # Check if module already has a quiz - use the database directly
+                existing_quiz = Quiz.query.filter_by(module_id=module_id).first()
+                    
+                if existing_quiz:
+                    # Update existing quiz in the database
+                    existing_quiz.title = title
+                    existing_quiz.description = description
+                    existing_quiz.passing_score = passing_score
+                    existing_quiz.updated_at = datetime.now()
+                    
+                    # Also update in-memory
+                    memory_quiz = quiz_db.get(existing_quiz.id)
+                    if memory_quiz:
+                        memory_quiz.title = title
+                        memory_quiz.description = description
+                        memory_quiz.passing_score = passing_score
+                        memory_quiz.updated_at = datetime.now()
+                    
+                    flash('Existing quiz updated successfully', 'success')
+                else:
+                    # Create new quiz in the database
+                    new_quiz = Quiz(
+                        module_id=module_id,
+                        title=title,
+                        description=description,
+                        passing_score=passing_score,
+                        created_at=datetime.now()
+                    )
+                    db.session.add(new_quiz)
+                    db.session.flush()  # Get the ID without committing
+                    
+                    # Also create in in-memory DB
+                    quiz_db[new_quiz.id] = new_quiz
+                    flash('Quiz created successfully', 'success')
+                
+                db.session.commit()
+                
+            # After the transaction is complete, fetch fresh data for the view
             return redirect(url_for('admin_course_wizard_step3', course_id=course_id, quiz_added=True))
+            
         except Exception as e:
             db.session.rollback()
             app.logger.error(f"Error creating quiz: {str(e)}")
