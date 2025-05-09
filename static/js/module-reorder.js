@@ -47,7 +47,26 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         indicator.style.opacity = '1';
         
+        // Add success visual feedback to all modules
+        const modules = moduleList.querySelectorAll('.module-item');
+        modules.forEach(module => {
+            // Add a green border flash effect
+            module.classList.add('border');
+            module.classList.add('border-green-500');
+            module.classList.add('bg-green-50');
+            
+            // Remove the pending state classes if present
+            module.classList.remove('border-blue-500');
+            module.classList.remove('animate-pulse');
+        });
+        
+        // Reset module styling after the toast disappears
         setTimeout(() => {
+            modules.forEach(module => {
+                module.classList.remove('border');
+                module.classList.remove('border-green-500');
+                module.classList.remove('bg-green-50');
+            });
             indicator.style.opacity = '0';
         }, 2000);
     }

@@ -1159,33 +1159,56 @@ def admin_modules_reorder(course_id):
                 
                 # Use raw SQL to force updates to be committed properly
                 update_count = 0
+                
+                # Track the current order values for debugging
                 for update in updates:
-                    # Force the update at the SQL level
-                    try:
+                    # Get current order value from database
+                    current = connection.execute(
+                        "SELECT \"order\" FROM modules WHERE id = :id", 
+                        {"id": update['id']}
+                    ).first()
+                    update['current_order'] = current[0] if current else None
+                    app.logger.info(f"Module {update['id']} current order={update['current_order']}, new order={update['order']}")
+                
+                # Execute all updates
+                connection.execute("BEGIN")  # Explicitly start transaction
+                try:
+                    for update in updates:
+                        # Use a timestamped update to avoid caching issues
                         result = connection.execute(
-                            "UPDATE modules SET \"order\" = :order WHERE id = :id AND course_id = :course_id",
+                            "UPDATE modules SET \"order\" = :order, updated_at = NOW() WHERE id = :id AND course_id = :course_id",
                             {"order": update['order'], "id": update['id'], "course_id": course_id}
                         )
                         
-                        # Verify immediately with a follow-up query
-                        verify = connection.execute(
-                            "SELECT \"order\" FROM modules WHERE id = :id", 
-                            {"id": update['id']}
-                        ).first()
-                        
-                        if result.rowcount > 0 and verify and verify[0] == update['order']:
+                        if result.rowcount > 0:
                             update_count += 1
-                            app.logger.info(f"Updated and verified module {update['id']} order to {update['order']} in database")
+                            app.logger.info(f"SQL UPDATE: Changed module {update['id']} order from {update['current_order']} to {update['order']}")
                         else:
-                            if result.rowcount == 0:
-                                app.logger.warning(f"Failed to update module {update['id']} in database - no rows affected")
-                            else:
-                                app.logger.warning(f"Updated module {update['id']} but verification failed: expected {update['order']}, got {verify[0] if verify else 'none'}")
-                    except Exception as e:
-                        app.logger.error(f"Error updating module {update['id']}: {str(e)}")
+                            app.logger.warning(f"SQL UPDATE: Failed to update module {update['id']} - no rows affected")
+                    
+                    # Force the transaction to commit
+                    connection.execute("COMMIT")
+                    app.logger.info(f"Transaction explicitly committed: {update_count} updates")
+                except Exception as e:
+                    connection.execute("ROLLBACK")
+                    app.logger.error(f"Error during transaction, rolled back: {str(e)}")
+                    raise
                 
-                # Transaction is automatically committed when the context manager exits
-                app.logger.info(f"Successfully updated {update_count} out of {len(updates)} modules in database")
+                # Verify all updates were applied successfully
+                verified_count = 0
+                for update in updates:
+                    verify = connection.execute(
+                        "SELECT \"order\" FROM modules WHERE id = :id", 
+                        {"id": update['id']}
+                    ).first()
+                    
+                    if verify and verify[0] == update['order']:
+                        verified_count += 1
+                        app.logger.info(f"✅ Verified module {update['id']} now has order={update['order']} in database")
+                    else:
+                        app.logger.warning(f"❌ Verification failed for module {update['id']}: expected {update['order']}, got {verify[0] if verify else 'none'}")
+                
+                app.logger.info(f"Successfully updated {update_count} out of {len(updates)} modules in database, with {verified_count} verified.")
             
             # Reload modules from database to memory to ensure consistency
             # First, reload the specific modules we just updated
@@ -1216,7 +1239,7 @@ def admin_modules_reorder(course_id):
             
             return jsonify({
                 'success': True, 
-                'message': f'Module orders updated successfully. {update_count} modules updated.'
+                'message': f'Module orders updated successfully. {update_count} modules updated and {verified_count} verified.'
             })
             
         except Exception as e:

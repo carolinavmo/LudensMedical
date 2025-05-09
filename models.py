@@ -200,17 +200,35 @@ class Module(db.Model):
             # Log order changes for debugging
             logging.info(f"Module {getattr(self, 'id', 'new')} order changing from {getattr(self, 'order', None)} to {value}")
             
-            # Call the parent class's __setattr__ to set the attribute
+            # Call the parent class's __setattr__ to set the attribute first
             super().__setattr__(name, value)
             
-            # Try to update in the database if we're in an application context
+            # Use direct SQL update for immediate persistence
             try:
-                # We're already in a database session, so just mark this object as modified if it exists
-                if hasattr(self, 'id') and self.id is not None:
+                if hasattr(self, 'id') and self.id is not None and hasattr(self, 'course_id'):
+                    # Execute raw SQL for direct, immediate update
+                    with db.engine.connect() as connection:
+                        connection.execute(
+                            "UPDATE modules SET \"order\" = :order, updated_at = :updated WHERE id = :id AND course_id = :course_id",
+                            {"order": value, "id": self.id, "course_id": self.course_id, "updated": datetime.now()}
+                        )
+                        logging.info(f"Directly updated module {self.id} order to {value} using SQL")
+                        
+                        # Verify the update actually happened
+                        verify = connection.execute(
+                            "SELECT \"order\" FROM modules WHERE id = :id", 
+                            {"id": self.id}
+                        ).first()
+                        
+                        if verify and verify[0] == value:
+                            logging.info(f"Verified module {self.id} now has order={value} in database")
+                        else:
+                            logging.warning(f"Failed to verify module order update: expected {value}, got {verify[0] if verify else 'none'}")
+                            
+                    # Also mark object as modified in session for consistency
                     db.session.add(self)
-                    logging.debug(f"Marked module {self.id} as modified with new order {self.order}")
             except Exception as e:
-                logging.error(f"Error updating module order in database: {str(e)}")
+                logging.error(f"Error directly updating module order in database: {str(e)}")
         else:
             # For all other attributes, proceed normally
             super().__setattr__(name, value)
