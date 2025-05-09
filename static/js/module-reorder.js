@@ -1,4 +1,4 @@
-// Enhanced drag-and-drop functionality for module reordering
+// Enhanced drag-and-drop functionality for module reordering with immediate updates
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Enhanced module reorder script loaded');
 
@@ -16,45 +16,70 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('Found module list container with reorder URL:', reorderUrl);
     
+    // Create a status indicator for feedback during/after drag operations
+    const createStatusIndicator = () => {
+        const indicator = document.createElement('div');
+        indicator.id = 'module-order-status';
+        indicator.className = 'fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300 flex items-center';
+        indicator.style.opacity = '0';
+        document.body.appendChild(indicator);
+        return indicator;
+    };
+    
+    // Get or create the status indicator
+    const getStatusIndicator = () => {
+        let indicator = document.getElementById('module-order-status');
+        if (!indicator) {
+            indicator = createStatusIndicator();
+        }
+        return indicator;
+    };
+    
     // Create success toast notification
     function showSuccessToast(message) {
-        const toast = document.createElement('div');
-        toast.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-        toast.innerHTML = `
-            <div class="flex items-center">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-                ${message}
-            </div>
+        const indicator = getStatusIndicator();
+        indicator.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300 flex items-center';
+        indicator.innerHTML = `
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            ${message}
         `;
-        document.body.appendChild(toast);
+        indicator.style.opacity = '1';
         
         setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transition = 'opacity 0.5s ease-out';
-            setTimeout(() => toast.remove(), 500);
+            indicator.style.opacity = '0';
         }, 2000);
+    }
+    
+    // Create pending toast notification
+    function showPendingToast(message) {
+        const indicator = getStatusIndicator();
+        indicator.className = 'fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300 flex items-center';
+        indicator.innerHTML = `
+            <svg class="w-5 h-5 mr-2 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            ${message}
+        `;
+        indicator.style.opacity = '1';
     }
     
     // Create error toast notification
     function showErrorToast(message) {
-        const toast = document.createElement('div');
-        toast.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-        toast.innerHTML = `
-            <div class="flex items-center">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-                ${message}
-            </div>
+        const indicator = getStatusIndicator();
+        indicator.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300 flex items-center';
+        indicator.innerHTML = `
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            ${message}
         `;
-        document.body.appendChild(toast);
+        indicator.style.opacity = '1';
         
         setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transition = 'opacity 0.5s ease-out';
-            setTimeout(() => toast.remove(), 500);
+            indicator.style.opacity = '0';
         }, 3000);
     }
     
@@ -64,24 +89,23 @@ document.addEventListener('DOMContentLoaded', function() {
         return metaTag ? metaTag.getAttribute('content') : '';
     }
     
-    // Function to update module order on the server
-    function updateModuleOrder() {
+    // Update the module order display immediately in the UI without waiting for the server
+    function updateModuleOrderDisplay() {
         const modules = Array.from(moduleList.querySelectorAll('.module-item'));
         
-        if (!modules.length) {
-            console.error('No modules found to reorder');
-            return;
-        }
-        
-        // Collect modules data
-        const modulesData = modules.map((module, index) => {
-            const moduleId = module.dataset.moduleId;
+        modules.forEach((module, index) => {
             const newOrder = index + 1;
             
             // Update the order number displayed in the UI
             const orderDisplay = module.querySelector('.module-order');
             if (orderDisplay) {
                 orderDisplay.textContent = newOrder;
+            }
+            
+            // Update the order in module edit form if it's expanded
+            const orderInput = module.querySelector('input[name="order"]');
+            if (orderInput) {
+                orderInput.value = newOrder;
             }
             
             // Update the title display if it contains the order number
@@ -93,6 +117,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     titleElement.textContent = `${newOrder}${currentTitle.substring(dotIndex)}`;
                 }
             }
+        });
+    }
+    
+    // Function to update module order on the server
+    function saveModuleOrderToServer() {
+        showPendingToast('Saving order...');
+        
+        const modules = Array.from(moduleList.querySelectorAll('.module-item'));
+        
+        if (!modules.length) {
+            console.error('No modules found to reorder');
+            showErrorToast('No modules found');
+            return;
+        }
+        
+        // Collect modules data
+        const modulesData = modules.map((module, index) => {
+            const moduleId = module.dataset.moduleId;
+            const newOrder = index + 1;
             
             return {
                 module_id: moduleId,
@@ -100,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         });
         
-        console.log('Sending updated order data:', modulesData);
+        console.log('Sending updated order data to server:', modulesData);
         
         // Get CSRF token
         const csrfToken = getCSRFToken();
@@ -128,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             console.log('Server response:', data);
             if (data.success) {
-                showSuccessToast('Module order saved');
+                showSuccessToast('Order saved successfully');
             } else {
                 showErrorToast(data.message || 'Failed to update module order');
             }
@@ -139,26 +182,66 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Initialize Sortable with simpler configuration
+    // Track the last module order string to detect changes
+    let lastOrderString = '';
+    
+    // Function to generate a string representing the current module order
+    function getModuleOrderString() {
+        return Array.from(moduleList.querySelectorAll('.module-item'))
+            .map(module => module.dataset.moduleId)
+            .join(',');
+    }
+    
+    // Initialize last order string
+    lastOrderString = getModuleOrderString();
+    
+    // Initialize Sortable with real-time updates
     new Sortable(moduleList, {
         handle: '.drag-handle',
         animation: 150,
         ghostClass: 'bg-gray-100',
         dragClass: 'dragging',
+        // Set a delay so short clicks don't trigger drag
+        delay: 150,
+        delayOnTouchOnly: true,
+        
         onStart(evt) {
             evt.item.classList.add('dragging');
-            // Add visual drop indicator
+            
+            // Create visual feedback
             const indicator = document.createElement('div');
             indicator.className = 'module-drop-indicator';
             document.body.appendChild(indicator);
+            
+            // Store the initial order
+            lastOrderString = getModuleOrderString();
         },
+        
+        onChange(evt) {
+            // Update the visual order in the UI immediately while dragging
+            updateModuleOrderDisplay();
+        },
+        
         onEnd(evt) {
             evt.item.classList.remove('dragging');
+            
             // Remove any drop indicators
             document.querySelectorAll('.module-drop-indicator').forEach(el => el.remove());
             
-            // Always update the order after a drag operation completes
-            updateModuleOrder();
+            // Get the new order string after drag
+            const newOrderString = getModuleOrderString();
+            
+            // If the order has changed, update the server
+            if (newOrderString !== lastOrderString) {
+                // Immediately update the display
+                updateModuleOrderDisplay();
+                
+                // Save to server
+                saveModuleOrderToServer();
+                
+                // Update last order string
+                lastOrderString = newOrderString;
+            }
         }
     });
 });
