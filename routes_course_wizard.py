@@ -81,19 +81,58 @@ def admin_course_wizard_step2(course_id):
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
-    course = course_db.get(course_id)
-    if not course:
-        flash('Course not found', 'error')
-        return redirect(url_for('admin_courses'))
-    
-    modules = get_course_modules(course_id, module_db)
-    
-    # Get all quizzes for checking if modules have quizzes
-    quizzes = []
     try:
-        quizzes = list(quiz_db.values())
+        # Fetch fresh data directly from the database to avoid detached instances
+        with app.app_context():
+            # Get course from database
+            course = Course.query.get(course_id)
+            if not course:
+                flash('Course not found', 'error')
+                return redirect(url_for('admin_courses'))
+            
+            # Update in-memory course
+            course_db[course_id] = course
+            
+            # Get modules from database
+            db_modules = list(Module.query.filter_by(course_id=course_id).order_by(Module.order).all())
+            
+            # Update in-memory modules
+            for module in db_modules:
+                module_db[module.id] = module
+            
+            # Get module IDs for quiz lookup
+            module_ids = [m.id for m in db_modules]
+            
+            # Get quizzes for these modules
+            db_quizzes = list(Quiz.query.filter(Quiz.module_id.in_(module_ids)).all()) if module_ids else []
+            
+            # Update in-memory quizzes
+            for quiz in db_quizzes:
+                quiz_db[quiz.id] = quiz
+                
+            # Get questions for these quizzes
+            quiz_ids = [q.id for q in db_quizzes]
+            if quiz_ids:
+                db_questions = list(QuizQuestion.query.filter(QuizQuestion.quiz_id.in_(quiz_ids)).all())
+                for question in db_questions:
+                    question_db[question.id] = question
+            
+            # Use the updated in-memory data
+            modules = db_modules
+            quizzes = db_quizzes
+            
+            app.logger.debug(f"Refreshed data for course {course_id}: {len(modules)} modules, {len(quizzes)} quizzes")
+    
     except Exception as e:
-        app.logger.error(f"Error fetching quizzes: {str(e)}")
+        app.logger.error(f"Error refreshing data: {str(e)}")
+        # Fallback to in-memory data if refresh fails
+        course = course_db.get(course_id)
+        if not course:
+            flash('Course not found', 'error')
+            return redirect(url_for('admin_courses'))
+        
+        modules = get_course_modules(course_id, module_db)
+        quizzes = list(quiz_db.values())
     
     return render_template('admin/course_wizard_step2.html',
                           course=course,
@@ -132,22 +171,69 @@ def admin_course_wizard_step3(course_id):
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
-    course = course_db.get(course_id)
-    if not course:
-        flash('Course not found', 'error')
-        return redirect(url_for('admin_courses'))
-    
-    modules = get_course_modules(course_id, module_db)
-    quizzes = list(quiz_db.values())
-    questions = list(question_db.values())
-    
     # Check if question_added parameter is passed
     question_added = request.args.get('question_added', False)
     quiz_added = request.args.get('quiz_added', False)
     
-    # Add debug logging
-    app.logger.debug(f"Loading course wizard step 3 for course {course_id}")
-    app.logger.debug(f"Found {len(modules)} modules, {len(quizzes)} quizzes, {len(questions)} questions")
+    try:
+        # Fetch fresh data directly from the database to avoid detached instances
+        with app.app_context():
+            # Get course from database
+            course = Course.query.get(course_id)
+            if not course:
+                flash('Course not found', 'error')
+                return redirect(url_for('admin_courses'))
+            
+            # Update in-memory course
+            course_db[course_id] = course
+            
+            # Get modules from database
+            db_modules = list(Module.query.filter_by(course_id=course_id).order_by(Module.order).all())
+            
+            # Update in-memory modules
+            for module in db_modules:
+                module_db[module.id] = module
+            
+            # Get module IDs for quiz lookup
+            module_ids = [m.id for m in db_modules]
+            
+            # Get quizzes for these modules
+            db_quizzes = list(Quiz.query.filter(Quiz.module_id.in_(module_ids)).all()) if module_ids else []
+            
+            # Update in-memory quizzes
+            for quiz in db_quizzes:
+                quiz_db[quiz.id] = quiz
+                
+            # Get quiz IDs for question lookup
+            quiz_ids = [q.id for q in db_quizzes]
+            
+            # Get questions for these quizzes
+            db_questions = list(QuizQuestion.query.filter(QuizQuestion.quiz_id.in_(quiz_ids)).all()) if quiz_ids else []
+            
+            # Update in-memory questions
+            for question in db_questions:
+                question_db[question.id] = question
+            
+            # Use the refreshed data
+            modules = db_modules
+            quizzes = db_quizzes
+            questions = db_questions
+            
+            # Add debug logging
+            app.logger.debug(f"Loading course wizard step 3 for course {course_id}")
+            app.logger.debug(f"Found {len(modules)} modules, {len(quizzes)} quizzes, {len(questions)} questions")
+            
+    except Exception as e:
+        app.logger.error(f"Error refreshing data: {str(e)}")
+        # Fallback to in-memory data if refresh fails
+        course = course_db.get(course_id)
+        if not course:
+            flash('Course not found', 'error')
+            return redirect(url_for('admin_courses'))
+        
+        modules = get_course_modules(course_id, module_db)
+        quizzes = list(quiz_db.values())
+        questions = list(question_db.values())
     
     # Handle POST request to create new quiz
     if request.method == 'POST':
@@ -399,37 +485,94 @@ def admin_quiz_wizard(module_id=None, quiz_id=None):
     module = None
     course = None
     
-    if edit_mode:
-        quiz = quiz_db.get(quiz_id)
-        if not quiz:
-            flash('Quiz not found', 'error')
+    try:
+        # Work within the app context to avoid detached instance errors
+        with app.app_context():
+            if edit_mode:
+                # Get fresh quiz data from database
+                quiz = Quiz.query.get(quiz_id)
+                if not quiz:
+                    flash('Quiz not found', 'error')
+                    return redirect(url_for('admin_courses'))
+                
+                # Update in-memory quiz
+                quiz_db[quiz.id] = quiz
+                
+                module_id = quiz.module_id
+                # Get fresh module data
+                module = Module.query.get(module_id)
+                if module:
+                    module_db[module.id] = module
+            else:
+                # Get fresh module data
+                module = Module.query.get(module_id)
+                if not module:
+                    flash('Module not found', 'error')
+                    return redirect(url_for('admin_courses'))
+                
+                # Update in-memory module
+                module_db[module.id] = module
+                
+                # Check if a quiz already exists for this module - use database
+                existing_quiz = Quiz.query.filter_by(module_id=module_id).first()
+                if existing_quiz:
+                    # Update in-memory
+                    quiz_db[existing_quiz.id] = existing_quiz
+                    flash('A quiz already exists for this module', 'info')
+                    return redirect(url_for('admin_quiz_wizard', quiz_id=existing_quiz.id))
+            
+            # Get fresh course data
+            course = Course.query.get(module.course_id)
+            if not course:
+                flash('Course not found', 'error')
+                return redirect(url_for('admin_courses'))
+            
+            # Update in-memory course
+            course_db[course.id] = course
+            
+            # Get questions for this quiz - from database
+            questions = []
+            if edit_mode:
+                questions = list(QuizQuestion.query.filter_by(quiz_id=quiz_id).order_by(QuizQuestion.order).all())
+                
+                # Update in-memory questions
+                for question in questions:
+                    question_db[question.id] = question
+            
+    except Exception as e:
+        app.logger.error(f"Error getting fresh data: {str(e)}")
+        # Fallback to in-memory data
+        if edit_mode:
+            quiz = quiz_db.get(quiz_id)
+            if not quiz:
+                flash('Quiz not found', 'error')
+                return redirect(url_for('admin_courses'))
+            
+            module_id = quiz.module_id
+            module = module_db.get(module_id)
+        else:
+            module = module_db.get(module_id)
+            if not module:
+                flash('Module not found', 'error')
+                return redirect(url_for('admin_courses'))
+                
+            # Check if a quiz already exists for this module
+            existing_quiz = next((q for q in quiz_db.values() if q.module_id == module_id), None)
+            if existing_quiz:
+                flash('A quiz already exists for this module', 'info')
+                return redirect(url_for('admin_quiz_wizard', quiz_id=existing_quiz.id))
+        
+        # Get course
+        course = course_db.get(module.course_id)
+        if not course:
+            flash('Course not found', 'error')
             return redirect(url_for('admin_courses'))
         
-        module_id = quiz.module_id
-        module = module_db.get(module_id)
-    else:
-        module = module_db.get(module_id)
-        if not module:
-            flash('Module not found', 'error')
-            return redirect(url_for('admin_courses'))
-            
-        # Check if a quiz already exists for this module
-        existing_quiz = next((q for q in quiz_db.values() if q.module_id == module_id), None)
-        if existing_quiz:
-            flash('A quiz already exists for this module', 'info')
-            return redirect(url_for('admin_quiz_wizard', quiz_id=existing_quiz.id))
-    
-    # Get course
-    course = course_db.get(module.course_id)
-    if not course:
-        flash('Course not found', 'error')
-        return redirect(url_for('admin_courses'))
-    
-    # Get questions for this quiz
-    questions = []
-    if edit_mode:
-        questions = [q for q in question_db.values() if q.quiz_id == quiz_id]
-        questions.sort(key=lambda q: q.order)
+        # Get questions for this quiz
+        questions = []
+        if edit_mode:
+            questions = [q for q in question_db.values() if q.quiz_id == quiz_id]
+            questions.sort(key=lambda q: q.order)
     
     # Create form
     form = QuizForm(obj=quiz if edit_mode else None)
