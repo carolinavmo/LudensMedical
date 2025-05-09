@@ -1649,6 +1649,7 @@ def admin_question_new(quiz_id):
 @app.route('/admin/question/<int:question_id>/edit', methods=['GET', 'POST'])
 @login_required
 def admin_question_edit(question_id):
+    """Redirect to the course wizard's edit question functionality"""
     if current_user.role != 'admin':
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
@@ -1658,44 +1659,9 @@ def admin_question_edit(question_id):
         flash('Question not found', 'error')
         return redirect(url_for('admin_courses'))
     
-    quiz = quiz_db.get(question.quiz_id)
-    module = module_db.get(quiz.module_id) if quiz else None
-    course = course_db.get(module.course_id) if module else None
-    
-    # Pre-populate the form
-    form = QuestionForm(obj=question)
-    form.option1.data = question.options[0] if len(question.options) > 0 else ""
-    form.option2.data = question.options[1] if len(question.options) > 1 else ""
-    form.option3.data = question.options[2] if len(question.options) > 2 else ""
-    form.option4.data = question.options[3] if len(question.options) > 3 else ""
-    form.correct_answer.data = str(question.correct_answer)
-    
-    if form.validate_on_submit():
-        # Gather options
-        options = [
-            form.option1.data,
-            form.option2.data
-        ]
-        if form.option3.data:
-            options.append(form.option3.data)
-        if form.option4.data:
-            options.append(form.option4.data)
-        
-        question.question = form.question.data
-        question.options = options
-        question.correct_answer = int(form.correct_answer.data)
-        question.order = form.order.data
-        
-        flash('Question updated successfully', 'success')
-        return redirect(url_for('admin_quiz_edit', quiz_id=question.quiz_id))
-    
-    return render_template('admin/question_edit.html',
-                          form=form,
-                          quiz=quiz,
-                          module=module,
-                          course=course,
-                          question=question,
-                          edit_mode=True)
+    # Redirect to the course wizard's edit question functionality
+    app.logger.debug(f"Redirecting question edit request from standalone to wizard for question {question_id}")
+    return redirect(f'/admin/question/{question_id}/edit-wizard')
 
 @app.route('/admin/question/<int:question_id>/delete', methods=['POST'])
 @login_required

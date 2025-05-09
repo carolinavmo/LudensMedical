@@ -1467,6 +1467,39 @@ def admin_question_new_json(quiz_id):
             'form_errors': form.errors
         }), 400
 
+# Special route for redirected standard question edit
+@app.route('/admin/question/<int:question_id>/edit-wizard', methods=['GET'])
+@login_required
+def admin_question_edit_wizard(question_id):
+    """Handle redirects from the old standalone question editor to the wizard version."""
+    if current_user.role != 'admin':
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    question = question_db.get(question_id)
+    if not question:
+        flash('Question not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    quiz_id = question.quiz_id
+    
+    # Get module and course info for redirecting back to step 3
+    quiz = quiz_db.get(quiz_id)
+    if not quiz:
+        flash('Quiz not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    module = module_db.get(quiz.module_id)
+    if not module:
+        flash('Module not found', 'error')
+        return redirect(url_for('admin_courses'))
+    
+    course_id = module.course_id
+    
+    # Now redirect to the proper edit question page in the wizard
+    app.logger.debug(f"Wizard edit route redirecting to admin_edit_question for question {question_id}")
+    return redirect(f'/admin/question/{question_id}/edit')
+
 # Delete a question via AJAX
 @app.route('/admin/question/<int:question_id>/delete-ajax', methods=['POST'])
 @login_required
