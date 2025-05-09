@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Management - Ludens Medical Academy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .quiz-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .quiz-header {
+            padding: 1rem;
+            background-color: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .quiz-body {
+            padding: 1rem;
+            display: none;
+        }
+        .quiz-body.show {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Top Navigation -->
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <span class="text-xl font-bold text-primary-600">Ludens Medical Academy</span>
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="/admin/dashboard" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Dashboard
+                        </a>
+                        <a href="/admin/courses" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Courses
+                        </a>
+                        <a href="/admin/users" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Users
+                        </a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <button class="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        <span class="sr-only">View notifications</span>
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                    </button>
+                    <div class="ml-3 relative">
+                        <div>
+                            <button type="button" class="bg-white rounded-full flex text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500" id="user-menu" aria-expanded="false" aria-haspopup="true">
+                                <span class="sr-only">Open user menu</span>
+                                <div class="h-8 w-8 rounded-full bg-primary-200 flex items-center justify-center">
+                                    <span class="text-primary-800 font-medium">A</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Course Wizard Progress -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        <div class="mb-8 bg-white shadow rounded-lg overflow-hidden">
+            <div class="px-4 py-5 sm:px-6">
+                <h2 class="text-lg font-medium leading-6 text-gray-900">Course Wizard</h2>
+                <p class="mt-1 max-w-2xl text-sm text-gray-500">Creating a new course in 4 simple steps</p>
+            </div>
+            <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
+                <div class="py-5 sm:p-6">
+                    <nav aria-label="Progress">
+                        <ol role="list" class="space-y-4 md:flex md:space-y-0 md:space-x-8">
+                            <li class="md:flex-1">
+                                <a href="/admin/course-wizard/step1/{{ course.id }}" class="group flex flex-col border-l-4 border-primary-600 py-2 pl-4 md:border-l-0 md:border-t-4 md:pl-0 md:pt-4 md:pb-0">
+                                    <span class="text-sm font-medium text-primary-600 group-hover:text-primary-800">Step 1</span>
+                                    <span class="text-sm font-medium">Course Details</span>
+                                </a>
+                            </li>
+                            <li class="md:flex-1">
+                                <a href="/admin/course-wizard/step2/{{ course.id }}" class="group flex flex-col border-l-4 border-primary-600 py-2 pl-4 md:border-l-0 md:border-t-4 md:pl-0 md:pt-4 md:pb-0">
+                                    <span class="text-sm font-medium text-primary-600 group-hover:text-primary-800">Step 2</span>
+                                    <span class="text-sm font-medium">Add Modules</span>
+                                </a>
+                            </li>
+                            <li class="md:flex-1">
+                                <a href="/admin/course-wizard/step3/{{ course.id }}" class="group flex flex-col border-l-4 border-primary-600 py-2 pl-4 md:border-l-0 md:border-t-4 md:pl-0 md:pt-4 md:pb-0">
+                                    <span class="text-sm font-medium text-primary-600 group-hover:text-primary-800">Step 3</span>
+                                    <span class="text-sm font-medium">Add Quizzes</span>
+                                </a>
+                            </li>
+                            <li class="md:flex-1">
+                                <a href="/admin/course-wizard/step4/{{ course.id }}" class="group flex flex-col border-l-4 border-gray-200 py-2 pl-4 md:border-l-0 md:border-t-4 md:pl-0 md:pt-4 md:pb-0">
+                                    <span class="text-sm font-medium text-gray-500 group-hover:text-gray-700">Step 4</span>
+                                    <span class="text-sm font-medium">Finalize</span>
+                                </a>
+                            </li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+            <div class="px-4 py-5 sm:px-6">
+                <h2 class="text-lg font-medium leading-6 text-gray-900">Quiz Management</h2>
+                <p class="mt-1 max-w-2xl text-sm text-gray-500">Create and manage quizzes for your course: {{ course.title }}</p>
+            </div>
+
+            <!-- Debug Info -->
+            <div class="border-t border-gray-200 p-4 bg-yellow-50">
+                <div class="mb-2">
+                    <p class="font-medium text-yellow-800">Debug Information:</p>
+                    <p class="text-yellow-700 text-sm">Course ID: {{ course.id }}</p>
+                    <p class="text-yellow-700 text-sm">Total Modules: {{ modules|length }}</p>
+                    <p class="text-yellow-700 text-sm">Total Quizzes: {{ quizzes|length }}</p>
+                </div>
+                <div class="text-yellow-700 text-sm">
+                    <p class="font-medium">Quiz Details:</p>
+                    <ul class="list-disc ml-5">
+                        {% for quiz in quizzes %}
+                            <li>Quiz #{{ quiz.id }}: {{ quiz.title }} (Module: {{ quiz.module_id }})</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Quizzes Section -->
+            <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Existing Quizzes</h3>
+                
+                {% if quizzes %}
+                    {% for quiz in quizzes %}
+                        {% set module = None %}
+                        {% for m in modules %}
+                            {% if m.id == quiz.module_id %}
+                                {% set module = m %}
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if module %}
+                            {% set question_count = 0 %}
+                            {% for question in questions %}
+                                {% if question.quiz_id == quiz.id %}
+                                    {% set question_count = question_count + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            
+                            <div class="quiz-card" id="quiz-{{ quiz.id }}">
+                                <div class="quiz-header" onclick="toggleQuiz({{ quiz.id }})">
+                                    <div>
+                                        <h4 class="font-medium text-primary-600">{{ quiz.title }}</h4>
+                                        <p class="text-sm text-gray-500">Module: {{ module.title }}</p>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 mr-2">
+                                            {{ question_count }} Question{% if question_count != 1 %}s{% endif %}
+                                        </span>
+                                        <svg id="quiz-arrow-{{ quiz.id }}" class="h-5 w-5 text-gray-400 transform transition-transform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div id="quiz-body-{{ quiz.id }}" class="quiz-body">
+                                    <form action="/admin/quiz/{{ quiz.id }}/edit" method="POST">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="quiz_id" value="{{ quiz.id }}">
+                                        <input type="hidden" name="course_id" value="{{ course.id }}">
+                                        
+                                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <label for="module_id_{{ quiz.id }}" class="block text-sm font-medium text-gray-700">Module</label>
+                                                <select id="module_id_{{ quiz.id }}" name="module_id" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                                                    {% for m in modules %}
+                                                        <option value="{{ m.id }}" {% if m.id == quiz.module_id %}selected{% endif %}>
+                                                            Module {{ m.order }}: {{ m.title }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label for="passing_score_{{ quiz.id }}" class="block text-sm font-medium text-gray-700">Passing Score (%)</label>
+                                                <input type="number" name="passing_score" id="passing_score_{{ quiz.id }}" min="1" max="100" value="{{ quiz.passing_score }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mt-4">
+                                            <label for="title_{{ quiz.id }}" class="block text-sm font-medium text-gray-700">Quiz Title</label>
+                                            <input type="text" name="title" id="title_{{ quiz.id }}" value="{{ quiz.title }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                                        </div>
+                                        
+                                        <div class="mt-4">
+                                            <label for="description_{{ quiz.id }}" class="block text-sm font-medium text-gray-700">Description</label>
+                                            <textarea id="description_{{ quiz.id }}" name="description" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm">{{ quiz.description }}</textarea>
+                                        </div>
+                                        
+                                        <div class="mt-4 flex justify-between">
+                                            <button type="button" onclick="window.location.href='/admin/quiz-wizard/{{ quiz.id }}'" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                                Manage Questions ({{ question_count }})
+                                            </button>
+                                            <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                                Save Quiz
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <div class="bg-gray-50 p-4 text-center rounded-md">
+                        <p class="text-gray-500">No quizzes have been created yet. Use the form below to create your first quiz.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- New Quiz Form -->
+            <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Create New Quiz</h3>
+                
+                <form action="/admin/course-wizard/step3/{{ course.id }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="course_id" value="{{ course.id }}">
+                    
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label for="module_id" class="block text-sm font-medium text-gray-700">Module</label>
+                            <select id="module_id" name="module_id" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                                <option value="">Select a module...</option>
+                                {% for module in modules %}
+                                    {% set has_quiz = False %}
+                                    {% for quiz in quizzes %}
+                                        {% if quiz.module_id == module.id %}
+                                            {% set has_quiz = True %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    <option value="{{ module.id }}" {% if has_quiz %}data-has-quiz="true"{% endif %}>
+                                        Module {{ module.order }}: {{ module.title }} {% if has_quiz %}(Has Quiz){% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <p id="module-warning" class="mt-1 text-xs text-gray-500"></p>
+                        </div>
+                        <div>
+                            <label for="passing_score" class="block text-sm font-medium text-gray-700">Passing Score (%)</label>
+                            <input type="number" name="passing_score" id="passing_score" min="1" max="100" value="70" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <label for="title" class="block text-sm font-medium text-gray-700">Quiz Title</label>
+                        <input type="text" name="title" id="title" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                    </div>
+                    
+                    <div class="mt-4">
+                        <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                        <textarea id="description" name="description" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"></textarea>
+                    </div>
+                    
+                    <div class="mt-4 flex justify-end">
+                        <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                            Create Quiz
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="mt-6 flex justify-between">
+            <a href="/admin/course-wizard/step2/{{ course.id }}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                <svg class="mr-2 -ml-1 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                Back to Modules
+            </a>
+            <a href="/admin/course-wizard/step4/{{ course.id }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                Next: Finalize
+                <svg class="ml-2 -mr-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        function toggleQuiz(quizId) {
+            console.log(`Toggling quiz ${quizId}`);
+            const quizBody = document.getElementById(`quiz-body-${quizId}`);
+            const quizArrow = document.getElementById(`quiz-arrow-${quizId}`);
+            
+            if (quizBody.classList.contains('show')) {
+                quizBody.classList.remove('show');
+                quizBody.style.display = 'none';
+                quizArrow.style.transform = '';
+            } else {
+                quizBody.classList.add('show');
+                quizBody.style.display = 'block';
+                quizArrow.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Standalone Quiz Management page loaded');
+            
+            // Log quiz count
+            const quizCards = document.querySelectorAll('.quiz-card');
+            console.log(`Found ${quizCards.length} quiz cards`);
+            
+            // Module warning for new quiz form
+            const moduleSelect = document.getElementById('module_id');
+            const moduleWarning = document.getElementById('module-warning');
+            
+            if (moduleSelect) {
+                moduleSelect.addEventListener('change', function() {
+                    const selectedOption = this.options[this.selectedIndex];
+                    if (selectedOption && selectedOption.getAttribute('data-has-quiz') === 'true') {
+                        moduleWarning.textContent = 'This module already has a quiz. Creating a new quiz will replace the existing one.';
+                        moduleWarning.classList.add('text-yellow-600');
+                    } else {
+                        moduleWarning.textContent = '';
+                    }
+                });
+            }
+            
+            // List quizzes in console
+            if (quizCards.length > 0) {
+                quizCards.forEach((card, index) => {
+                    const quizId = card.id.replace('quiz-', '');
+                    console.log(`Quiz ${index + 1}: ID=${quizId}`);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
