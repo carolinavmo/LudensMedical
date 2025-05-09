@@ -49,13 +49,8 @@
                         {% endfor %}
                     </div>
                     <div class="flex items-center">
-                        {# Get question count directly from database  #}
-                        {% set question_count = 0 %}
-                        {% for question in questions %}
-                            {% if question.quiz_id == quiz.id %}
-                                {% set question_count = question_count + 1 %}
-                            {% endif %}
-                        {% endfor %}
+                        {# Use the accurate question count from the server #}
+                        {% set question_count = quiz_question_counts.get(quiz.id, 0) %}
                         
                         <span class="mr-3 px-2 py-0.5 rounded-full text-xs font-medium {% if question_count > 0 %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
                             {{ question_count }} Question{% if question_count != 1 %}s{% endif %}

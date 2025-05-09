@@ -219,9 +219,17 @@ def admin_course_wizard_step3(course_id):
             quizzes = db_quizzes
             questions = db_questions
             
+            # Calculate question counts for each quiz
+            quiz_question_counts = {}
+            for quiz_id in quiz_ids:
+                count = QuizQuestion.query.filter_by(quiz_id=quiz_id).count()
+                quiz_question_counts[quiz_id] = count
+                app.logger.debug(f"Quiz {quiz_id} has {count} questions")
+            
             # Add debug logging
             app.logger.debug(f"Loading course wizard step 3 for course {course_id}")
             app.logger.debug(f"Found {len(modules)} modules, {len(quizzes)} quizzes, {len(questions)} questions")
+            app.logger.debug(f"Question counts by quiz: {quiz_question_counts}")
             
     except Exception as e:
         app.logger.error(f"Error refreshing data: {str(e)}")
@@ -308,12 +316,25 @@ def admin_course_wizard_step3(course_id):
             app.logger.error(f"Error creating quiz: {str(e)}")
             flash(f'Error creating quiz: {str(e)}', 'error')
     
+    # For the fallback case, build quiz_question_counts if not defined
+    if 'quiz_question_counts' not in locals():
+        quiz_question_counts = {}
+        try:
+            for quiz in quizzes:
+                count = len([q for q in questions if q.quiz_id == quiz.id])
+                quiz_question_counts[quiz.id] = count
+                app.logger.debug(f"Fallback count: Quiz {quiz.id} has {count} questions")
+        except Exception as e:
+            app.logger.error(f"Error calculating fallback question counts: {str(e)}")
+            quiz_question_counts = {}
+
     # Use our newly created course_wizard_step3.html template with working accordion
     return render_template('admin/course_wizard_step3.html',
                           course=course,
                           modules=modules,
                           quizzes=quizzes,
                           questions=questions,
+                          quiz_question_counts=quiz_question_counts,
                           edit_mode=True,
                           question_added=question_added,
                           quiz_added=quiz_added,
@@ -798,31 +819,72 @@ def admin_quiz_delete(quiz_id):
 @app.route('/admin/quiz/<int:quiz_id>/edit', methods=['POST'])
 @login_required
 def admin_quiz_edit_direct(quiz_id):
+    app.logger.debug(f"🟢 EDIT QUIZ DIRECT HANDLER: quiz_id={quiz_id}, referrer={request.referrer}")
+    app.logger.debug(f"🟢 Form data: {request.form.to_dict()}")
+    
     if current_user.role != 'admin':
+        app.logger.warning("Access denied: user is not admin")
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
-    quiz = quiz_db.get(quiz_id)
+    # Try to get quiz directly from the database first
+    try:
+        with app.app_context():
+            db_quiz = Quiz.query.get(quiz_id)
+            if db_quiz:
+                # Update in-memory
+                quiz = db_quiz
+                quiz_db[quiz_id] = db_quiz
+                app.logger.debug(f"🟢 Found quiz in database: {quiz.title}")
+            else:
+                app.logger.warning(f"Quiz {quiz_id} not found in database")
+                quiz = None
+    except Exception as e:
+        app.logger.error(f"Error retrieving quiz from database: {str(e)}")
+        # Fallback to in-memory
+        quiz = quiz_db.get(quiz_id)
+        app.logger.debug(f"🟢 Using in-memory quiz: {quiz_id if quiz else 'Not found'}")
+    
     if not quiz:
+        app.logger.warning(f"Quiz {quiz_id} not found in memory either")
         flash('Quiz not found', 'error')
         return redirect(url_for('admin_dashboard'))
     
     # Get course ID from form
     course_id = request.form.get('course_id', None)
     if not course_id:
+        app.logger.warning("Course ID is missing from form data")
         flash('Course ID is required', 'error')
         return redirect(url_for('admin_dashboard'))
     
     # Convert course_id to integer
     try:
         course_id = int(course_id)
+        app.logger.debug(f"🟢 Course ID: {course_id}")
     except ValueError:
+        app.logger.warning(f"Invalid course ID format: {course_id}")
         flash('Invalid course ID', 'error')
         return redirect(url_for('admin_dashboard'))
     
     # Check if the course exists
-    course = course_db.get(course_id)
+    try:
+        with app.app_context():
+            db_course = Course.query.get(course_id)
+            if db_course:
+                course = db_course
+                course_db[course_id] = db_course
+                app.logger.debug(f"🟢 Found course in database: {course.title}")
+            else:
+                app.logger.warning(f"Course {course_id} not found in database")
+                course = None
+    except Exception as e:
+        app.logger.error(f"Error retrieving course from database: {str(e)}")
+        # Fallback to in-memory
+        course = course_db.get(course_id)
+        app.logger.debug(f"🟢 Using in-memory course: {course_id if course else 'Not found'}")
+    
     if not course:
+        app.logger.warning(f"Course {course_id} not found in memory either")
         flash('Course not found', 'error')
         return redirect(url_for('admin_dashboard'))
     
