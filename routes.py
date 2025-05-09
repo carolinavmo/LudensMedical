@@ -1289,6 +1289,7 @@ def admin_module_edit(module_id):
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
+    # Get module from in-memory database
     module = module_db.get(module_id)
     if not module:
         flash('Module not found', 'error')
@@ -1301,6 +1302,7 @@ def admin_module_edit(module_id):
     
     form = ModuleForm(obj=module)
     if form.validate_on_submit():
+        # Update module in memory
         module.title = form.title.data
         module.content = form.content.data
         module.order = form.order.data
@@ -1309,6 +1311,7 @@ def admin_module_edit(module_id):
         module.updated_at = datetime.now()
         
         # Handle video file upload
+        video_file_path = module.video_file
         if form.video_file.data:
             # Remove old file if exists
             if module.video_file:
@@ -1330,6 +1333,7 @@ def admin_module_edit(module_id):
             logging.info(f"Saved new video file: {video_file_path}")
         
         # Handle PDF file upload
+        pdf_file_path = module.pdf_file
         if form.pdf_file.data:
             # Remove old file if exists
             if module.pdf_file:
@@ -1350,7 +1354,45 @@ def admin_module_edit(module_id):
             module.pdf_file = pdf_file_path
             logging.info(f"Saved new PDF file: {pdf_file_path}")
         
-        flash('Module updated successfully', 'success')
+        # Also update in the PostgreSQL database
+        try:
+            db_module = Module.query.get(module_id)
+            if db_module:
+                # Update existing module
+                db_module.title = form.title.data
+                db_module.content = form.content.data
+                db_module.order = form.order.data
+                db_module.video_url = form.video_url.data
+                db_module.pdf_url = form.pdf_url.data
+                db_module.video_file = video_file_path
+                db_module.pdf_file = pdf_file_path
+                db_module.updated_at = datetime.now()
+                db.session.commit()
+                app.logger.info(f"Updated module {module_id} in database")
+            else:
+                # Create new module in database
+                db_module = Module(
+                    id=module_id,
+                    course_id=module.course_id,
+                    title=form.title.data,
+                    content=form.content.data,
+                    order=form.order.data,
+                    video_url=form.video_url.data,
+                    pdf_url=form.pdf_url.data,
+                    video_file=video_file_path,
+                    pdf_file=pdf_file_path,
+                    created_at=module.created_at,
+                    updated_at=datetime.now()
+                )
+                db.session.add(db_module)
+                db.session.commit()
+                app.logger.info(f"Created new module {module_id} in database")
+        except Exception as e:
+            app.logger.error(f"Error updating module in database: {str(e)}")
+            db.session.rollback()
+            flash(f'Module updated in memory, but database update failed: {str(e)}', 'warning')
+        else:
+            flash('Module updated successfully in both memory and database', 'success')
         
         # Check if we are in wizard flow - if the referer has 'course-wizard' in the URL
         referer = request.referrer or ""
@@ -1376,12 +1418,35 @@ def admin_module_delete(module_id):
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
     
+    # Get module from in-memory database
     module = module_db.get(module_id)
     if not module:
         flash('Module not found', 'error')
         return redirect(url_for('admin_courses'))
     
     course_id = module.course_id
+    app.logger.info(f"Deleting module {module_id} from course {course_id}")
+    
+    # Also delete from PostgreSQL database
+    try:
+        # First, find quizzes associated with this module
+        db_module = Module.query.get(module_id)
+        if db_module:
+            # Find any quizzes for this module
+            db_quiz = Quiz.query.filter_by(module_id=module_id).first()
+            if db_quiz:
+                # Delete questions for this quiz
+                QuizQuestion.query.filter_by(quiz_id=db_quiz.id).delete()
+                # Delete the quiz
+                db.session.delete(db_quiz)
+            
+            # Now delete the module itself
+            db.session.delete(db_module)
+            db.session.commit()
+            app.logger.info(f"Successfully deleted module {module_id} from database")
+    except Exception as e:
+        app.logger.error(f"Error deleting module from database: {str(e)}")
+        db.session.rollback()
     
     # Delete uploaded files if they exist
     if module.video_file:
@@ -1402,7 +1467,7 @@ def admin_module_delete(module_id):
         except Exception as e:
             logging.error(f"Error deleting PDF file: {str(e)}")
     
-    # Delete quizzes and questions related to this module
+    # Delete quizzes and questions related to this module in memory
     for quiz in list(quiz_db.values()):
         if quiz.module_id == module_id:
             # Delete questions for this quiz
@@ -1412,7 +1477,7 @@ def admin_module_delete(module_id):
             # Delete the quiz
             del quiz_db[quiz.id]
     
-    # Delete the module
+    # Delete the module from in-memory DB
     del module_db[module_id]
     
     flash('Module and related data deleted successfully', 'success')
