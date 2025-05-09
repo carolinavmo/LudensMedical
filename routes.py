@@ -1179,8 +1179,36 @@ def admin_modules_reorder(course_id):
                     app.logger.warning(f"Module {db_module.id} not in update list or belongs to different course")
             
             # Commit all changes at once
-            db.session.commit()
-            app.logger.info("Successfully committed all module order changes to database")
+            try:
+                db.session.flush()  # Flush first to catch any database errors before commit
+                app.logger.info("Successfully flushed all module order changes to database")
+                
+                # Verify the changes before commit
+                for db_module in db_modules:
+                    if db_module.id in modules_by_id:
+                        expected_order = modules_by_id[db_module.id]
+                        app.logger.info(f"Verifying module {db_module.id}: expected order {expected_order}, actual order {db_module.order}")
+                        if db_module.order != expected_order:
+                            app.logger.error(f"Order mismatch for module {db_module.id}: expected {expected_order}, actual {db_module.order}")
+                
+                # Now commit the changes
+                db.session.commit()
+                app.logger.info("Successfully committed all module order changes to database")
+                
+                # Double check that the changes were actually saved by querying the database again
+                verification_modules = Module.query.filter(Module.id.in_(module_ids)).all()
+                for verification_module in verification_modules:
+                    if verification_module.id in modules_by_id:
+                        expected_order = modules_by_id[verification_module.id]
+                        app.logger.info(f"Post-commit verification for module {verification_module.id}: expected order {expected_order}, actual order {verification_module.order}")
+                        if verification_module.order != expected_order:
+                            app.logger.error(f"Post-commit order mismatch for module {verification_module.id}!")
+                        else:
+                            app.logger.info(f"Updated module {verification_module.id} in database")
+            except Exception as e:
+                app.logger.error(f"Error during commit: {str(e)}")
+                db.session.rollback()
+                raise
             
             # Now update the in-memory modules
             for module_id, new_order in modules_by_id.items():

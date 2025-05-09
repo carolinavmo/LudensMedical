@@ -1,8 +1,12 @@
+import json
+import logging
 from datetime import datetime
+
+from flask import current_app
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-import json
-from app import db
+
+from app import app, db
 
 # Keep in-memory databases for compatibility during migration
 user_db = {}
@@ -179,7 +183,7 @@ class Module(db.Model):
     course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
     title = db.Column(db.String(100), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    order = db.Column(db.Integer, nullable=False)
+    order = db.Column(db.Integer, nullable=False, index=True)  # Added index for faster order-based queries
     video_url = db.Column(db.String(255))
     pdf_url = db.Column(db.String(255))
     video_file = db.Column(db.String(255))
@@ -189,6 +193,27 @@ class Module(db.Model):
     
     # Relationships
     quiz = db.relationship('Quiz', backref='module', uselist=False)
+    
+    def __setattr__(self, name, value):
+        """Override setattr to track order changes and handle database updates."""
+        if name == 'order' and hasattr(self, 'order') and getattr(self, 'order', None) != value:
+            # Log order changes for debugging
+            logging.info(f"Module {getattr(self, 'id', 'new')} order changing from {getattr(self, 'order', None)} to {value}")
+            
+            # Call the parent class's __setattr__ to set the attribute
+            super().__setattr__(name, value)
+            
+            # Try to update in the database if we're in an application context
+            try:
+                # We're already in a database session, so just mark this object as modified if it exists
+                if hasattr(self, 'id') and self.id is not None:
+                    db.session.add(self)
+                    logging.debug(f"Marked module {self.id} as modified with new order {self.order}")
+            except Exception as e:
+                logging.error(f"Error updating module order in database: {str(e)}")
+        else:
+            # For all other attributes, proceed normally
+            super().__setattr__(name, value)
     
     def get_quiz(self):
         return self.quiz
