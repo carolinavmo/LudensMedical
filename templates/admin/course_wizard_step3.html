@@ -63,7 +63,7 @@
                 </div>
                 
                 <div id="quiz-content-{{ quiz.id }}" class="quiz-content border-t border-gray-100">
-                    <form action="/admin/quiz/{{ quiz.id }}/edit" method="POST">
+                    <form action="/admin/quiz-wizard/{{ quiz.id }}/edit" method="POST">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <input type="hidden" name="quiz_id" value="{{ quiz.id }}"/>
                         <input type="hidden" name="course_id" value="{{ course.id }}"/>

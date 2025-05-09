@@ -816,7 +816,7 @@ def admin_quiz_delete(quiz_id):
 
 # Get questions for a quiz in JSON format
 # Direct edit quiz route from accordion
-@app.route('/admin/quiz/<int:quiz_id>/edit', methods=['POST'])
+@app.route('/admin/quiz-wizard/<int:quiz_id>/edit', methods=['POST'])
 @login_required
 def admin_quiz_edit_direct(quiz_id):
     """Handle edit requests from the accordion form in step 3."""
