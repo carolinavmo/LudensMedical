@@ -4,6 +4,18 @@
 {{ super() }}
 <style>
     [x-cloak] { display: none !important; }
+    .dragging { 
+        opacity: 0.7;
+        background-color: #e5edff !important;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.2s ease;
+    }
+    .module-drop-indicator {
+        height: 3px;
+        background-color: #4f46e5;
+        margin: 0;
+        transition: all 0.2s ease-in-out;
+    }
 </style>
 {% endblock %}
 

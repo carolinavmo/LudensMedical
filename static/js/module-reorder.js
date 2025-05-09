@@ -1,131 +1,125 @@
-// Drag and drop functionality for module reordering
+// Enhanced drag-and-drop functionality for module reordering
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Module reorder script loaded');
-    
+    console.log('Enhanced module reorder script loaded');
+
     const moduleList = document.getElementById('module-list');
     if (!moduleList) {
-        console.warn('Module list container not found on the page');
+        console.error('Module list container not found');
         return;
     }
     
-    console.log('Found module list container with ID:', moduleList.id);
-    console.log('Reorder URL from data attribute:', moduleList.dataset.reorderUrl);
+    const reorderUrl = moduleList.dataset.reorderUrl;
+    if (!reorderUrl) {
+        console.error('Reorder URL not found in module list data attribute');
+        return;
+    }
     
-    // Initialize Sortable.js
-    const sortable = new Sortable(moduleList, {
-        handle: '.drag-handle', // Updated to match the handle in HTML
-        animation: 150,
-        ghostClass: 'bg-gray-100',
-        onStart: function(evt) {
-            console.log('Drag started');
-            // Add visual feedback
-            evt.item.classList.add('bg-blue-50');
-        },
-        onChange: function(evt) {
-            console.log('Order changing during drag');
-        },
-        onEnd: function(evt) {
-            console.log('Drag ended at index:', evt.newIndex);
-            console.log('Previous index was:', evt.oldIndex);
-            evt.item.classList.remove('bg-blue-50');
-            
-            // Only update if the position actually changed
-            if (evt.oldIndex !== evt.newIndex) {
-                console.log('Position changed, updating module order');
-                updateModuleOrder();
-            } else {
-                console.log('No position change detected, skipping update');
-            }
-        }
-    });
+    console.log('Found module list container with reorder URL:', reorderUrl);
     
-    // Function to update module order after dragging
+    // Create success toast notification
+    function showSuccessToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        toast.innerHTML = `
+            <div class="flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                ${message}
+            </div>
+        `;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.5s ease-out';
+            setTimeout(() => toast.remove(), 500);
+        }, 2000);
+    }
+    
+    // Create error toast notification
+    function showErrorToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        toast.innerHTML = `
+            <div class="flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                ${message}
+            </div>
+        `;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.5s ease-out';
+            setTimeout(() => toast.remove(), 500);
+        }, 3000);
+    }
+    
+    // Function to get CSRF token from meta tag
+    function getCSRFToken() {
+        const metaTag = document.querySelector('meta[name="csrf-token"]');
+        return metaTag ? metaTag.getAttribute('content') : '';
+    }
+    
+    // Function to update module order on the server
     function updateModuleOrder() {
-        console.log("updateModuleOrder function called");
+        const modules = Array.from(moduleList.querySelectorAll('.module-item'));
         
-        // Get a fresh reference to the module list
-        const moduleListElement = document.getElementById('module-list');
-        if (!moduleListElement) {
-            console.error('Module list element not found on page');
+        if (!modules.length) {
+            console.error('No modules found to reorder');
             return;
         }
         
-        const modules = Array.from(moduleListElement.querySelectorAll('.module-item'));
-        console.log(`Found ${modules.length} module items to reorder`);
-        
-        // Get the reorder URL directly from the data attribute
-        const reorderUrl = moduleListElement.dataset.reorderUrl;
-        
-        if (!reorderUrl) {
-            console.error('Reorder URL not found in data-reorder-url attribute');
-            showErrorToast('Configuration error: Missing reorder URL');
-            return;
-        }
-        
-        console.log('Using reorder URL:', reorderUrl);
-        
-        const orderData = [];
-        
-        modules.forEach((module, index) => {
+        // Collect modules data
+        const modulesData = modules.map((module, index) => {
             const moduleId = module.dataset.moduleId;
-            if (!moduleId) {
-                console.error('Module is missing data-module-id attribute:', module);
-                return;
-            }
+            const newOrder = index + 1;
             
-            console.log(`Setting module ${moduleId} to order ${index + 1}`);
-            
-            orderData.push({
-                module_id: moduleId,
-                order: index + 1
-            });
-            
-            // Update displayed order number in UI
+            // Update the order number displayed in the UI
             const orderDisplay = module.querySelector('.module-order');
             if (orderDisplay) {
-                orderDisplay.textContent = index + 1;
+                orderDisplay.textContent = newOrder;
             }
             
-            // Also update the displayed order number in the module title
+            // Update the title display if it contains the order number
             const titleElement = module.querySelector('.text-primary-600');
             if (titleElement) {
                 const currentTitle = titleElement.textContent;
                 const dotIndex = currentTitle.indexOf('.');
                 if (dotIndex > -1) {
-                    const updatedTitle = (index + 1) + currentTitle.substring(dotIndex);
-                    titleElement.textContent = updatedTitle;
-                    console.log(`Updated module title to: ${updatedTitle}`);
+                    titleElement.textContent = `${newOrder}${currentTitle.substring(dotIndex)}`;
                 }
             }
+            
+            return {
+                module_id: moduleId,
+                order: newOrder
+            };
         });
         
-        if (orderData.length === 0) {
-            console.error('No valid modules found to reorder');
-            return;
-        }
-        
-        console.log('Sending updated order to:', reorderUrl);
-        console.log('Order data:', orderData);
+        console.log('Sending updated order data:', modulesData);
         
         // Get CSRF token
         const csrfToken = getCSRFToken();
         if (!csrfToken) {
-            console.error('CSRF token not found, cannot proceed with update');
-            showErrorToast('Security token missing, please refresh the page');
+            console.error('CSRF token not found');
+            showErrorToast('Security token missing. Please refresh the page.');
             return;
         }
         
-        // Send the new order to the server using the URL from data attribute
+        // Send the update to the server
         fetch(reorderUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrfToken
             },
-            body: JSON.stringify({modules: orderData})
+            body: JSON.stringify({ modules: modulesData })
         })
         .then(response => {
-            console.log(`Server responded with status: ${response.status}`);
             if (!response.ok) {
                 throw new Error(`Server responded with status: ${response.status}`);
             }
@@ -134,55 +128,37 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             console.log('Server response:', data);
             if (data.success) {
-                showSuccessToast('Module order updated successfully');
+                showSuccessToast('Module order saved');
             } else {
                 showErrorToast(data.message || 'Failed to update module order');
             }
         })
         .catch(error => {
             console.error('Error updating module order:', error);
-            showErrorToast('An error occurred while updating module order');
+            showErrorToast('Error saving module order');
         });
     }
     
-    // Helper function to get CSRF token
-    function getCSRFToken() {
-        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-        if (!csrfMeta) {
-            console.error('CSRF token meta tag not found.');
-            return '';
+    // Initialize Sortable with simpler configuration
+    new Sortable(moduleList, {
+        handle: '.drag-handle',
+        animation: 150,
+        ghostClass: 'bg-gray-100',
+        dragClass: 'dragging',
+        onStart(evt) {
+            evt.item.classList.add('dragging');
+            // Add visual drop indicator
+            const indicator = document.createElement('div');
+            indicator.className = 'module-drop-indicator';
+            document.body.appendChild(indicator);
+        },
+        onEnd(evt) {
+            evt.item.classList.remove('dragging');
+            // Remove any drop indicators
+            document.querySelectorAll('.module-drop-indicator').forEach(el => el.remove());
+            
+            // Always update the order after a drag operation completes
+            updateModuleOrder();
         }
-        const token = csrfMeta.getAttribute('content');
-        console.log('CSRF token found:', token ? 'Yes (value hidden)' : 'No');
-        return token || '';
-    }
-    
-    // Toast notification functions
-    function showSuccessToast(message) {
-        const toast = document.createElement('div');
-        toast.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-500 ease-in-out';
-        toast.innerHTML = message;
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.classList.add('opacity-0');
-            setTimeout(() => {
-                document.body.removeChild(toast);
-            }, 500);
-        }, 3000);
-    }
-    
-    function showErrorToast(message) {
-        const toast = document.createElement('div');
-        toast.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-500 ease-in-out';
-        toast.innerHTML = message;
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.classList.add('opacity-0');
-            setTimeout(() => {
-                document.body.removeChild(toast);
-            }, 500);
-        }, 3000);
-    }
+    });
 });
