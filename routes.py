@@ -1022,8 +1022,27 @@ def admin_courses():
     for course in courses:
         enrollments[course.id] = sum(1 for e in enrollment_db.values() if e.course_id == course.id)
     
+    # Organize courses by category
+    courses_by_category = {}
+    all_categories = []
+    
+    for course in courses:
+        category = course.category
+        if category not in all_categories:
+            all_categories.append(category)
+        
+        if category not in courses_by_category:
+            courses_by_category[category] = []
+        
+        courses_by_category[category].append(course)
+    
+    # Sort categories alphabetically
+    all_categories.sort()
+    
     return render_template('admin/courses.html', 
                           courses=courses,
+                          courses_by_category=courses_by_category,
+                          all_categories=all_categories,
                           enrollments=enrollments)
 
 @app.route('/admin/courses/new', methods=['GET', 'POST'])
