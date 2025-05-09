@@ -47,20 +47,42 @@ def admin_course_wizard_step1(course_id=None):
         else:
             # Create new course
             course_id = get_next_id(course_db)
-            course = Course(
-                id=course_id,
-                title=form.title.data,
-                description=form.description.data,
-                category=form.category.data,
-                level=form.level.data,
-                price=form.price.data,
-                instructor_id=current_user.id,
-                image_url=form.image_url.data,
-                created_at=datetime.now()
-            )
-            course_db[course_id] = course
             
-            flash('Course created successfully', 'success')
+            # Create the course in both the database and in-memory storage
+            try:
+                # Create in database first
+                new_course = Course(
+                    id=course_id,
+                    title=form.title.data,
+                    description=form.description.data,
+                    category=form.category.data,
+                    level=form.level.data,
+                    price=form.price.data,
+                    instructor_id=current_user.id,
+                    image_url=form.image_url.data,
+                    created_at=datetime.now()
+                )
+                
+                db.session.add(new_course)
+                db.session.commit()
+                app.logger.info(f"Course with ID {course_id} saved to database successfully")
+                
+                # Save to in-memory storage
+                course_db[course_id] = new_course
+                course = new_course
+                
+                flash('Course created successfully', 'success')
+            except Exception as e:
+                db.session.rollback()
+                app.logger.error(f"Error creating course: {str(e)}")
+                flash(f'Error creating course: {str(e)}', 'error')
+                return render_template('admin/course_wizard_step1.html',
+                                      form=form,
+                                      course=None,
+                                      edit_mode=False,
+                                      wizard_title='Course Setup - Step 1: Course Details',
+                                      step=1,
+                                      progress_percentage=25)
         
         # Redirect to step 2
         return redirect(url_for('admin_course_wizard_step2', course_id=course_id))
