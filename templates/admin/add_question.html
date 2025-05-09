@@ -134,6 +134,13 @@
                             </select>
                         </div>
                     </div>
+                    
+                    <div class="sm:col-span-3">
+                        <label for="order" class="block text-sm font-medium text-gray-700">Question Order</label>
+                        <div class="mt-1">
+                            <input type="number" id="order" name="order" value="{{ next_order }}" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md" required min="1">
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="mt-6 flex justify-end space-x-3">

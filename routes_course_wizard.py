@@ -1071,8 +1071,10 @@ def admin_add_question(quiz_id):
 @login_required
 def admin_edit_question(question_id):
     """Edit a question with redirect back to question management page."""
-    app.logger.debug(f"admin_edit_question CALLED with question_id={question_id}, method={request.method}")
-    app.logger.debug(f"Form data received: {request.form.to_dict() if request.method == 'POST' else 'GET request'}")
+    app.logger.debug(f"▶️ EDIT QUESTION HANDLER CALLED with question_id={question_id}, method={request.method}")
+    
+    if request.method == 'POST':
+        app.logger.debug(f"▶️ POST request received with data: {request.form.to_dict()}")
     
     if current_user.role != 'admin':
         flash('Access denied', 'error')
@@ -1277,8 +1279,10 @@ def admin_edit_question(question_id):
             flash(f'Error updating question: {str(e)}', 'error')
         
         # Redirect to the question management page for this quiz
-        app.logger.debug(f"Redirecting to question management for quiz {quiz_id}")
-        return redirect(url_for('admin_manage_questions', quiz_id=quiz_id))
+        # Use absolute URL to avoid issues with relative redirection
+        redirect_url = f"/admin/quiz/{quiz_id}/questions"
+        app.logger.debug(f"Redirecting to: {redirect_url}")
+        return redirect(redirect_url)
     
     app.logger.debug(f"Rendering edit_question.html with question={question_id}, quiz={quiz_id}, options={options}")
     
