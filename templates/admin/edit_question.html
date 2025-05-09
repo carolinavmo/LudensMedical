@@ -72,7 +72,7 @@
         </div>
         <div class="px-4 py-5 sm:p-6">
             <!-- SIMPLE FORM WITH NO JAVASCRIPT -->
-            <form method="POST" action="/admin/question/{{ question.id }}/edit">
+            <form method="POST" action="/admin/question/{{ question.id }}/edit-wizard">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <input type="hidden" name="quiz_id" value="{{ quiz.id }}"/>
                 

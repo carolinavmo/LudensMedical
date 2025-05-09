@@ -1468,13 +1468,15 @@ def admin_question_new_json(quiz_id):
         }), 400
 
 # Special route for redirected standard question edit
-@app.route('/admin/question/<int:question_id>/edit-wizard', methods=['GET'])
+@app.route('/admin/question/<int:question_id>/edit-wizard', methods=['GET', 'POST'])
 @login_required
 def admin_question_edit_wizard(question_id):
     """Handle redirects from the old standalone question editor to the wizard version."""
     if current_user.role != 'admin':
         flash('Access denied', 'error')
         return redirect(url_for('dashboard'))
+    
+    app.logger.debug(f"Processing edit-wizard request for question {question_id}")
     
     question = question_db.get(question_id)
     if not question:
@@ -1496,9 +1498,148 @@ def admin_question_edit_wizard(question_id):
     
     course_id = module.course_id
     
-    # Now redirect to the proper edit question page in the wizard
-    app.logger.debug(f"Wizard edit route redirecting to admin_edit_question for question {question_id}")
-    return redirect(f'/admin/question/{question_id}/edit')
+    app.logger.debug(f"Retrieving options for question {question_id}")
+    
+    # Get the options directly from database to ensure we have the latest
+    try:
+        with app.app_context():
+            db_question = QuizQuestion.query.get(question_id)
+            if db_question and db_question.options:
+                try:
+                    options = json.loads(db_question.options)
+                    app.logger.debug(f"Retrieved options from database: {options}")
+                except Exception as json_error:
+                    app.logger.error(f"Error parsing options JSON: {str(json_error)}")
+                    options = question.get_options()
+                    app.logger.debug(f"Fallback to in-memory options after JSON error: {options}")
+            else:
+                options = question.get_options()
+                app.logger.debug(f"Using in-memory options: {options}")
+    except Exception as e:
+        app.logger.error(f"Error getting options from database: {str(e)}")
+        options = question.get_options()
+        app.logger.debug(f"Exception - Using in-memory options: {options}")
+    
+    app.logger.debug(f"Options for question: {options}")
+    app.logger.debug(f"🟢 OPTIONS DATA TYPE: {type(options)}")
+    app.logger.debug(f"🟢 OPTIONS CONTENT: {options}")
+    
+    # Create a form instance for CSRF token
+    form = QuestionForm()
+    
+    # Process form submission
+    if request.method == 'POST':
+        app.logger.debug(f"Received POST data: {request.form.to_dict()}")
+        
+        # Explicitly get form data
+        question_text = request.form.get('question')
+        option1 = request.form.get('option1')
+        option2 = request.form.get('option2')
+        option3 = request.form.get('option3')
+        option4 = request.form.get('option4')
+        correct_answer = int(request.form.get('correct_answer', 0))
+        quiz_id = int(request.form.get('quiz_id', quiz_id))
+        order = int(request.form.get('order', 1))  # Use the order from the form, default to 1
+        
+        app.logger.debug(f"POST data - question: {question_text}, options: {option1}, {option2}, {option3}, {option4}, correct: {correct_answer}, quiz_id: {quiz_id}")
+        
+        # Create new options list - make sure we handle empty strings properly
+        new_options = [option1, option2]
+        if option3 and option3.strip():
+            new_options.append(option3)
+        if option4 and option4.strip():
+            new_options.append(option4)
+        
+        app.logger.debug(f"New options list: {new_options}")
+        
+        # Track update success
+        update_success = False
+        
+        try:
+            # Update database first
+            db_question = None
+            with app.app_context():
+                # Force a session refresh to avoid detached instance errors
+                db.session.expire_all()
+                
+                db_question = QuizQuestion.query.get(question_id)
+                app.logger.debug(f"Retrieved question from DB for update: {db_question.question if db_question else 'Not found'}")
+                
+                if db_question:
+                    # Update the database object
+                    db_question.question = question_text
+                    db_question.correct_answer = correct_answer
+                    db_question.options = json.dumps(new_options)
+                    db_question.order = order  # Update the order field
+                    
+                    # Commit the changes
+                    db.session.commit()
+                    app.logger.debug(f"Question {question_id} updated in database")
+                    update_success = True
+                else:
+                    app.logger.warning(f"Question {question_id} not found in database for update")
+                    
+                    # Try to create it if not found
+                    try:
+                        app.logger.debug(f"Attempting to create question {question_id} as it was not found")
+                        new_question = QuizQuestion(
+                            id=question_id,
+                            quiz_id=quiz_id,
+                            question=question_text,
+                            correct_answer=correct_answer,
+                            options=json.dumps(new_options),
+                            order=order,  # Use the provided order
+                            created_at=datetime.now()
+                        )
+                        db.session.add(new_question)
+                        db.session.commit()
+                        app.logger.debug(f"Created new question {question_id} in database")
+                        update_success = True
+                    except Exception as create_error:
+                        app.logger.error(f"Error creating question: {str(create_error)}")
+                        db.session.rollback()
+            
+            # Update in-memory after successful database update
+            if update_success:
+                # Get a fresh copy from the database
+                with app.app_context():
+                    db_question = QuizQuestion.query.get(question_id)
+                    if db_question:
+                        # Update in-memory
+                        question_db[question_id] = db_question
+                        app.logger.debug(f"Updated in-memory question with DB data")
+                    else:
+                        # Fallback to direct update if DB query fails
+                        if question_id in question_db:
+                            question = question_db[question_id]
+                            question.question = question_text
+                            question.correct_answer = correct_answer
+                            question.order = order  # Update order in memory
+                            question.set_options(new_options)
+                            app.logger.debug(f"Question {question_id} updated in memory directly")
+                
+                flash('Question updated successfully', 'success')
+                # Redirect to the question management page for this quiz
+                return redirect(f"/admin/quiz/{quiz_id}/questions")
+            else:
+                flash('Warning: Question not updated in database. Please retry.', 'warning')
+                
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error updating question: {str(e)}")
+            flash(f'Error updating question: {str(e)}', 'error')
+    
+    app.logger.debug(f"Rendering edit_question.html directly from edit-wizard route")
+    
+    return render_template(
+        'admin/edit_question.html',
+        form=form,
+        question=question,
+        quiz=quiz,
+        module=module,
+        course_id=course_id,
+        options=options
+    )
 
 # Delete a question via AJAX
 @app.route('/admin/question/<int:question_id>/delete-ajax', methods=['POST'])
