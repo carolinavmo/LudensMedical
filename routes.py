@@ -1145,32 +1145,56 @@ def admin_modules_reorder(course_id):
         modules_data = data['modules']
         app.logger.info(f"Received module reorder data: {modules_data}")
         
-        # Update the order of each module both in-memory and in database
+        # Collect all the module data first
+        modules_by_id = {}
         for module_data in modules_data:
             module_id = int(module_data['module_id'])
             new_order = int(module_data['order'])
+            modules_by_id[module_id] = new_order
+            app.logger.info(f"Planning to update module {module_id} to order {new_order}")
+        
+        if not modules_by_id:
+            app.logger.error("No valid module data received for reordering")
+            return jsonify({'success': False, 'message': 'No valid module data received'}), 400
+        
+        # First, update all modules in the SQL database in a single transaction
+        try:
+            # Fetch all affected modules at once
+            module_ids = list(modules_by_id.keys())
+            db_modules = Module.query.filter(Module.id.in_(module_ids)).all()
             
-            # Update in-memory module
-            module = module_db.get(module_id)
-            if module and module.course_id == course_id:
-                module.order = new_order
-                app.logger.info(f"Updated in-memory module {module_id} order to {new_order}")
-                
-                # Also update in database
-                try:
-                    db_module = Module.query.get(module_id)
-                    if db_module:
-                        db_module.order = new_order
-                        db.session.commit()
-                        app.logger.info(f"Updated database module {module_id} order to {new_order}")
-                    else:
-                        app.logger.warning(f"Module {module_id} not found in database")
-                except Exception as e:
-                    app.logger.error(f"Error updating module order in database: {str(e)}")
-                    db.session.rollback()
-                logging.info(f"Updated module {module_id} order to {new_order}")
-            else:
-                logging.warning(f"Module {module_id} not found or doesn't belong to course {course_id}")
+            if not db_modules:
+                app.logger.error(f"No modules found in database with IDs: {module_ids}")
+                return jsonify({'success': False, 'message': 'Modules not found in database'}), 404
+            
+            app.logger.info(f"Found {len(db_modules)} modules in database to update")
+            
+            # Update all modules in the database
+            for db_module in db_modules:
+                if db_module.id in modules_by_id and db_module.course_id == course_id:
+                    new_order = modules_by_id[db_module.id]
+                    db_module.order = new_order
+                    app.logger.info(f"Setting database module {db_module.id} order to {new_order}")
+                else:
+                    app.logger.warning(f"Module {db_module.id} not in update list or belongs to different course")
+            
+            # Commit all changes at once
+            db.session.commit()
+            app.logger.info("Successfully committed all module order changes to database")
+            
+            # Now update the in-memory modules
+            for module_id, new_order in modules_by_id.items():
+                module = module_db.get(module_id)
+                if module and module.course_id == course_id:
+                    module.order = new_order
+                    app.logger.info(f"Updated in-memory module {module_id} to order {new_order}")
+                else:
+                    app.logger.warning(f"Module {module_id} not found in memory or belongs to different course")
+                    
+        except Exception as e:
+            app.logger.error(f"Error updating module orders in database: {str(e)}")
+            db.session.rollback()
+            return jsonify({'success': False, 'message': f'Database error: {str(e)}'}), 500
         
         return jsonify({'success': True, 'message': 'Module order updated successfully'})
     

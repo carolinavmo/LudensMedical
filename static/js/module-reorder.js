@@ -18,26 +18,51 @@ document.addEventListener('DOMContentLoaded', function() {
         ghostClass: 'bg-gray-100',
         onStart: function(evt) {
             console.log('Drag started');
+            // Add visual feedback
+            evt.item.classList.add('bg-blue-50');
+        },
+        onChange: function(evt) {
+            console.log('Order changing during drag');
         },
         onEnd: function(evt) {
-            console.log('Drag ended, updating module order');
-            updateModuleOrder();
+            console.log('Drag ended at index:', evt.newIndex);
+            console.log('Previous index was:', evt.oldIndex);
+            evt.item.classList.remove('bg-blue-50');
+            
+            // Only update if the position actually changed
+            if (evt.oldIndex !== evt.newIndex) {
+                console.log('Position changed, updating module order');
+                updateModuleOrder();
+            } else {
+                console.log('No position change detected, skipping update');
+            }
         }
     });
     
     // Function to update module order after dragging
     function updateModuleOrder() {
-        const modules = document.querySelectorAll('#module-list .module-item');
+        console.log("updateModuleOrder function called");
+        
+        // Get a fresh reference to the module list
+        const moduleListElement = document.getElementById('module-list');
+        if (!moduleListElement) {
+            console.error('Module list element not found on page');
+            return;
+        }
+        
+        const modules = Array.from(moduleListElement.querySelectorAll('.module-item'));
         console.log(`Found ${modules.length} module items to reorder`);
         
         // Get the reorder URL directly from the data attribute
-        const reorderUrl = moduleList.dataset.reorderUrl;
+        const reorderUrl = moduleListElement.dataset.reorderUrl;
         
         if (!reorderUrl) {
             console.error('Reorder URL not found in data-reorder-url attribute');
             showErrorToast('Configuration error: Missing reorder URL');
             return;
         }
+        
+        console.log('Using reorder URL:', reorderUrl);
         
         const orderData = [];
         
