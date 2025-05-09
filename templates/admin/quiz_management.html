@@ -134,7 +134,7 @@
                                         </div>
                                         
                                         <!-- Quiz Details - Initially hidden -->
-                                        <div id="quiz-details-{{ quiz.id }}" style="display: none;" class="px-4 py-5 sm:p-6 border-t border-gray-100 bg-gray-50">
+                                        <div id="quiz-details-{{ quiz.id }}" class="quiz-details px-4 py-5 sm:p-6 border-t border-gray-100 bg-gray-50">
                                             <div class="grid grid-cols-1 gap-4">
                                                 <div>
                                                     <h5 class="text-sm font-medium text-gray-700">Description</h5>
@@ -421,21 +421,47 @@
 </div>
 
 <script>
-    // Function to toggle quiz details visibility
+    // Very simple toggle function with direct DOM manipulation
 function toggleQuizDetails(quizId) {
-    const details = document.getElementById(`quiz-details-${quizId}`);
-    const chevron = document.getElementById(`quiz-chevron-${quizId}`);
+    console.log('Toggle function called for quiz ID:', quizId);
     
-    if (details.style.display === 'none') {
+    const detailsId = `quiz-details-${quizId}`;
+    const chevronId = `quiz-chevron-${quizId}`;
+    
+    console.log('Looking for elements with IDs:', detailsId, chevronId);
+    
+    const details = document.getElementById(detailsId);
+    const chevron = document.getElementById(chevronId);
+    
+    if (!details || !chevron) {
+        console.error('Could not find quiz details or chevron elements');
+        return;
+    }
+    
+    console.log('Current display style:', details.style.display);
+    
+    // Toggle visibility with direct style manipulation
+    if (details.style.display === 'none' || details.style.display === '') {
         details.style.display = 'block';
-        chevron.classList.add('rotate-180');
+        chevron.classList.add('rotate-icon');
+        console.log('Expanding quiz details');
     } else {
         details.style.display = 'none';
-        chevron.classList.remove('rotate-180');
+        chevron.classList.remove('rotate-icon');
+        console.log('Collapsing quiz details');
     }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+        // Initialize quiz detail panels to be hidden
+        document.querySelectorAll('.quiz-details').forEach(panel => {
+            panel.style.display = 'none';
+        });
+
+        // Ensure console logging is active for debugging
+        console.log('Quiz management page loaded');
+        console.log('Found ' + document.querySelectorAll('.quiz-item').length + ' quiz items');
+        
         // Debug toggle button functionality
         const toggleDebugBtn = document.getElementById('toggle-debug-btn');
         if (toggleDebugBtn) {
