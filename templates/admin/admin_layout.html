@@ -3,22 +3,40 @@
 {% block content %}
 <!-- Admin layout with collapsible sidebar -->
 <div x-data="{ sidebarOpen: true }" class="relative min-h-screen bg-gray-50">
-    <!-- Override the base layout navigation with empty - we'll use our own -->
+    <!-- Override the base layout navigation and footer with empty - we'll use our own -->
     <style>
         .main-content > nav, .main-content > footer {
-            display: none;
+            display: none !important;
         }
         .main-content {
-            padding: 0;
-            margin: 0;
-            width: 100%;
-            min-height: 100vh; 
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            min-height: 100vh !important;
+            max-width: 100% !important;
+            overflow-x: hidden !important;
+        }
+        html, body {
+            overflow-x: hidden;
         }
     </style>
 
+    <!-- Custom footer for admin layout -->
+    <div class="admin-footer bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-12">
+        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            <div class="md:flex md:items-center md:justify-between">
+                <div class="mt-8 md:mt-0 md:order-1">
+                    <p class="text-center text-base text-gray-400">
+                        &copy; 2023 Ludens Medical Academy. All rights reserved.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Sidebar for desktop -->
-    <div :class="{'w-64': sidebarOpen, 'w-20': !sidebarOpen}" class="fixed hidden md:block top-0 left-0 h-full bg-primary-800 transition-all duration-300 z-50">
-        <div class="flex items-center justify-between h-16 px-4 bg-primary-900">
+    <div :class="{'w-64': sidebarOpen, 'w-20': !sidebarOpen}" class="fixed hidden md:block top-0 left-0 bottom-0 overflow-y-auto bg-primary-800 transition-all duration-300 z-50">
+        <div class="flex items-center justify-between h-16 px-4 bg-primary-900 sticky top-0">
             <span :class="{'hidden': !sidebarOpen}" class="text-white font-bold text-lg transition-opacity duration-200">Admin Panel</span>
             <button @click="sidebarOpen = !sidebarOpen" class="p-1 rounded-md text-primary-200 hover:text-white focus:outline-none">
                 <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -27,42 +45,42 @@
                 </svg>
             </button>
         </div>
-        <div class="h-full overflow-y-auto pb-16">
+        <div class="overflow-y-auto">
             <nav class="px-2 py-4 space-y-1">
                 <a href="{{ url_for('admin_dashboard') }}" class="{% if request.path == url_for('admin_dashboard') %}bg-primary-900 text-white{% else %}text-primary-100 hover:bg-primary-700 hover:text-white{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md">
-                    <svg class="h-6 w-6 {% if request.path == url_for('admin_dashboard') %}text-primary-300{% else %}text-primary-400 group-hover:text-primary-300{% endif %}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg class="h-6 w-6 flex-shrink-0 {% if request.path == url_for('admin_dashboard') %}text-primary-300{% else %}text-primary-400 group-hover:text-primary-300{% endif %}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                     </svg>
-                    <span :class="{'opacity-0 ml-0': !sidebarOpen, 'ml-3': sidebarOpen}" class="transition-opacity duration-200">Dashboard</span>
+                    <span :class="{'opacity-0 ml-0 w-0': !sidebarOpen, 'ml-3': sidebarOpen}" class="transition-all duration-200 overflow-hidden">Dashboard</span>
                 </a>
 
                 <a href="{{ url_for('admin_courses') }}" class="{% if '/admin/course' in request.path and not '/wizard' in request.path %}bg-primary-900 text-white{% else %}text-primary-100 hover:bg-primary-700 hover:text-white{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md">
-                    <svg class="h-6 w-6 {% if '/admin/course' in request.path and not '/wizard' in request.path %}text-primary-300{% else %}text-primary-400 group-hover:text-primary-300{% endif %}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg class="h-6 w-6 flex-shrink-0 {% if '/admin/course' in request.path and not '/wizard' in request.path %}text-primary-300{% else %}text-primary-400 group-hover:text-primary-300{% endif %}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
-                    <span :class="{'opacity-0 ml-0': !sidebarOpen, 'ml-3': sidebarOpen}" class="transition-opacity duration-200">Manage Courses</span>
+                    <span :class="{'opacity-0 ml-0 w-0': !sidebarOpen, 'ml-3': sidebarOpen}" class="transition-all duration-200 overflow-hidden">Manage Courses</span>
                 </a>
 
                 <a href="{{ url_for('admin_users') }}" class="{% if '/admin/user' in request.path %}bg-primary-900 text-white{% else %}text-primary-100 hover:bg-primary-700 hover:text-white{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md">
-                    <svg class="h-6 w-6 {% if '/admin/user' in request.path %}text-primary-300{% else %}text-primary-400 group-hover:text-primary-300{% endif %}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg class="h-6 w-6 flex-shrink-0 {% if '/admin/user' in request.path %}text-primary-300{% else %}text-primary-400 group-hover:text-primary-300{% endif %}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
-                    <span :class="{'opacity-0 ml-0': !sidebarOpen, 'ml-3': sidebarOpen}" class="transition-opacity duration-200">Manage Users</span>
+                    <span :class="{'opacity-0 ml-0 w-0': !sidebarOpen, 'ml-3': sidebarOpen}" class="transition-all duration-200 overflow-hidden">Manage Users</span>
                 </a>
 
                 <a href="{{ url_for('admin_dashboard') }}" class="text-primary-100 hover:bg-primary-700 hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md">
-                    <svg class="h-6 w-6 text-primary-400 group-hover:text-primary-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg class="h-6 w-6 flex-shrink-0 text-primary-400 group-hover:text-primary-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
-                    <span :class="{'opacity-0 ml-0': !sidebarOpen, 'ml-3': sidebarOpen}" class="transition-opacity duration-200">Analytics</span>
+                    <span :class="{'opacity-0 ml-0 w-0': !sidebarOpen, 'ml-3': sidebarOpen}" class="transition-all duration-200 overflow-hidden">Analytics</span>
                 </a>
 
                 <div class="pt-4 mt-4 border-t border-primary-700">
                     <a href="{{ url_for('logout') }}" class="text-primary-100 hover:bg-primary-700 hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md">
-                        <svg class="h-6 w-6 text-primary-400 group-hover:text-primary-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="h-6 w-6 flex-shrink-0 text-primary-400 group-hover:text-primary-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
-                        <span :class="{'opacity-0 ml-0': !sidebarOpen, 'ml-3': sidebarOpen}" class="transition-opacity duration-200">Sign Out</span>
+                        <span :class="{'opacity-0 ml-0 w-0': !sidebarOpen, 'ml-3': sidebarOpen}" class="transition-all duration-200 overflow-hidden">Sign Out</span>
                     </a>
                 </div>
             </nav>
@@ -145,7 +163,7 @@
     </div>
 
     <!-- Main content area -->
-    <div :class="{'md:ml-64': sidebarOpen, 'md:ml-20': !sidebarOpen}" class="transition-all duration-300">
+    <div :class="{'md:ml-64': sidebarOpen, 'md:ml-20': !sidebarOpen}" class="transition-all duration-300 min-h-screen pb-20">
         <!-- Main content -->
         <main class="py-6">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
