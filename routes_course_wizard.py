@@ -125,7 +125,7 @@ def admin_course_wizard_step2_next(course_id):
     return redirect(url_for('admin_course_wizard_step3', course_id=course_id))
 
 # Course Wizard Step 3 - Quizzes
-@app.route('/admin/course-wizard/step3/<int:course_id>', methods=['GET'])
+@app.route('/admin/course-wizard/step3/<int:course_id>', methods=['GET', 'POST'])
 @login_required
 def admin_course_wizard_step3(course_id):
     if current_user.role != 'admin':
@@ -148,6 +148,74 @@ def admin_course_wizard_step3(course_id):
     # Add debug logging
     app.logger.debug(f"Loading course wizard step 3 for course {course_id}")
     app.logger.debug(f"Found {len(modules)} modules, {len(quizzes)} quizzes, {len(questions)} questions")
+    
+    # Handle POST request to create new quiz
+    if request.method == 'POST':
+        module_id = request.form.get('module_id')
+        title = request.form.get('title')
+        description = request.form.get('description')
+        passing_score = request.form.get('passing_score')
+        
+        # Validate required fields
+        if not module_id or not title or not description or not passing_score:
+            flash('All fields are required', 'error')
+            return redirect(url_for('admin_course_wizard_step3', course_id=course_id))
+        
+        try:
+            module_id = int(module_id)
+            passing_score = int(passing_score)
+        except ValueError:
+            flash('Invalid module ID or passing score', 'error')
+            return redirect(url_for('admin_course_wizard_step3', course_id=course_id))
+        
+        # Validate module
+        module = module_db.get(module_id)
+        if not module or module.course_id != course_id:
+            flash('Invalid module selected', 'error')
+            return redirect(url_for('admin_course_wizard_step3', course_id=course_id))
+        
+        # Check if module already has a quiz
+        existing_quiz = None
+        for q in quiz_db.values():
+            if q.module_id == module_id:
+                existing_quiz = q
+                break
+                
+        if existing_quiz:
+            flash(f'This module already has a quiz. The existing quiz will be updated.', 'warning')
+            quiz_id = existing_quiz.id
+            existing_quiz.title = title
+            existing_quiz.description = description
+            existing_quiz.passing_score = passing_score
+            existing_quiz.updated_at = datetime.now()
+        else:
+            # Create new quiz
+            quiz_id = get_next_id(quiz_db)
+            
+            # Create quiz object
+            new_quiz = Quiz(
+                id=quiz_id,
+                module_id=module_id,
+                title=title,
+                description=description,
+                passing_score=passing_score,
+                created_at=datetime.now()
+            )
+            
+            # Add to in-memory database
+            quiz_db[quiz_id] = new_quiz
+            
+            # Add to database
+            db.session.add(new_quiz)
+            
+        try:
+            db.session.commit()
+            flash('Quiz created successfully', 'success')
+            return redirect(url_for('admin_course_wizard_step3', course_id=course_id, quiz_added=True))
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error creating quiz: {str(e)}")
+            flash(f'Error creating quiz: {str(e)}', 'error')
     
     # Use our newly created course_wizard_step3.html template with working accordion
     return render_template('admin/course_wizard_step3.html',
