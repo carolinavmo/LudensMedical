@@ -863,14 +863,59 @@ def admin_quiz_edit_direct(quiz_id):
                 flash(f'Module already has a quiz. Please choose a different module or edit that quiz instead.', 'warning')
                 return redirect(url_for('admin_course_wizard_step3', course_id=course_id))
     
-    # Update quiz
-    quiz.module_id = module_id
-    quiz.title = title
-    quiz.description = description
-    quiz.passing_score = passing_score
-    quiz.updated_at = datetime.now()
+    # Update quiz in database and in-memory
+    try:
+        # First update database
+        with app.app_context():
+            db_quiz = Quiz.query.get(quiz_id)
+            if db_quiz:
+                # Update database object
+                db_quiz.module_id = module_id
+                db_quiz.title = title
+                db_quiz.description = description
+                db_quiz.passing_score = passing_score
+                db_quiz.updated_at = datetime.now()
+                
+                # Commit changes to database
+                app.logger.debug(f"Updating quiz {quiz_id} in database")
+                db.session.commit()
+                
+                # Update the in-memory object with the fresh data from DB
+                quiz_db[quiz_id] = db_quiz
+                
+                flash('Quiz updated successfully', 'success')
+            else:
+                # Quiz not found in database, try to create it
+                app.logger.warning(f"Quiz {quiz_id} not found in database during edit, attempting to create")
+                new_quiz = Quiz(
+                    id=quiz_id,
+                    module_id=module_id,
+                    title=title,
+                    description=description,
+                    passing_score=passing_score,
+                    created_at=datetime.now()
+                )
+                db.session.add(new_quiz)
+                db.session.commit()
+                
+                # Update in-memory
+                quiz_db[quiz_id] = new_quiz
+                
+                flash('Quiz created successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error updating quiz in database: {str(e)}")
+        
+        # Fallback: update in-memory only
+        quiz.module_id = module_id
+        quiz.title = title
+        quiz.description = description
+        quiz.passing_score = passing_score
+        quiz.updated_at = datetime.now()
+        
+        flash('Quiz updated in memory only. Database update failed.', 'warning')
     
-    flash('Quiz updated successfully', 'success')
+    # Redirect back to step 3
     return redirect(url_for('admin_course_wizard_step3', course_id=course_id))
 
 @app.route('/admin/quiz/<int:quiz_id>/questions-json', methods=['GET'])
