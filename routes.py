@@ -1105,6 +1105,11 @@ def admin_course_edit(course_id):
 @app.route('/admin/courses/<int:course_id>/modules/reorder', methods=['POST'])
 @login_required
 def admin_modules_reorder(course_id):
+    """
+    Reorder modules for a course by accepting either:
+    1. An array of module_ids in order (module_ids=[1,4,2,3])
+    2. Legacy: array of objects with module_id/order pairs ({modules: [{module_id: 1, order: 3}, ...]})
+    """
     app.logger.info(f"Module reorder request received for course {course_id}")
     
     if current_user.role != 'admin':
@@ -1112,6 +1117,8 @@ def admin_modules_reorder(course_id):
         return jsonify({'success': False, 'message': 'Access denied'}), 403
     
     try:
+        from sqlalchemy import text
+        
         # Verify the course exists
         course = Course.query.get(course_id)
         if not course:
@@ -1122,30 +1129,42 @@ def admin_modules_reorder(course_id):
         data = request.get_json()
         app.logger.debug(f"Received reorder data: {data}")
         
-        if not data or 'modules' not in data:
-            app.logger.error(f"Invalid reorder data format: {data}")
-            return jsonify({'success': False, 'message': 'Invalid data format'}), 400
-        
-        try:
-            # Parse and validate module data
+        # New approach: simple ordered list of module IDs
+        if data and 'module_ids' in data and isinstance(data['module_ids'], list):
+            app.logger.info(f"Using new module_ids list approach with {len(data['module_ids'])} modules")
+            module_ids = data['module_ids']
+            
+            # Create updates with order matching position in array (1-based)
+            updates = [{'id': int(module_id), 'order': index + 1} 
+                      for index, module_id in enumerate(module_ids)]
+                      
+        # Legacy approach: modules array with module_id/order pairs
+        elif data and 'modules' in data and isinstance(data['modules'], list):
+            app.logger.info("Using legacy modules array approach")
             updates = []
             for item in data['modules']:
                 module_id = int(item['module_id'])
                 new_order = int(item['order'])
                 updates.append({'id': module_id, 'order': new_order})
-            
-            if not updates:
-                app.logger.error("No valid module data to process")
-                return jsonify({'success': False, 'message': 'No modules to update'}), 400
-            
-            app.logger.info(f"Processing {len(updates)} module order updates")
-            
-            # Create a fresh session to ensure isolation
-            with db.engine.begin() as connection:
+        else:
+            app.logger.error(f"Invalid reorder data format: {data}")
+            return jsonify({'success': False, 'message': 'Invalid data format. Expected "module_ids" array or "modules" array.'}), 400
+        
+        if not updates:
+            app.logger.error("No valid module data to process")
+            return jsonify({'success': False, 'message': 'No modules to update'}), 400
+        
+        app.logger.info(f"Processing {len(updates)} module order updates")
+        update_count = 0
+        verified_count = 0
+        
+        try:
+            # Use a with block to ensure connection is properly closed
+            with db.engine.connect() as connection:
                 # First verify all modules belong to this course
                 for update in updates:
                     result = connection.execute(
-                        "SELECT course_id FROM modules WHERE id = :id",
+                        text("SELECT course_id FROM modules WHERE id = :id"),
                         {"id": update['id']}
                     ).first()
                     
@@ -1156,12 +1175,6 @@ def admin_modules_reorder(course_id):
                     if result[0] != course_id:
                         app.logger.error(f"Module {update['id']} belongs to course {result[0]}, not {course_id}")
                         return jsonify({'success': False, 'message': f'Module {update["id"]} belongs to a different course'}), 403
-                
-                # Import text() for proper SQLAlchemy statement handling
-                from sqlalchemy import text
-                
-                # Use raw SQL to force updates to be committed properly
-                update_count = 0
                 
                 # Track the current order values for debugging
                 for update in updates:
@@ -1174,13 +1187,13 @@ def admin_modules_reorder(course_id):
                     update['current_order'] = current[0] if current else None
                     app.logger.info(f"Module {update['id']} current order={update['current_order']}, new order={update['order']}")
                 
-                # Begin a transaction
-                connection.begin()
+                # Execute the updates in a transaction
+                trans = connection.begin()
                 try:
                     for update in updates:
                         # Use a timestamped update to avoid caching issues
                         result = connection.execute(
-                            text("UPDATE modules SET order = :order, updated_at = NOW() WHERE id = :id AND course_id = :course_id"),
+                            text("UPDATE modules SET \"order\" = :order, updated_at = NOW() WHERE id = :id AND course_id = :course_id"),
                             {"order": update['order'], "id": update['id'], "course_id": course_id}
                         )
                         
@@ -1191,18 +1204,17 @@ def admin_modules_reorder(course_id):
                             app.logger.warning(f"SQL UPDATE: Failed to update module {update['id']} - no rows affected")
                     
                     # Commit the transaction
-                    connection.commit()
+                    trans.commit()
                     app.logger.info(f"Transaction committed: {update_count} updates")
                 except Exception as e:
-                    connection.rollback()
+                    trans.rollback()
                     app.logger.error(f"Error during transaction, rolled back: {str(e)}")
-                    raise
+                    return jsonify({'success': False, 'message': f'Database error: {str(e)}'}), 500
                 
                 # Verify all updates were applied successfully
-                verified_count = 0
                 for update in updates:
                     result = connection.execute(
-                        text("SELECT order FROM modules WHERE id = :id"), 
+                        text("SELECT \"order\" FROM modules WHERE id = :id"), 
                         {"id": update['id']}
                     )
                     verify = result.first()
@@ -1212,11 +1224,8 @@ def admin_modules_reorder(course_id):
                         app.logger.info(f"✅ Verified module {update['id']} now has order={update['order']} in database")
                     else:
                         app.logger.warning(f"❌ Verification failed for module {update['id']}: expected {update['order']}, got {verify[0] if verify else 'none'}")
-                
-                app.logger.info(f"Successfully updated {update_count} out of {len(updates)} modules in database, with {verified_count} verified.")
             
             # Reload modules from database to memory to ensure consistency
-            # First, reload the specific modules we just updated
             updated_ids = [update['id'] for update in updates]
             updated_modules = Module.query.filter(Module.id.in_(updated_ids)).all()
             
@@ -1227,14 +1236,11 @@ def admin_modules_reorder(course_id):
             # Now refresh all course data for consistency
             app.logger.debug(f"Refreshed data for course {course_id}: {len(course.get_modules())} modules, {Quiz.query.join(Module).filter(Module.course_id == course_id).count()} quizzes")
             
-            # Also refresh in-memory data for consistency
-            # Force a full reload from database to ensure all changes are reflected
+            # Execute one final verification query to double-check
             try:
-                # Execute a direct query to verify
                 with db.engine.connect() as conn:
-                    from sqlalchemy import text
                     result = conn.execute(
-                        text("SELECT id, order FROM modules WHERE course_id = :course_id ORDER BY order"),
+                        text("SELECT id, \"order\" FROM modules WHERE course_id = :course_id ORDER BY \"order\""),
                         {"course_id": course_id}
                     )
                     modules_ordered = result.fetchall()
@@ -1253,7 +1259,7 @@ def admin_modules_reorder(course_id):
             })
             
         except Exception as e:
-            app.logger.error(f"Database error during module reordering: {str(e)}")
+            app.logger.error(f"Error accessing database: {str(e)}")
             return jsonify({'success': False, 'message': f'Database error: {str(e)}'}), 500
             
     except Exception as e:

@@ -197,18 +197,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Collect modules data
-        const modulesData = modules.map((module, index) => {
-            const moduleId = module.dataset.moduleId;
-            const newOrder = index + 1;
-            
-            return {
-                module_id: moduleId,
-                order: newOrder
-            };
-        });
+        // Extract module IDs in the current order
+        const moduleIds = modules.map(module => module.dataset.moduleId);
         
-        console.log('Sending updated order data to server:', modulesData);
+        // Using the new simplified format - just an array of module IDs in order
+        console.log('Sending ordered module IDs to server:', moduleIds);
         
         // Get CSRF token
         const csrfToken = getCSRFToken();
@@ -218,14 +211,14 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Send the update to the server
+        // Send the update to the server using the new module_ids format
         fetch(reorderUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrfToken
             },
-            body: JSON.stringify({ modules: modulesData })
+            body: JSON.stringify({ module_ids: moduleIds })
         })
         .then(response => {
             if (!response.ok) {
