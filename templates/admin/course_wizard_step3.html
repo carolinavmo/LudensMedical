@@ -1,6 +1,41 @@
 {% extends 'admin/course_wizard.html' %}
 
 {% block wizard_content %}
+
+<!-- Add custom accordion-related styles at the top of the template -->
+<style>
+    .custom-accordion-header {
+        cursor: pointer;
+        padding: 1rem;
+        background-color: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
+        transition: background-color 0.2s;
+    }
+    
+    .custom-accordion-header:hover {
+        background-color: #f3f4f6;
+    }
+    
+    .custom-accordion-header.active {
+        background-color: #eef2ff;
+        border-bottom: 1px solid #c7d2fe;
+    }
+    
+    .custom-accordion-content {
+        display: none;
+        padding: 1rem;
+        background-color: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .chevron-icon {
+        transition: transform 0.2s;
+    }
+    
+    .custom-accordion-header.active .chevron-icon {
+        transform: rotate(180deg);
+    }
+</style>
 <div class="px-4 py-5 sm:p-6">
     <div class="grid grid-cols-6 gap-6">
         <div class="col-span-6">

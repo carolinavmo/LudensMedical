@@ -1,6 +1,22 @@
 {% extends 'admin/course_wizard.html' %}
 
 {% block wizard_content %}
+<!-- Add direct, simple accordion styles -->
+<style>
+.quiz-header {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.quiz-header:hover {
+    background-color: #f3f4f6;
+}
+.quiz-details {
+    display: none;
+}
+.rotate-icon {
+    transform: rotate(180deg);
+}
+</style>
 <div class="px-4 py-5 sm:p-6">
     <div class="grid grid-cols-6 gap-6">
         <div class="col-span-6">
