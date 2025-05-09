@@ -206,19 +206,24 @@ class Module(db.Model):
             # Use direct SQL update for immediate persistence
             try:
                 if hasattr(self, 'id') and self.id is not None and hasattr(self, 'course_id'):
+                    # Import text() for SQLAlchemy compatible raw SQL
+                    from sqlalchemy import text
+                    
                     # Execute raw SQL for direct, immediate update
                     with db.engine.connect() as connection:
                         connection.execute(
-                            "UPDATE modules SET \"order\" = :order, updated_at = :updated WHERE id = :id AND course_id = :course_id",
+                            text("UPDATE modules SET order = :order, updated_at = :updated WHERE id = :id AND course_id = :course_id"),
                             {"order": value, "id": self.id, "course_id": self.course_id, "updated": datetime.now()}
                         )
+                        connection.commit()  # Explicitly commit the transaction
                         logging.info(f"Directly updated module {self.id} order to {value} using SQL")
                         
                         # Verify the update actually happened
-                        verify = connection.execute(
-                            "SELECT \"order\" FROM modules WHERE id = :id", 
+                        result = connection.execute(
+                            text("SELECT order FROM modules WHERE id = :id"), 
                             {"id": self.id}
-                        ).first()
+                        )
+                        verify = result.first()
                         
                         if verify and verify[0] == value:
                             logging.info(f"Verified module {self.id} now has order={value} in database")

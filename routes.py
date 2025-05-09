@@ -1157,26 +1157,30 @@ def admin_modules_reorder(course_id):
                         app.logger.error(f"Module {update['id']} belongs to course {result[0]}, not {course_id}")
                         return jsonify({'success': False, 'message': f'Module {update["id"]} belongs to a different course'}), 403
                 
+                # Import text() for proper SQLAlchemy statement handling
+                from sqlalchemy import text
+                
                 # Use raw SQL to force updates to be committed properly
                 update_count = 0
                 
                 # Track the current order values for debugging
                 for update in updates:
                     # Get current order value from database
-                    current = connection.execute(
-                        "SELECT \"order\" FROM modules WHERE id = :id", 
+                    result = connection.execute(
+                        text("SELECT \"order\" FROM modules WHERE id = :id"), 
                         {"id": update['id']}
-                    ).first()
+                    )
+                    current = result.first()
                     update['current_order'] = current[0] if current else None
                     app.logger.info(f"Module {update['id']} current order={update['current_order']}, new order={update['order']}")
                 
-                # Execute all updates
-                connection.execute("BEGIN")  # Explicitly start transaction
+                # Begin a transaction
+                connection.begin()
                 try:
                     for update in updates:
                         # Use a timestamped update to avoid caching issues
                         result = connection.execute(
-                            "UPDATE modules SET \"order\" = :order, updated_at = NOW() WHERE id = :id AND course_id = :course_id",
+                            text("UPDATE modules SET order = :order, updated_at = NOW() WHERE id = :id AND course_id = :course_id"),
                             {"order": update['order'], "id": update['id'], "course_id": course_id}
                         )
                         
@@ -1186,21 +1190,22 @@ def admin_modules_reorder(course_id):
                         else:
                             app.logger.warning(f"SQL UPDATE: Failed to update module {update['id']} - no rows affected")
                     
-                    # Force the transaction to commit
-                    connection.execute("COMMIT")
-                    app.logger.info(f"Transaction explicitly committed: {update_count} updates")
+                    # Commit the transaction
+                    connection.commit()
+                    app.logger.info(f"Transaction committed: {update_count} updates")
                 except Exception as e:
-                    connection.execute("ROLLBACK")
+                    connection.rollback()
                     app.logger.error(f"Error during transaction, rolled back: {str(e)}")
                     raise
                 
                 # Verify all updates were applied successfully
                 verified_count = 0
                 for update in updates:
-                    verify = connection.execute(
-                        "SELECT \"order\" FROM modules WHERE id = :id", 
+                    result = connection.execute(
+                        text("SELECT order FROM modules WHERE id = :id"), 
                         {"id": update['id']}
-                    ).first()
+                    )
+                    verify = result.first()
                     
                     if verify and verify[0] == update['order']:
                         verified_count += 1
@@ -1227,9 +1232,14 @@ def admin_modules_reorder(course_id):
             try:
                 # Execute a direct query to verify
                 with db.engine.connect() as conn:
-                    results = conn.execute(f"SELECT id, \"order\" FROM modules WHERE course_id = {course_id} ORDER BY \"order\"").fetchall()
-                    for result in results:
-                        app.logger.info(f"Verified module {result[0]} has order {result[1]}")
+                    from sqlalchemy import text
+                    result = conn.execute(
+                        text("SELECT id, order FROM modules WHERE course_id = :course_id ORDER BY order"),
+                        {"course_id": course_id}
+                    )
+                    modules_ordered = result.fetchall()
+                    for module_row in modules_ordered:
+                        app.logger.info(f"Verified module {module_row[0]} has order {module_row[1]}")
                 
                 # Completely refresh in-memory database
                 db.session.expire_all()
