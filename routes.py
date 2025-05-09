@@ -1108,7 +1108,16 @@ def admin_modules_reorder(course_id):
     if current_user.role != 'admin':
         return jsonify({'success': False, 'message': 'Access denied'}), 403
     
+    # Check in-memory database first
     course = course_db.get(course_id)
+    if not course:
+        # Try SQL database as fallback
+        try:
+            course = Course.query.get(course_id)
+        except Exception as e:
+            app.logger.error(f"Database error when fetching course: {str(e)}")
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+            
     if not course:
         return jsonify({'success': False, 'message': 'Course not found'}), 404
     
@@ -1116,18 +1125,35 @@ def admin_modules_reorder(course_id):
         # Get the new module order data from the request
         data = request.get_json()
         if not data or 'modules' not in data:
+            app.logger.error(f"Invalid reorder data format: {data}")
             return jsonify({'success': False, 'message': 'Invalid data format'}), 400
         
         modules_data = data['modules']
+        app.logger.info(f"Received module reorder data: {modules_data}")
         
-        # Update the order of each module
+        # Update the order of each module both in-memory and in database
         for module_data in modules_data:
             module_id = int(module_data['module_id'])
             new_order = int(module_data['order'])
             
+            # Update in-memory module
             module = module_db.get(module_id)
             if module and module.course_id == course_id:
                 module.order = new_order
+                app.logger.info(f"Updated in-memory module {module_id} order to {new_order}")
+                
+                # Also update in database
+                try:
+                    db_module = Module.query.get(module_id)
+                    if db_module:
+                        db_module.order = new_order
+                        db.session.commit()
+                        app.logger.info(f"Updated database module {module_id} order to {new_order}")
+                    else:
+                        app.logger.warning(f"Module {module_id} not found in database")
+                except Exception as e:
+                    app.logger.error(f"Error updating module order in database: {str(e)}")
+                    db.session.rollback()
                 logging.info(f"Updated module {module_id} order to {new_order}")
             else:
                 logging.warning(f"Module {module_id} not found or doesn't belong to course {course_id}")

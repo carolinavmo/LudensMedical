@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize Sortable.js
     const sortable = new Sortable(moduleList, {
-        handle: '.module-drag-handle',
+        handle: '.cursor-move', // Updated to use the correct handle class
         animation: 150,
         ghostClass: 'bg-gray-100',
         onEnd: function(evt) {
@@ -16,7 +16,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to update module order after dragging
     function updateModuleOrder() {
         const modules = document.querySelectorAll('#module-list .module-item');
-        const courseId = moduleList.dataset.courseId;
+        
+        // Get the reorder URL directly from the data attribute
+        const reorderUrl = moduleList.dataset.reorderUrl;
+        
+        if (!reorderUrl) {
+            console.error('Reorder URL not found in data-reorder-url attribute');
+            showErrorToast('Configuration error: Missing reorder URL');
+            return;
+        }
+        
         const orderData = [];
         
         modules.forEach((module, index) => {
@@ -26,15 +35,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 order: index + 1
             });
             
-            // Update displayed order number
+            // Update displayed order number in UI
             const orderDisplay = module.querySelector('.module-order');
             if (orderDisplay) {
                 orderDisplay.textContent = index + 1;
             }
+            
+            // Also update the displayed order number in the module title
+            const titleElement = module.querySelector('.text-primary-600');
+            if (titleElement) {
+                const currentTitle = titleElement.textContent;
+                const updatedTitle = (index + 1) + '.' + currentTitle.substring(currentTitle.indexOf('.'));
+                titleElement.textContent = updatedTitle;
+            }
         });
         
-        // Send the new order to the server
-        fetch('/admin/courses/' + courseId + '/modules/reorder', {
+        console.log('Sending updated order to:', reorderUrl);
+        console.log('Order data:', orderData);
+        
+        // Send the new order to the server using the URL from data attribute
+        fetch(reorderUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
