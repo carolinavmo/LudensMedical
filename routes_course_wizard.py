@@ -514,6 +514,85 @@ def admin_course_wizard_step4_complete(course_id):
 # New Quiz Management Endpoints
 
 # Get questions for a quiz in JSON format
+# Direct edit quiz route from accordion
+@app.route('/admin/quiz/<int:quiz_id>/edit', methods=['POST'])
+@login_required
+def admin_quiz_edit_direct(quiz_id):
+    if current_user.role != 'admin':
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    quiz = quiz_db.get(quiz_id)
+    if not quiz:
+        flash('Quiz not found', 'error')
+        return redirect(url_for('admin_dashboard'))
+    
+    # Get course ID from form
+    course_id = request.form.get('course_id', None)
+    if not course_id:
+        flash('Course ID is required', 'error')
+        return redirect(url_for('admin_dashboard'))
+    
+    # Convert course_id to integer
+    try:
+        course_id = int(course_id)
+    except ValueError:
+        flash('Invalid course ID', 'error')
+        return redirect(url_for('admin_dashboard'))
+    
+    # Check if the course exists
+    course = course_db.get(course_id)
+    if not course:
+        flash('Course not found', 'error')
+        return redirect(url_for('admin_dashboard'))
+    
+    # Get form data
+    module_id = request.form.get('module_id')
+    title = request.form.get('title')
+    description = request.form.get('description')
+    passing_score = request.form.get('passing_score')
+    
+    # Validate form data
+    if not all([module_id, title, description, passing_score]):
+        flash('All fields are required', 'error')
+        return redirect(url_for('admin_course_wizard_step3', course_id=course_id))
+    
+    # Convert module_id and passing_score to appropriate types
+    try:
+        module_id = int(module_id)
+        passing_score = int(passing_score)
+    except ValueError:
+        flash('Invalid module ID or passing score', 'error')
+        return redirect(url_for('admin_course_wizard_step3', course_id=course_id))
+    
+    # Check if module exists and belongs to the course
+    module = None
+    for m in module_db.values():
+        if m.id == module_id and m.course_id == course_id:
+            module = m
+            break
+    
+    if not module:
+        flash('Module not found or does not belong to this course', 'error')
+        return redirect(url_for('admin_course_wizard_step3', course_id=course_id))
+    
+    # Check if switching to a module that already has a quiz (other than this one)
+    if module_id != quiz.module_id:
+        for q in quiz_db.values():
+            if q.module_id == module_id and q.id != quiz_id:
+                flash(f'Module already has a quiz. Please choose a different module or edit that quiz instead.', 'warning')
+                return redirect(url_for('admin_course_wizard_step3', course_id=course_id))
+    
+    # Update quiz
+    quiz.module_id = module_id
+    quiz.title = title
+    quiz.description = description
+    quiz.passing_score = passing_score
+    quiz.updated_at = datetime.now()
+    
+    flash('Quiz updated successfully', 'success')
+    return redirect(url_for('admin_course_wizard_step3', course_id=course_id))
+
 @app.route('/admin/quiz/<int:quiz_id>/questions-json', methods=['GET'])
 @login_required
 def admin_quiz_questions_json(quiz_id):
