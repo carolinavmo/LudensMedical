@@ -87,8 +87,19 @@
             <div class="space-y-4 mb-8">
                 <h3 class="text-lg font-medium leading-6 text-gray-900">Existing Quizzes</h3>
                 
+                <!-- Debug info -->
+                <div class="mb-4 p-3 bg-yellow-50 rounded-md border border-yellow-200 text-xs text-yellow-600">
+                    <p>Quiz Debug: There are {{ quizzes|length }} quizzes in data</p>
+                    <ul class="list-disc ml-5 mt-1">
+                    {% for quiz in quizzes %}
+                        <li>Quiz ID: {{ quiz.id }}, Title: {{ quiz.title }}, Module ID: {{ quiz.module_id }}</li>  
+                    {% endfor %}
+                    </ul>
+                </div>
+                
                 {% if quizzes %}
                     {% for quiz in quizzes %}
+                        <!-- Find corresponding module -->
                         {% set module = None %}
                         {% for m in modules %}
                             {% if m.id == quiz.module_id %}
@@ -97,6 +108,7 @@
                         {% endfor %}
                         
                         {% if module %}
+                            <!-- Count questions for this quiz -->
                             {% set question_count = 0 %}
                             {% for question in questions %}
                                 {% if question.quiz_id == quiz.id %}
@@ -478,7 +490,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Ensure console logging is active for debugging
         console.log('Quiz management page loaded');
-        console.log('Found ' + document.querySelectorAll('.quiz-item').length + ' quiz items');
+        const quizItems = document.querySelectorAll('.quiz-item');
+        console.log('Found ' + quizItems.length + ' quiz items');
+        
+        // Debug all quiz items found
+        if (quizItems.length > 0) {
+            console.log('Quiz items found:');
+            quizItems.forEach((item, index) => {
+                console.log(`Quiz ${index + 1} ID: ${item.getAttribute('data-quiz-id')}`);
+            });
+        } else {
+            console.error('No quiz items found. This might be a data issue.');
+            console.log('Quizzes in the template data:', {{ quizzes|length }});
+            {% if quizzes %}
+                {% for quiz in quizzes %}
+                    console.log('Quiz {{ loop.index }}: ID={{ quiz.id }}, Title={{ quiz.title }}');
+                {% endfor %}
+            {% endif %}
+        }
         
         // Debug toggle button functionality
         const toggleDebugBtn = document.getElementById('toggle-debug-btn');
