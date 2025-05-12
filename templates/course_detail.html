@@ -1,12 +1,22 @@
 {% if current_user.is_authenticated %}
   {% extends 'student_layout.html' %}
-  {% block student_content %}
 {% else %}
   {% extends 'base.html' %}
-  {% block content %}
 {% endif %}
 
 {% block title %}{{ course.title }} - Ludens Medical Academy{% endblock %}
+
+{% block head %}
+<style>
+    [x-cloak] { display: none !important; }
+</style>
+{% endblock %}
+
+{% if current_user.is_authenticated %}
+  {% block student_content %}
+{% else %}
+  {% block content %}
+{% endif %}
 <div class="bg-white">
     <!-- Course Header -->
     <div class="bg-primary-700">
