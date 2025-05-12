@@ -7,7 +7,7 @@
         <div class="w-full md:w-64 bg-white shadow-md">
             <div class="p-4 border-b border-gray-200">
                 <div class="flex items-center space-x-3">
-                    <span class="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-700">
+                    <span class="h-10 w-10 rounded-full bg-primary-300 flex items-center justify-center text-primary-700">
                         {{ current_user.username[0].upper() }}
                     </span>
                     <div>
@@ -18,8 +18,8 @@
             </div>
             <div class="py-4">
                 <nav>
-                    <a href="{{ url_for('dashboard') }}" class="flex items-center px-4 py-3 text-sm {% if request.path == url_for('dashboard') %}text-primary-700 bg-primary-50 border-l-4 border-primary-500{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %}">
-                        <svg class="mr-3 h-5 w-5 {% if request.path == url_for('dashboard') %}text-primary-500{% else %}text-gray-500{% endif %}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <a href="{{ url_for('dashboard') }}" class="flex items-center px-4 py-3 text-sm {% if request.path == url_for('dashboard') %}text-primary-700 bg-primary-100 border-l-4 border-primary-500{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+                        <svg class="mr-3 h-5 w-5 {% if request.path == url_for('dashboard') %}text-primary-600{% else %}text-gray-500{% endif %}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
                         </svg>
                         Dashboard
