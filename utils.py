@@ -606,7 +606,7 @@ def get_course_analytics(course_id, course_db, enrollment_db, user_db=None):
         'enrollment_data': counts,
         'revenue_data': revenue_data,
         'percentage_data': percentage_data,
-        'total_users': len(user_db) if user_db else total_users if 'total_users' in locals() else 50
+        'total_users': len(user_db) if user_db else 50
     }
 
 def get_stats(user_db, course_db, enrollment_db):

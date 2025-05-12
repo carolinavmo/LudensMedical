@@ -1025,7 +1025,8 @@ def admin_course_analytics(course_id):
         return redirect(url_for('dashboard'))
     
     # Get course analytics
-    course_analytics = get_course_analytics(course_id, course_db, enrollment_db)
+    from models import user_db
+    course_analytics = get_course_analytics(course_id, course_db, enrollment_db, user_db)
     
     if not course_analytics:
         flash('Course not found', 'error')
