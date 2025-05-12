@@ -243,6 +243,15 @@ wheels = [
 ]
 
 [[package]]
+name = "narwhals"
+version = "1.38.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/dd/fa/f4c2b2524b6b1e7475af933849ecaad280822eab5631151ccb1993d600ce/narwhals-1.38.2.tar.gz", hash = "sha256:7c5fbc9f2b8e1d5d95f49dcef9c2d94bf17810de68c87ff195dc7d22f7b3eeb5", size = 277368 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/56/45/59251121eb801f033ffdd56d8893a0f20ec661bdc362f8d52a4e4d547f91/narwhals-1.38.2-py3-none-any.whl", hash = "sha256:a33a182e32f18d794a04e7828a5c401fb26ce9083f609993e7e5064aace641c7", size = 338437 },
+]
+
+[[package]]
 name = "packaging"
 version = "25.0"
 source = { registry = "https://pypi.org/simple" }
@@ -311,6 +320,19 @@ wheels = [
 ]
 
 [[package]]
+name = "plotly"
+version = "6.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "narwhals" },
+    { name = "packaging" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c7/cc/e41b5f697ae403f0b50e47b7af2e36642a193085f553bf7cc1169362873a/plotly-6.0.1.tar.gz", hash = "sha256:dd8400229872b6e3c964b099be699f8d00c489a974f2cfccfad5e8240873366b", size = 8094643 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/02/65/ad2bc85f7377f5cfba5d4466d5474423a3fb7f6a97fd807c06f92dd3e721/plotly-6.0.1-py3-none-any.whl", hash = "sha256:4714db20fea57a435692c548a4eb4fae454f7daddf15f8d8ba7e1045681d7768", size = 14805757 },
+]
+
+[[package]]
 name = "psycopg2-binary"
 version = "2.9.10"
 source = { registry = "https://pypi.org/simple" }
@@ -365,7 +387,9 @@ dependencies = [
     { name = "flask-wtf" },
     { name = "gunicorn" },
     { name = "pillow" },
+    { name = "plotly" },
     { name = "psycopg2-binary" },
+    { name = "sqlalchemy" },
     { name = "werkzeug" },
     { name = "wtforms" },
 ]
@@ -379,7 +403,9 @@ requires-dist = [
     { name = "flask-wtf", specifier = ">=1.2.2" },
     { name = "gunicorn", specifier = ">=23.0.0" },
     { name = "pillow", specifier = ">=11.2.1" },
+    { name = "plotly", specifier = ">=6.0.1" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
+    { name = "sqlalchemy", specifier = ">=2.0.40" },
     { name = "werkzeug", specifier = ">=3.1.3" },
     { name = "wtforms", specifier = ">=3.2.1" },
 ]

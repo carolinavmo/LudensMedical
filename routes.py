@@ -1004,9 +1004,34 @@ def admin_dashboard():
     # Get popular courses with full course data
     popular_courses = [(course_db.get(course_id), count) for course_id, count in stats['popular_courses']]
     
+    # Calculate revenue for each popular course
+    popular_course_revenue = []
+    for course, count in popular_courses:
+        if course:
+            revenue = course.price * count
+            popular_course_revenue.append((course, count, revenue))
+    
     return render_template('admin/dashboard.html', 
                           stats=stats,
-                          popular_courses=popular_courses)
+                          popular_courses=popular_course_revenue)
+
+@app.route('/admin/analytics/course/<int:course_id>')
+@login_required
+def admin_course_analytics(course_id):
+    """Detailed analytics for a specific course."""
+    if current_user.role != 'admin':
+        flash('Access denied: Admin privileges required', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Get course analytics
+    course_analytics = get_course_analytics(course_id, course_db, enrollment_db)
+    
+    if not course_analytics:
+        flash('Course not found', 'error')
+        return redirect(url_for('admin_dashboard'))
+    
+    return render_template('admin/course_analytics.html', 
+                           analytics=course_analytics)
 
 @app.route('/admin/courses')
 @login_required

@@ -179,8 +179,225 @@ def generate_certificate(user, course, certificate_id):
     
     return img_io
 
+def get_user_registration_timeline(user_db):
+    """Generate user registration data over time for charts."""
+    from datetime import timedelta
+    import plotly.graph_objects as go
+    import json
+    
+    # Group users by registration date
+    timeline = {}
+    for user in user_db.values():
+        date_str = user.created_at.strftime('%Y-%m-%d')
+        if date_str not in timeline:
+            timeline[date_str] = 0
+        timeline[date_str] += 1
+    
+    # Sort by date
+    sorted_dates = sorted(timeline.keys())
+    
+    # Generate cumulative data
+    dates = []
+    counts = []
+    cumulative = 0
+    
+    for date in sorted_dates:
+        dates.append(date)
+        cumulative += timeline[date]
+        counts.append(cumulative)
+    
+    # Create plotly figure
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=dates, y=counts, mode='lines+markers', name='Total Users'))
+    fig.update_layout(
+        title='User Growth Over Time',
+        xaxis_title='Date',
+        yaxis_title='Number of Users',
+        hovermode='x unified',
+        margin=dict(l=20, r=20, t=40, b=20),
+        height=300
+    )
+    
+    return {
+        'chart': fig.to_json(),
+        'dates': dates,
+        'counts': counts
+    }
+
+def get_course_enrollment_timeline(enrollment_db):
+    """Generate course enrollment data over time for charts."""
+    import plotly.graph_objects as go
+    import json
+    
+    # Group enrollments by date
+    timeline = {}
+    for enrollment in enrollment_db.values():
+        date_str = enrollment.created_at.strftime('%Y-%m-%d')
+        if date_str not in timeline:
+            timeline[date_str] = 0
+        timeline[date_str] += 1
+    
+    # Sort by date
+    sorted_dates = sorted(timeline.keys())
+    
+    # Generate cumulative data
+    dates = []
+    counts = []
+    cumulative = 0
+    
+    for date in sorted_dates:
+        dates.append(date)
+        cumulative += timeline[date]
+        counts.append(cumulative)
+    
+    # Create plotly figure
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=dates, y=counts, mode='lines+markers', name='Total Enrollments'))
+    fig.update_layout(
+        title='Course Enrollments Over Time',
+        xaxis_title='Date',
+        yaxis_title='Number of Enrollments',
+        hovermode='x unified',
+        margin=dict(l=20, r=20, t=40, b=20),
+        height=300
+    )
+    
+    return {
+        'chart': fig.to_json(),
+        'dates': dates,
+        'counts': counts
+    }
+
+def get_active_users(user_db, enrollment_db):
+    """Calculate the number of active users in the last 7 and 30 days."""
+    from datetime import datetime, timedelta
+    
+    now = datetime.now()
+    active_7_days = 0
+    active_30_days = 0
+    
+    # Check enrollments for activity
+    for enrollment in enrollment_db.values():
+        if enrollment.updated_at > now - timedelta(days=7):
+            active_7_days += 1
+        if enrollment.updated_at > now - timedelta(days=30):
+            active_30_days += 1
+    
+    # Remove duplicates (same user with multiple enrollments)
+    unique_active_users_7 = set()
+    unique_active_users_30 = set()
+    
+    for enrollment in enrollment_db.values():
+        if enrollment.updated_at > now - timedelta(days=7):
+            unique_active_users_7.add(enrollment.user_id)
+        if enrollment.updated_at > now - timedelta(days=30):
+            unique_active_users_30.add(enrollment.user_id)
+    
+    return {
+        'active_7_days': len(unique_active_users_7),
+        'active_30_days': len(unique_active_users_30)
+    }
+
+def calculate_revenue(course_db, enrollment_db):
+    """Calculate total revenue from course enrollments."""
+    total_revenue = 0
+    course_revenue = {}
+    
+    for enrollment in enrollment_db.values():
+        course = course_db.get(enrollment.course_id)
+        if course:
+            price = course.price
+            total_revenue += price
+            
+            if course.id not in course_revenue:
+                course_revenue[course.id] = 0
+            course_revenue[course.id] += price
+    
+    return {
+        'total_revenue': total_revenue,
+        'course_revenue': course_revenue
+    }
+
+def get_course_analytics(course_id, course_db, enrollment_db):
+    """Get detailed analytics for a specific course."""
+    import plotly.graph_objects as go
+    from datetime import datetime
+    
+    course = course_db.get(int(course_id))
+    if not course:
+        return None
+    
+    # Get course enrollments
+    course_enrollments = [e for e in enrollment_db.values() if e.course_id == int(course_id)]
+    
+    # Course revenue
+    course_revenue = course.price * len(course_enrollments)
+    
+    # Enrollment timeline
+    timeline = {}
+    for enrollment in course_enrollments:
+        date_str = enrollment.created_at.strftime('%Y-%m-%d')
+        if date_str not in timeline:
+            timeline[date_str] = 0
+        timeline[date_str] += 1
+    
+    # Sort by date
+    sorted_dates = sorted(timeline.keys())
+    
+    # Generate cumulative data
+    dates = []
+    counts = []
+    revenue_data = []
+    cumulative = 0
+    
+    for date in sorted_dates:
+        dates.append(date)
+        cumulative += timeline[date]
+        counts.append(cumulative)
+        revenue_data.append(cumulative * course.price)
+    
+    # Create enrollment chart
+    enrollment_fig = go.Figure()
+    enrollment_fig.add_trace(go.Scatter(x=dates, y=counts, mode='lines+markers', name='Enrollments'))
+    enrollment_fig.update_layout(
+        title='Course Enrollments Over Time',
+        xaxis_title='Date',
+        yaxis_title='Number of Enrollments',
+        hovermode='x unified',
+        margin=dict(l=20, r=20, t=40, b=20),
+        height=300
+    )
+    
+    # Create revenue chart
+    revenue_fig = go.Figure()
+    revenue_fig.add_trace(go.Scatter(x=dates, y=revenue_data, mode='lines+markers', name='Revenue'))
+    revenue_fig.update_layout(
+        title='Course Revenue Over Time',
+        xaxis_title='Date',
+        yaxis_title='Revenue (USD)',
+        hovermode='x unified',
+        margin=dict(l=20, r=20, t=40, b=20),
+        height=300
+    )
+    
+    # Completion rate
+    completed_enrollments = sum(1 for e in course_enrollments if e.completed)
+    completion_rate = (completed_enrollments / len(course_enrollments)) * 100 if course_enrollments else 0
+    
+    return {
+        'course': course,
+        'enrollment_count': len(course_enrollments),
+        'completion_rate': round(completion_rate, 1),
+        'revenue': course_revenue,
+        'enrollments_chart': enrollment_fig.to_json(),
+        'revenue_chart': revenue_fig.to_json(),
+        'dates': dates,
+        'enrollment_data': counts,
+        'revenue_data': revenue_data
+    }
+
 def get_stats(user_db, course_db, enrollment_db):
-    """Get statistics for the admin dashboard."""
+    """Get enhanced statistics for the admin dashboard."""
     total_users = len(user_db)
     total_courses = len(course_db)
     total_enrollments = len(enrollment_db)
@@ -201,6 +418,16 @@ def get_stats(user_db, course_db, enrollment_db):
         reverse=True
     )[:5]
     
+    # Get timeline data for charts
+    user_timeline = get_user_registration_timeline(user_db)
+    enrollment_timeline = get_course_enrollment_timeline(enrollment_db)
+    
+    # Get active users
+    active_users = get_active_users(user_db, enrollment_db)
+    
+    # Calculate revenue
+    revenue_data = calculate_revenue(course_db, enrollment_db)
+    
     return {
         'total_users': total_users,
         'total_courses': total_courses,
@@ -208,5 +435,9 @@ def get_stats(user_db, course_db, enrollment_db):
         'students': students,
         'admins': admins,
         'course_enrollments': course_enrollments,
-        'popular_courses': popular_courses
+        'popular_courses': popular_courses,
+        'user_timeline': user_timeline,
+        'enrollment_timeline': enrollment_timeline,
+        'active_users': active_users,
+        'revenue': revenue_data
     }
