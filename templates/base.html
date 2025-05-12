@@ -40,28 +40,28 @@
                 extend: {
                     colors: {
                         primary: {
-                            50: '#f5f3ff',
-                            100: '#ede9fe',
-                            200: '#ddd6fe',
-                            300: '#c4b5fd',
-                            400: '#a78bfa',
-                            500: '#8b5cf6',
-                            600: '#7c3aed',
-                            700: '#6d28d9',
-                            800: '#5b21b6',
-                            900: '#4c1d95',
+                            50: '#ecfeff',
+                            100: '#cffafe',
+                            200: '#a5f3fc',
+                            300: '#67e8f9',
+                            400: '#22d3ee',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                            700: '#0e7490',
+                            800: '#155e75',
+                            900: '#164e63',
                         },
                         secondary: {
-                            50: '#eff6ff',
-                            100: '#dbeafe',
-                            200: '#bfdbfe',
-                            300: '#93c5fd',
-                            400: '#60a5fa',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
-                            800: '#1e40af',
-                            900: '#1e3a8a',
+                            50: '#fefce8',
+                            100: '#fef9c3',
+                            200: '#fef08a',
+                            300: '#fde047',
+                            400: '#facc15',
+                            500: '#eab308',
+                            600: '#ca8a04',
+                            700: '#a16207',
+                            800: '#854d0e',
+                            900: '#713f12',
                         }
                     },
                     aspectRatio: {
@@ -104,14 +104,14 @@
     
     {% block head %}{% endblock %}
 </head>
-<body class="bg-gradient-to-br from-primary-50 to-secondary-50 dark:bg-gray-900 min-h-screen flex flex-col">
+<body class="bg-gradient-to-r from-teal-400 to-yellow-200 dark:bg-gray-900 min-h-screen flex flex-col">
     <!-- Navigation -->
-    <nav class="bg-white dark:bg-gray-800 shadow-md" x-data="{ mobileMenuOpen: false }" style="background: linear-gradient(135deg, #f5f3ff, #ede9fe);">
+    <nav class="bg-white dark:bg-gray-800 shadow-md" x-data="{ mobileMenuOpen: false }" style="background: linear-gradient(135deg, #cffafe, #fef9c3);">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex">
                     <a href="{{ url_for('index') }}" class="flex-shrink-0 flex items-center">
-                        <span class="text-primary-700 font-bold text-xl" style="background: linear-gradient(135deg, #7c3aed, #2563eb); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Ludens Medical Academy</span>
+                        <span class="text-primary-700 font-bold text-xl" style="background: linear-gradient(135deg, #0891b2, #ca8a04); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Ludens Medical Academy</span>
                     </a>
                     <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
                         <!-- Desktop menu -->
@@ -189,10 +189,10 @@
                         </div>
                     {% else %}
                         <div class="flex space-x-4">
-                            <a href="{{ url_for('login') }}" class="text-primary-600 hover:text-primary-700 px-3 py-2 rounded-md text-sm font-medium border border-primary-300 hover:border-primary-400 bg-white">
+                            <a href="{{ url_for('login') }}" class="text-primary-600 hover:text-primary-700 px-3 py-2 rounded-md text-sm font-medium border border-teal-300 hover:border-teal-400 bg-white">
                                 Log in
                             </a>
-                            <a href="{{ url_for('signup') }}" style="background: linear-gradient(135deg, #7c3aed, #2563eb);" class="hover:opacity-90 text-white px-3 py-2 rounded-md text-sm font-medium shadow-md">
+                            <a href="{{ url_for('signup') }}" style="background: linear-gradient(135deg, #0891b2, #ca8a04);" class="hover:opacity-90 text-white px-3 py-2 rounded-md text-sm font-medium shadow-md">
                                 Sign up
                             </a>
                         </div>
