@@ -283,11 +283,13 @@
                     },
                     xaxis: {
                         title: 'Date',
-                        gridcolor: '#f0f0f0'
+                        gridcolor: '#f0f0f0',
+                        range: ['{{ analytics.dates[0] }}', '{{ analytics.dates[-1] }}']
                     },
                     yaxis: {
                         title: 'Number of Enrollments',
-                        gridcolor: '#f0f0f0'
+                        gridcolor: '#f0f0f0',
+                        range: [0, Math.max(...enrollmentData) * 1.1] // 10% padding
                     }
                 };
                 
@@ -330,12 +332,14 @@
                     },
                     xaxis: {
                         title: 'Date',
-                        gridcolor: '#f0f0f0'
+                        gridcolor: '#f0f0f0',
+                        range: ['{{ analytics.dates[0] }}', '{{ analytics.dates[-1] }}']
                     },
                     yaxis: {
                         title: 'Revenue (USD)',
                         gridcolor: '#f0f0f0',
-                        tickprefix: '$'
+                        tickprefix: '$',
+                        range: [0, Math.max(...revenueData) * 1.1] // 10% padding
                     }
                 };
                 

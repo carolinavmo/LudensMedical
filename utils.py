@@ -387,7 +387,7 @@ def calculate_revenue(course_db, enrollment_db):
         'course_revenue': course_revenue
     }
 
-def get_course_analytics(course_id, course_db, enrollment_db):
+def get_course_analytics(course_id, course_db, enrollment_db, user_db=None):
     """Get detailed analytics for a specific course."""
     import plotly.graph_objects as go
     from datetime import datetime, timedelta
@@ -409,6 +409,10 @@ def get_course_analytics(course_id, course_db, enrollment_db):
         dates = [(today - timedelta(days=30-i)).strftime('%Y-%m-%d') for i in range(31)]
         counts = [min(i, 10) for i in range(31)]  # Cap at 10 enrollments
         revenue_data = [min(i, 10) * course.price for i in range(31)]
+        
+        # Calculate percentage of total users enrolled over time
+        total_users = len(user_db) if user_db else 50  # Default to 50 for sample data
+        percentage_data = [(count / max(1, total_users - (30-i))) * 100 for i, count in enumerate(counts)]
         
         # Create enrollment chart
         enrollment_fig = go.Figure()
@@ -434,6 +438,18 @@ def get_course_analytics(course_id, course_db, enrollment_db):
             height=300
         )
         
+        # Create percentage enrollment chart
+        percentage_fig = go.Figure()
+        percentage_fig.add_trace(go.Scatter(x=dates, y=percentage_data, mode='lines+markers', name='% of Users Enrolled'))
+        percentage_fig.update_layout(
+            title='Percentage of Total Users Enrolled',
+            xaxis_title='Date',
+            yaxis_title='% of Total Users',
+            hovermode='x unified',
+            margin=dict(l=20, r=20, t=40, b=20),
+            height=300
+        )
+        
         return {
             'course': course,
             'enrollment_count': len(course_enrollments),
@@ -441,9 +457,12 @@ def get_course_analytics(course_id, course_db, enrollment_db):
             'revenue': course_revenue,
             'enrollments_chart': enrollment_fig.to_json(),
             'revenue_chart': revenue_fig.to_json(),
+            'percentage_chart': percentage_fig.to_json(),
             'dates': dates,
             'enrollment_data': counts,
-            'revenue_data': revenue_data
+            'revenue_data': revenue_data,
+            'percentage_data': percentage_data,
+            'total_users': total_users
         }
     
     # Enrollment timeline for real data
@@ -470,32 +489,109 @@ def get_course_analytics(course_id, course_db, enrollment_db):
         counts.append(cumulative)
         revenue_data.append(cumulative * course.price)
     
-    # Create enrollment chart
+    # Calculate percentage of total users enrolled over time
+    percentage_data = []
+    
+    if user_db:
+        # Calculate how many users existed on each date
+        total_users_by_date = {}
+        for user in user_db.values():
+            if hasattr(user, 'created_at') and user.created_at:
+                user_date_str = user.created_at.strftime('%Y-%m-%d')
+                for date in dates:
+                    if date >= user_date_str:
+                        if date not in total_users_by_date:
+                            total_users_by_date[date] = 0
+                        total_users_by_date[date] += 1
+        
+        # Calculate percentage for each date
+        for i, date in enumerate(dates):
+            total_users = total_users_by_date.get(date, len(user_db))
+            if total_users > 0:
+                percentage = (counts[i] / total_users) * 100
+            else:
+                percentage = 0
+            percentage_data.append(percentage)
+    else:
+        # If user_db isn't provided, use a simple estimate
+        total_users = 50  # Default value
+        percentage_data = [(count / total_users) * 100 for count in counts]
+    
+    # Create enrollment chart with improved styling
     enrollment_fig = go.Figure()
-    enrollment_fig.add_trace(go.Scatter(x=dates, y=counts, mode='lines+markers', name='Enrollments'))
+    enrollment_fig.add_trace(go.Scatter(
+        x=dates, 
+        y=counts, 
+        mode='lines+markers', 
+        name='Enrollments',
+        line={'color': 'rgb(67, 56, 202)', 'width': 3},
+        marker={'color': 'rgb(67, 56, 202)', 'size': 8}
+    ))
     enrollment_fig.update_layout(
         title='Course Enrollments Over Time',
         xaxis_title='Date',
         yaxis_title='Number of Enrollments',
         hovermode='x unified',
-        margin=dict(l=20, r=20, t=40, b=20),
-        height=300
+        margin=dict(l=50, r=30, t=50, b=50),
+        height=300,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        xaxis={'gridcolor': '#f0f0f0'},
+        yaxis={'gridcolor': '#f0f0f0'}
     )
     
-    # Create revenue chart
+    # Create revenue chart with improved styling
     revenue_fig = go.Figure()
-    revenue_fig.add_trace(go.Scatter(x=dates, y=revenue_data, mode='lines+markers', name='Revenue'))
+    revenue_fig.add_trace(go.Scatter(
+        x=dates, 
+        y=revenue_data, 
+        mode='lines+markers', 
+        name='Revenue',
+        line={'color': 'rgb(234, 179, 8)', 'width': 3},
+        marker={'color': 'rgb(234, 179, 8)', 'size': 8},
+        fill='tozeroy',
+        fillcolor='rgba(234, 179, 8, 0.1)'
+    ))
     revenue_fig.update_layout(
         title='Course Revenue Over Time',
         xaxis_title='Date',
         yaxis_title='Revenue (USD)',
         hovermode='x unified',
-        margin=dict(l=20, r=20, t=40, b=20),
-        height=300
+        margin=dict(l=50, r=30, t=50, b=50),
+        height=300,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        xaxis={'gridcolor': '#f0f0f0'},
+        yaxis={'gridcolor': '#f0f0f0', 'tickprefix': '$'}
+    )
+    
+    # Create percentage enrollment chart
+    percentage_fig = go.Figure()
+    percentage_fig.add_trace(go.Scatter(
+        x=dates, 
+        y=percentage_data, 
+        mode='lines+markers', 
+        name='% of Users Enrolled',
+        line={'color': 'rgb(16, 185, 129)', 'width': 3},
+        marker={'color': 'rgb(16, 185, 129)', 'size': 8},
+        fill='tozeroy',
+        fillcolor='rgba(16, 185, 129, 0.1)'
+    ))
+    percentage_fig.update_layout(
+        title='Percentage of Total Users Enrolled',
+        xaxis_title='Date',
+        yaxis_title='% of Total Users',
+        hovermode='x unified',
+        margin=dict(l=50, r=30, t=50, b=50),
+        height=300,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        xaxis={'gridcolor': '#f0f0f0'},
+        yaxis={'gridcolor': '#f0f0f0', 'ticksuffix': '%'}
     )
     
     # Completion rate
-    completed_enrollments = sum(1 for e in course_enrollments if e.completed)
+    completed_enrollments = sum(1 for e in course_enrollments if hasattr(e, 'completed') and e.completed)
     completion_rate = (completed_enrollments / len(course_enrollments)) * 100 if course_enrollments else 0
     
     return {
@@ -505,9 +601,12 @@ def get_course_analytics(course_id, course_db, enrollment_db):
         'revenue': course_revenue,
         'enrollments_chart': enrollment_fig.to_json(),
         'revenue_chart': revenue_fig.to_json(),
+        'percentage_chart': percentage_fig.to_json(),
         'dates': dates,
         'enrollment_data': counts,
-        'revenue_data': revenue_data
+        'revenue_data': revenue_data,
+        'percentage_data': percentage_data,
+        'total_users': len(user_db) if user_db else total_users if 'total_users' in locals() else 50
     }
 
 def get_stats(user_db, course_db, enrollment_db):

@@ -337,11 +337,13 @@
                     },
                     xaxis: {
                         title: 'Date',
-                        gridcolor: '#f0f0f0'
+                        gridcolor: '#f0f0f0',
+                        range: ['{{ stats.enrollment_timeline.dates[0] }}', '{{ stats.enrollment_timeline.dates[-1] }}']
                     },
                     yaxis: {
                         title: 'Number of Enrollments',
-                        gridcolor: '#f0f0f0'
+                        gridcolor: '#f0f0f0',
+                        range: [0, Math.max(...enrollmentCounts) * 1.1] // 10% padding
                     }
                 };
                 
@@ -390,11 +392,13 @@
                     },
                     xaxis: {
                         title: 'Date',
-                        gridcolor: '#f0f0f0'
+                        gridcolor: '#f0f0f0',
+                        range: ['{{ stats.user_timeline.dates[0] }}', '{{ stats.user_timeline.dates[-1] }}']
                     },
                     yaxis: {
                         title: 'Number of Users',
-                        gridcolor: '#f0f0f0'
+                        gridcolor: '#f0f0f0',
+                        range: [0, Math.max(...userCounts) * 1.1] // 10% padding
                     }
                 };
                 
