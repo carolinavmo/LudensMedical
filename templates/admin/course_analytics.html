@@ -88,8 +88,8 @@
         <div class="bg-white overflow-hidden shadow rounded-lg">
             <div class="p-5">
                 <div class="flex items-center">
-                    <div class="flex-shrink-0 bg-green-100 rounded-md p-3">
-                        <svg class="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div class="flex-shrink-0 bg-accent-100 rounded-md p-3">
+                        <svg class="h-6 w-6 text-accent-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
@@ -113,8 +113,8 @@
         <div class="bg-white overflow-hidden shadow rounded-lg">
             <div class="p-5">
                 <div class="flex items-center">
-                    <div class="flex-shrink-0 bg-blue-100 rounded-md p-3">
-                        <svg class="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div class="flex-shrink-0 bg-primary-100 rounded-md p-3">
+                        <svg class="h-6 w-6 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 9a2 2 0 10-4 0v5a2 2 0 01-2 2h6m-6-4h4m8 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
@@ -138,8 +138,8 @@
         <div class="bg-white overflow-hidden shadow rounded-lg">
             <div class="p-5">
                 <div class="flex items-center">
-                    <div class="flex-shrink-0 bg-yellow-100 rounded-md p-3">
-                        <svg class="h-6 w-6 text-yellow-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div class="flex-shrink-0 bg-secondary-100 rounded-md p-3">
+                        <svg class="h-6 w-6 text-secondary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
@@ -274,11 +274,11 @@
                     mode: 'lines+markers',
                     name: 'Enrollments',
                     line: {
-                        color: 'rgb(67, 56, 202)',
+                        color: 'rgb(124, 58, 237)', /* primary color - purple */
                         width: 3
                     },
                     marker: {
-                        color: 'rgb(67, 56, 202)',
+                        color: 'rgb(124, 58, 237)',
                         size: 8
                     }
                 };
@@ -321,15 +321,15 @@
                     mode: 'lines+markers',
                     name: 'Revenue',
                     line: {
-                        color: 'rgb(234, 179, 8)',
+                        color: 'rgb(236, 72, 153)', /* secondary color - pink */
                         width: 3
                     },
                     marker: {
-                        color: 'rgb(234, 179, 8)',
+                        color: 'rgb(236, 72, 153)',
                         size: 8
                     },
                     fill: 'tozeroy',
-                    fillcolor: 'rgba(234, 179, 8, 0.1)'
+                    fillcolor: 'rgba(236, 72, 153, 0.1)'
                 };
                 
                 var revenueLayout = {
@@ -366,11 +366,11 @@
                     mode: 'lines+markers',
                     name: 'User Percentage',
                     line: {
-                        color: 'rgb(16, 185, 129)',
+                        color: 'rgb(20, 184, 166)', /* accent color - teal */
                         width: 3
                     },
                     marker: {
-                        color: 'rgb(16, 185, 129)',
+                        color: 'rgb(20, 184, 166)',
                         size: 8
                     },
                     hovertemplate: '%{y:.1f}% of total users<extra></extra>'
