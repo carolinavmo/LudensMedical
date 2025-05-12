@@ -17,8 +17,8 @@
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
     <div class="bg-white rounded-lg shadow p-5">
         <div class="flex items-center">
-            <div class="flex-shrink-0 bg-primary-100 rounded-md p-3">
-                <svg class="h-6 w-6 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div class="flex-shrink-0 bg-primary-300 rounded-md p-3">
+                <svg class="h-6 w-6 text-primary-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
             </div>
@@ -90,7 +90,7 @@
                         {% else %}
                             <img class="h-full w-full object-cover" src="https://pixabay.com/get/gea002c703b68579dabc8033e6ba4abaf4a887ee91baa23c3057bab94ce5bd9f9304827cc5d53785a297cc69926f47ad4810613e7ac1d3b0d1afeaca033140e87_1280.jpg" alt="{{ course.title }}">
                         {% endif %}
-                        <div class="absolute top-2 right-2 px-2 py-1 text-xs rounded-full bg-primary-100 text-primary-800">
+                        <div class="absolute top-2 right-2 px-2 py-1 text-xs rounded-full bg-primary-300 text-primary-800">
                             {{ course.category|replace('_', ' ')|title }}
                         </div>
                     </div>
