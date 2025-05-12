@@ -1,6 +1,16 @@
 {% extends 'base.html' %}
 
 {% block head %}
+<!-- Add script to make navbar sticky when on admin pages -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Target the navigation element and add the sticky class
+    const navbar = document.querySelector('nav');
+    if (navbar) {
+      navbar.classList.add('admin-sticky-nav');
+    }
+  });
+</script>
 <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.8.2/dist/alpine.min.js" defer></script>
 <style>
   /* Sidebar transition */
@@ -9,6 +19,15 @@
   }
   .content-transition {
     transition: margin-left 0.3s;
+  }
+  
+  /* Make the navbar sticky for admin */
+  .admin-sticky-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
   }
   
   @media (max-width: 640px) {
@@ -26,7 +45,7 @@
 <div class="min-h-screen bg-gray-50" x-data="{ sidebarOpen: true }">
   <!-- Admin Sidebar -->
   <div
-    class="fixed top-16 bottom-0 left-0 z-10 bg-white shadow-lg sidebar-transition"
+    class="fixed top-16 bottom-0 left-0 z-20 bg-white shadow-lg sidebar-transition"
     :class="sidebarOpen ? 'w-64' : 'w-20'"
     :class="{ 'sidebar-expanded': sidebarOpen, 'sidebar-collapsed': !sidebarOpen }"
   >
