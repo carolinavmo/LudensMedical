@@ -83,40 +83,40 @@
     {% if courses %}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {% for course in courses %}
-                <div class="bg-white shadow-md rounded-lg overflow-hidden course-card">
-                    <div class="h-40 bg-gray-200 relative">
+                <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden course-card">
+                    <div class="h-40 bg-gray-200 dark:bg-gray-700 relative">
                         {% if course.image_url %}
                             <img class="h-full w-full object-cover" src="{{ course.image_url }}" alt="{{ course.title }}">
                         {% else %}
                             <img class="h-full w-full object-cover" src="https://pixabay.com/get/gea002c703b68579dabc8033e6ba4abaf4a887ee91baa23c3057bab94ce5bd9f9304827cc5d53785a297cc69926f47ad4810613e7ac1d3b0d1afeaca033140e87_1280.jpg" alt="{{ course.title }}">
                         {% endif %}
-                        <div class="absolute top-2 right-2 px-2 py-1 text-xs rounded-full bg-primary-300 text-primary-800">
+                        <div class="absolute top-2 right-2 px-2 py-1 text-xs rounded-full bg-primary-300 dark:bg-primary-700 text-primary-800 dark:text-primary-100">
                             {{ course.category|replace('_', ' ')|title }}
                         </div>
                     </div>
                     <div class="p-4">
                         <div class="flex justify-between items-center mb-2">
-                            <h3 class="text-lg font-medium text-gray-900 truncate">{{ course.title }}</h3>
-                            <span class="text-xs text-gray-500">{{ course.level|title }}</span>
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white truncate">{{ course.title }}</h3>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">{{ course.level|title }}</span>
                         </div>
                         
                         <div class="mt-4" data-progress-course="{{ course.id }}">
-                            <div class="flex justify-between items-center text-sm text-gray-500 mb-1">
+                            <div class="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400 mb-1">
                                 <span>Progress</span>
                                 <span class="progress-text">{{ progress[course.id] }}%</span>
                             </div>
-                            <div class="progress-bar">
-                                <div class="progress-bar-fill" style="width: {{ progress[course.id] }}%"></div>
+                            <div class="progress-bar bg-gray-200 dark:bg-gray-700">
+                                <div class="progress-bar-fill bg-primary-500 dark:bg-primary-600" style="width: {{ progress[course.id] }}%"></div>
                             </div>
                         </div>
                         
                         <div class="mt-4 flex justify-between">
-                            <a href="{{ url_for('course_detail', course_id=course.id) }}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            <a href="{{ url_for('course_detail', course_id=course.id) }}" class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
                                 Continue
                             </a>
                             {% if progress[course.id] == 100 %}
-                                <span class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-green-700 bg-green-100">
-                                    <svg class="mr-1.5 h-4 w-4 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <span class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900">
+                                    <svg class="mr-1.5 h-4 w-4 text-green-500 dark:text-green-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                                     </svg>
                                     Completed
@@ -128,14 +128,14 @@
             {% endfor %}
         </div>
     {% else %}
-        <div class="text-center py-10 bg-white rounded-lg shadow-sm">
-            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="text-center py-10 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+            <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
-            <h3 class="mt-2 text-lg font-medium text-gray-900">No courses yet</h3>
-            <p class="mt-1 text-sm text-gray-500">Start your learning journey by enrolling in a course.</p>
+            <h3 class="mt-2 text-lg font-medium text-gray-900 dark:text-white">No courses yet</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Start your learning journey by enrolling in a course.</p>
             <div class="mt-6">
-                <a href="{{ url_for('courses') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
+                <a href="{{ url_for('courses') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600">
                     Explore Courses
                 </a>
             </div>
@@ -145,28 +145,28 @@
 
 <!-- Your Certificates -->
 <div>
-    <h2 class="text-xl font-bold text-gray-900 mb-4">Your Certificates</h2>
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Your Certificates</h2>
     {% if certificates %}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {% for certificate in certificates %}
                 {% set course = certificate_courses[loop.index0] if loop.index0 < certificate_courses|length else None %}
                 {% if course %}
-                    <div class="bg-white shadow-md rounded-lg overflow-hidden course-card">
+                    <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden course-card">
                         <div class="p-4 certificate">
                             <div class="text-center">
-                                <h3 class="text-lg font-bold text-primary-800">Certificate of Completion</h3>
-                                <p class="mt-2 text-sm text-gray-600">This certifies that</p>
-                                <p class="mt-1 text-lg font-medium text-gray-900">{{ current_user.get_full_name() }}</p>
-                                <p class="mt-2 text-sm text-gray-600">has successfully completed the course</p>
-                                <p class="mt-1 text-base font-medium text-primary-700">{{ course.title }}</p>
-                                <p class="mt-2 text-xs text-gray-500">Issued on: {{ certificate.issue_date.strftime('%B %d, %Y') }}</p>
+                                <h3 class="text-lg font-bold text-primary-800 dark:text-primary-400">Certificate of Completion</h3>
+                                <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">This certifies that</p>
+                                <p class="mt-1 text-lg font-medium text-gray-900 dark:text-white">{{ current_user.get_full_name() }}</p>
+                                <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">has successfully completed the course</p>
+                                <p class="mt-1 text-base font-medium text-primary-700 dark:text-primary-400">{{ course.title }}</p>
+                                <p class="mt-2 text-xs text-gray-500 dark:text-gray-500">Issued on: {{ certificate.issue_date.strftime('%B %d, %Y') }}</p>
                             </div>
                             
                             <div class="mt-4 flex justify-center">
-                                <a href="{{ url_for('view_certificate', certificate_id=certificate.id) }}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 mr-4">
+                                <a href="{{ url_for('view_certificate', certificate_id=certificate.id) }}" class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 mr-4">
                                     View
                                 </a>
-                                <a href="{{ url_for('download_certificate', certificate_id=certificate.id) }}" class="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                                <a href="{{ url_for('download_certificate', certificate_id=certificate.id) }}" class="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600">
                                     Download
                                 </a>
                             </div>
