@@ -225,13 +225,64 @@
 <!-- Load charts -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Load enrollment chart
-        var enrollmentData = {{ analytics.enrollments_chart|safe }};
-        Plotly.newPlot('enrollments-chart', JSON.parse(enrollmentData).data, JSON.parse(enrollmentData).layout);
-        
-        // Load revenue chart
-        var revenueData = {{ analytics.revenue_chart|safe }};
-        Plotly.newPlot('revenue-chart', JSON.parse(revenueData).data, JSON.parse(revenueData).layout);
+        try {
+            // Check if we have valid data for the charts
+            if ('{{ analytics.dates|length }}' > 0) {
+                // Create enrollment chart with the raw data
+                var dates = {{ analytics.dates|tojson }};
+                var enrollmentData = {{ analytics.enrollment_data|tojson }};
+                
+                var enrollmentTrace = {
+                    x: dates,
+                    y: enrollmentData,
+                    mode: 'lines+markers',
+                    name: 'Enrollments',
+                    line: {color: 'rgb(67, 56, 202)'}
+                };
+                
+                var enrollmentLayout = {
+                    title: 'Course Enrollments Over Time',
+                    xaxis: {title: 'Date'},
+                    yaxis: {title: 'Number of Enrollments'},
+                    margin: {l: 40, r: 10, t: 40, b: 40},
+                    height: 300
+                };
+                
+                Plotly.newPlot('enrollments-chart', [enrollmentTrace], enrollmentLayout);
+                
+                // Create revenue chart with the raw data
+                var revenueData = {{ analytics.revenue_data|tojson }};
+                
+                var revenueTrace = {
+                    x: dates,
+                    y: revenueData,
+                    mode: 'lines+markers',
+                    name: 'Revenue',
+                    line: {color: 'rgb(234, 179, 8)'}
+                };
+                
+                var revenueLayout = {
+                    title: 'Course Revenue Over Time',
+                    xaxis: {title: 'Date'},
+                    yaxis: {title: 'Revenue (USD)'},
+                    margin: {l: 40, r: 10, t: 40, b: 40},
+                    height: 300
+                };
+                
+                Plotly.newPlot('revenue-chart', [revenueTrace], revenueLayout);
+            } else {
+                document.getElementById('enrollments-chart').innerHTML = 
+                    '<div class="flex items-center justify-center h-full p-6 text-gray-500">No enrollment data available yet</div>';
+                document.getElementById('revenue-chart').innerHTML = 
+                    '<div class="flex items-center justify-center h-full p-6 text-gray-500">No revenue data available yet</div>';
+            }
+        } catch (e) {
+            console.error("Error rendering charts:", e);
+            document.getElementById('enrollments-chart').innerHTML = 
+                '<div class="flex items-center justify-center h-full p-6 text-gray-500">Error rendering chart</div>';
+            document.getElementById('revenue-chart').innerHTML = 
+                '<div class="flex items-center justify-center h-full p-6 text-gray-500">Error rendering chart</div>';
+        }
     });
 </script>
 {% endblock %}

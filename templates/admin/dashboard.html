@@ -279,13 +279,68 @@
 <!-- Load charts -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Load enrollment chart
-        var enrollmentData = {{ stats.enrollment_timeline.chart|safe }};
-        Plotly.newPlot('enrollments-chart', JSON.parse(enrollmentData).data, JSON.parse(enrollmentData).layout);
-        
-        // Load user growth chart
-        var userData = {{ stats.user_timeline.chart|safe }};
-        Plotly.newPlot('users-chart', JSON.parse(userData).data, JSON.parse(userData).layout);
+        try {
+            // Check if we have valid data for the charts
+            if ('{{ stats.enrollment_timeline.dates|length }}' > 0) {
+                // Create simple charts with the raw data since the JSON parsing is causing issues
+                var enrollmentDates = {{ stats.enrollment_timeline.dates|tojson }};
+                var enrollmentCounts = {{ stats.enrollment_timeline.counts|tojson }};
+                
+                var enrollmentTrace = {
+                    x: enrollmentDates,
+                    y: enrollmentCounts,
+                    mode: 'lines+markers',
+                    name: 'Total Enrollments',
+                    line: {color: 'rgb(67, 56, 202)'}
+                };
+                
+                var enrollmentLayout = {
+                    title: 'Course Enrollments Over Time',
+                    xaxis: {title: 'Date'},
+                    yaxis: {title: 'Number of Enrollments'},
+                    margin: {l: 40, r: 10, t: 40, b: 40},
+                    height: 300
+                };
+                
+                Plotly.newPlot('enrollments-chart', [enrollmentTrace], enrollmentLayout);
+            } else {
+                document.getElementById('enrollments-chart').innerHTML = 
+                    '<div class="flex items-center justify-center h-full p-6 text-gray-500">No enrollment data available yet</div>';
+            }
+            
+            if ('{{ stats.user_timeline.dates|length }}' > 0) {
+                // User growth chart
+                var userDates = {{ stats.user_timeline.dates|tojson }};
+                var userCounts = {{ stats.user_timeline.counts|tojson }};
+                
+                var userTrace = {
+                    x: userDates,
+                    y: userCounts,
+                    mode: 'lines+markers',
+                    name: 'Total Users',
+                    line: {color: 'rgb(59, 130, 246)'}
+                };
+                
+                var userLayout = {
+                    title: 'User Growth Over Time',
+                    xaxis: {title: 'Date'},
+                    yaxis: {title: 'Number of Users'},
+                    margin: {l: 40, r: 10, t: 40, b: 40},
+                    height: 300
+                };
+                
+                Plotly.newPlot('users-chart', [userTrace], userLayout);
+            } else {
+                document.getElementById('users-chart').innerHTML = 
+                    '<div class="flex items-center justify-center h-full p-6 text-gray-500">No user growth data available yet</div>';
+            }
+        } catch (e) {
+            console.error("Error rendering charts:", e);
+            document.getElementById('enrollments-chart').innerHTML = 
+                '<div class="flex items-center justify-center h-full p-6 text-gray-500">Error rendering chart</div>';
+            document.getElementById('users-chart').innerHTML = 
+                '<div class="flex items-center justify-center h-full p-6 text-gray-500">Error rendering chart</div>';
+        }
     });
 </script>
 {% endblock %}
