@@ -355,11 +355,57 @@
                 };
                 
                 Plotly.newPlot('revenue-chart', [revenueTrace], revenueLayout, config);
+                
+                // Create percentage chart with the raw data
+                var percentageData = {{ analytics.percentage_data|tojson }};
+                var totalUsers = {{ analytics.total_users }};
+                
+                var percentageTrace = {
+                    x: dates,
+                    y: percentageData,
+                    mode: 'lines+markers',
+                    name: 'User Percentage',
+                    line: {
+                        color: 'rgb(16, 185, 129)',
+                        width: 3
+                    },
+                    marker: {
+                        color: 'rgb(16, 185, 129)',
+                        size: 8
+                    },
+                    hovertemplate: '%{y:.1f}% of total users<extra></extra>'
+                };
+                
+                var percentageLayout = {
+                    ...commonLayout,
+                    title: {
+                        text: 'Percentage of Total Users Enrolled',
+                        font: {
+                            size: 18,
+                            weight: 'bold'
+                        }
+                    },
+                    xaxis: {
+                        title: 'Date',
+                        gridcolor: '#f0f0f0',
+                        range: ['{{ analytics.dates[0] }}', '{{ analytics.dates[-1] }}']
+                    },
+                    yaxis: {
+                        title: 'Percentage of Users (%)',
+                        gridcolor: '#f0f0f0',
+                        range: [0, Math.max(...percentageData) * 1.1 || 5], // 10% padding with fallback
+                        ticksuffix: '%'
+                    }
+                };
+                
+                Plotly.newPlot('percentage-chart', [percentageTrace], percentageLayout, config);
             } else {
                 document.getElementById('enrollments-chart').innerHTML = 
                     '<div class="flex items-center justify-center h-full p-6 text-gray-500">No enrollment data available yet</div>';
                 document.getElementById('revenue-chart').innerHTML = 
                     '<div class="flex items-center justify-center h-full p-6 text-gray-500">No revenue data available yet</div>';
+                document.getElementById('percentage-chart').innerHTML = 
+                    '<div class="flex items-center justify-center h-full p-6 text-gray-500">No enrollment percentage data available yet</div>';
             }
             
             // Add window resize handler for responsive charts
@@ -372,12 +418,18 @@
                     'xaxis.autorange': true,
                     'yaxis.autorange': true
                 });
+                Plotly.relayout('percentage-chart', {
+                    'xaxis.autorange': true,
+                    'yaxis.autorange': true
+                });
             });
         } catch (e) {
             console.error("Error rendering charts:", e);
             document.getElementById('enrollments-chart').innerHTML = 
                 '<div class="flex items-center justify-center h-full p-6 text-gray-500">Error rendering chart</div>';
             document.getElementById('revenue-chart').innerHTML = 
+                '<div class="flex items-center justify-center h-full p-6 text-gray-500">Error rendering chart</div>';
+            document.getElementById('percentage-chart').innerHTML = 
                 '<div class="flex items-center justify-center h-full p-6 text-gray-500">Error rendering chart</div>';
         }
     });
