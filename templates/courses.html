@@ -5,7 +5,7 @@
 
 {% block content %}
 <!-- Hero Section with Carousel -->
-<div x-data="{ activeSlide: 0 }" class="relative overflow-hidden rounded-xl mb-10 bg-gradient-to-r from-primary-600 to-primary-800 dark:from-primary-800 dark:to-primary-900 shadow-xl">
+<div x-data="{ activeSlide: 0 }" class="relative overflow-hidden rounded-xl mb-12 bg-gradient-to-r from-primary-600 to-primary-800 dark:from-primary-800 dark:to-primary-900 shadow-xl">
     <div class="absolute inset-0 bg-pattern opacity-10"></div>
     
     <!-- Carousel Content -->
@@ -100,15 +100,15 @@ document.addEventListener('alpine:init', () => {
 });
 </script>
 
-<div class="flex justify-between items-center mb-6">
+<div class="flex justify-between items-center mb-8">
     <div>
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Medical Courses</h1>
-        <p class="mt-1 text-gray-500 dark:text-gray-400">Browse our comprehensive selection of medical courses</p>
+        <p class="mt-2 text-gray-500 dark:text-gray-400">Browse our comprehensive selection of medical courses</p>
     </div>
 </div>
 
 <!-- Popular Categories Section -->
-<div class="mb-10">
+<div class="mb-12">
     <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Popular Categories</h2>
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {% for category in categories %}
@@ -126,7 +126,7 @@ document.addEventListener('alpine:init', () => {
 </div>
 
 <!-- Filters -->
-<div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md mb-8 border border-gray-200 dark:border-gray-700">
+<div class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-xl shadow-md mb-10 border border-gray-200 dark:border-gray-700">
     <div class="flex items-center mb-4">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-600 dark:text-primary-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd" />
@@ -193,7 +193,7 @@ document.addEventListener('alpine:init', () => {
 </div>
 
 <!-- Course Cards Header -->
-<div class="flex justify-between items-center mb-4">
+<div class="flex justify-between items-center mb-6">
     <h2 id="courses-grid" class="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-primary-600 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -207,7 +207,7 @@ document.addEventListener('alpine:init', () => {
 
 <!-- Course Cards -->
 {% if courses %}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {% for course in courses %}
             <div class="group bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700 flex flex-col h-full transform hover:-translate-y-1">
                 <!-- Course Image -->
@@ -291,8 +291,8 @@ document.addEventListener('alpine:init', () => {
 {% endif %}
 
 <!-- Call to Action Section -->
-<div class="mt-16 mb-8 bg-gradient-to-r from-primary-500 to-primary-700 dark:from-primary-700 dark:to-primary-900 rounded-xl shadow-xl overflow-hidden">
-    <div class="relative px-6 py-10 md:py-12 md:px-12">
+<div class="mt-20 mb-10 bg-gradient-to-r from-primary-500 to-primary-700 dark:from-primary-700 dark:to-primary-900 rounded-xl shadow-xl overflow-hidden">
+    <div class="relative px-8 py-12 md:py-16 md:px-16">
         <div class="absolute right-0 bottom-0 opacity-10">
             <svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" fill="currentColor" class="text-white" viewBox="0 0 16 16">
                 <path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM4.5 7.5a.5.5 0 0 0 0 1h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H4.5Z"/>
