@@ -180,7 +180,7 @@
                 <p class="mt-1 text-sm text-gray-500">Cumulative revenue over time</p>
             </div>
             <div class="px-5 py-5">
-                <div id="revenue-chart" class="h-80"></div>
+                <div id="revenue-chart" class="h-80" style="height: 350px;"></div>
             </div>
         </div>
     </div>
@@ -226,6 +226,31 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         try {
+            // Get the container width for responsive charts
+            const enrollmentChartWidth = document.getElementById('enrollments-chart').offsetWidth;
+            const revenueChartWidth = document.getElementById('revenue-chart').offsetWidth;
+            
+            // Common layout settings
+            const commonLayout = {
+                autosize: true,
+                font: {
+                    family: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                margin: {
+                    l: 60,
+                    r: 30,
+                    t: 50,
+                    b: 60
+                },
+                hoverlabel: {
+                    bgcolor: "#FFF",
+                    font: { size: 12, color: "#333" },
+                    bordercolor: "#DDD"
+                }
+            };
+            
             // Check if we have valid data for the charts
             if ('{{ analytics.dates|length }}' > 0) {
                 // Create enrollment chart with the raw data
@@ -237,18 +262,42 @@
                     y: enrollmentData,
                     mode: 'lines+markers',
                     name: 'Enrollments',
-                    line: {color: 'rgb(67, 56, 202)'}
+                    line: {
+                        color: 'rgb(67, 56, 202)',
+                        width: 3
+                    },
+                    marker: {
+                        color: 'rgb(67, 56, 202)',
+                        size: 8
+                    }
                 };
                 
                 var enrollmentLayout = {
-                    title: 'Course Enrollments Over Time',
-                    xaxis: {title: 'Date'},
-                    yaxis: {title: 'Number of Enrollments'},
-                    margin: {l: 40, r: 10, t: 40, b: 40},
-                    height: 300
+                    ...commonLayout,
+                    title: {
+                        text: 'Course Enrollments Over Time',
+                        font: {
+                            size: 18,
+                            weight: 'bold'
+                        }
+                    },
+                    xaxis: {
+                        title: 'Date',
+                        gridcolor: '#f0f0f0'
+                    },
+                    yaxis: {
+                        title: 'Number of Enrollments',
+                        gridcolor: '#f0f0f0'
+                    }
                 };
                 
-                Plotly.newPlot('enrollments-chart', [enrollmentTrace], enrollmentLayout);
+                // Set responsive options
+                var config = {
+                    responsive: true,
+                    displayModeBar: false
+                };
+                
+                Plotly.newPlot('enrollments-chart', [enrollmentTrace], enrollmentLayout, config);
                 
                 // Create revenue chart with the raw data
                 var revenueData = {{ analytics.revenue_data|tojson }};
@@ -258,24 +307,57 @@
                     y: revenueData,
                     mode: 'lines+markers',
                     name: 'Revenue',
-                    line: {color: 'rgb(234, 179, 8)'}
+                    line: {
+                        color: 'rgb(234, 179, 8)',
+                        width: 3
+                    },
+                    marker: {
+                        color: 'rgb(234, 179, 8)',
+                        size: 8
+                    },
+                    fill: 'tozeroy',
+                    fillcolor: 'rgba(234, 179, 8, 0.1)'
                 };
                 
                 var revenueLayout = {
-                    title: 'Course Revenue Over Time',
-                    xaxis: {title: 'Date'},
-                    yaxis: {title: 'Revenue (USD)'},
-                    margin: {l: 40, r: 10, t: 40, b: 40},
-                    height: 300
+                    ...commonLayout,
+                    title: {
+                        text: 'Course Revenue Over Time',
+                        font: {
+                            size: 18,
+                            weight: 'bold'
+                        }
+                    },
+                    xaxis: {
+                        title: 'Date',
+                        gridcolor: '#f0f0f0'
+                    },
+                    yaxis: {
+                        title: 'Revenue (USD)',
+                        gridcolor: '#f0f0f0',
+                        tickprefix: '$'
+                    }
                 };
                 
-                Plotly.newPlot('revenue-chart', [revenueTrace], revenueLayout);
+                Plotly.newPlot('revenue-chart', [revenueTrace], revenueLayout, config);
             } else {
                 document.getElementById('enrollments-chart').innerHTML = 
                     '<div class="flex items-center justify-center h-full p-6 text-gray-500">No enrollment data available yet</div>';
                 document.getElementById('revenue-chart').innerHTML = 
                     '<div class="flex items-center justify-center h-full p-6 text-gray-500">No revenue data available yet</div>';
             }
+            
+            // Add window resize handler for responsive charts
+            window.addEventListener('resize', function() {
+                Plotly.relayout('enrollments-chart', {
+                    'xaxis.autorange': true,
+                    'yaxis.autorange': true
+                });
+                Plotly.relayout('revenue-chart', {
+                    'xaxis.autorange': true,
+                    'yaxis.autorange': true
+                });
+            });
         } catch (e) {
             console.error("Error rendering charts:", e);
             document.getElementById('enrollments-chart').innerHTML = 
