@@ -26,7 +26,7 @@
 <div class="min-h-screen bg-gray-50" x-data="{ sidebarOpen: true }">
   <!-- Admin Sidebar -->
   <div
-    class="fixed inset-y-0 left-0 z-10 bg-white shadow-lg sidebar-transition"
+    class="fixed top-16 bottom-0 left-0 z-10 bg-white shadow-lg sidebar-transition"
     :class="sidebarOpen ? 'w-64' : 'w-20'"
     :class="{ 'sidebar-expanded': sidebarOpen, 'sidebar-collapsed': !sidebarOpen }"
   >
@@ -143,11 +143,11 @@
   
   <!-- Main Content -->
   <div 
-    class="content-transition min-h-screen" 
+    class="content-transition min-h-screen pt-16" 
     :class="sidebarOpen ? 'sm:ml-64 ml-0' : 'sm:ml-20 ml-0'"
   >
     <!-- Mobile Toggle Button (visible on small screens) -->
-    <div class="sm:hidden p-4 bg-white shadow flex justify-between items-center">
+    <div class="sm:hidden p-4 bg-white shadow flex justify-between items-center mt-0">
       <h1 class="text-xl font-semibold">Admin Panel</h1>
       <button 
         @click="sidebarOpen = !sidebarOpen" 
