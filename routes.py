@@ -17,7 +17,8 @@ from forms import (LoginForm, SignupForm, ResetPasswordRequestForm, ResetPasswor
 from utils import (generate_reset_token, find_user_by_email, find_user_by_username,
                   get_user_courses, get_user_enrollments, get_user_certificates,
                   get_course_modules, get_next_id, filter_courses, calculate_course_progress,
-                  generate_certificate, get_stats)
+                  generate_certificate, get_stats, get_course_analytics, get_active_users,
+                  calculate_revenue, get_user_registration_timeline, get_course_enrollment_timeline)
 
 # Public routes
 @app.route('/')
